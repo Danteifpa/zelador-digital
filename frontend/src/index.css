@@ -1,1 +1,16 @@
-@import "tailwindcss";
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@media print {
+  body {
+    background: white !important;
+    color: black !important;
+  }
+  .nao-imprimir, button, select, nav {
+    display: none !important;
+  }
+  .shadow-sm, .shadow-md, .shadow-2xl {
+    box-shadow: none !important;
+  }
+}

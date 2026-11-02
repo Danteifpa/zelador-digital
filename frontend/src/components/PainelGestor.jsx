@@ -9,15 +9,15 @@ import {
   AlertCircle, 
   Filter, 
   RefreshCw, 
-  ThumbsUp,
-  MapPin,
-  Lock,
-  LogOut,
-  KeyRound,
-  FileText,
-  Copy,
-  Printer,
-  X
+  ThumbsUp, 
+  MapPin, 
+  Lock, 
+  LogOut, 
+  KeyRound, 
+  FileText, 
+  Copy, 
+  Printer, 
+  X 
 } from 'lucide-react';
 
 const CHAVE_GESTOR = 'zelador##2026';
@@ -32,7 +32,6 @@ export default function PainelGestor() {
   const [filtroStatus, setFiltroStatus] = useState('todos');
   const [filtroCategoria, setFiltroCategoria] = useState('todas');
 
-  // Estado para o Modal de Ofício Formal
   const [ocorrenciaOficio, setOcorrenciaOficio] = useState(null);
   const [copiado, setCopiado] = useState(false);
 
@@ -113,7 +112,7 @@ export default function PainelGestor() {
 
   const excluirOcorrencia = async (id, fotoUrl) => {
     const confirmar = window.confirm(
-      'Tem a certeza de que pretende eliminar esta denúncia permanentemente?'
+      'Tem certeza de que deseja excluir esta denúncia permanentemente?'
     );
     if (!confirmar) return;
 
@@ -126,7 +125,7 @@ export default function PainelGestor() {
             await supabase.storage.from('evidencias').remove([nomeArquivo]);
           }
         } catch (storageErr) {
-          console.warn('Aviso ao remover ficheiro do Storage:', storageErr);
+          console.warn('Aviso ao remover foto do Storage:', storageErr);
         }
       }
 
@@ -140,14 +139,14 @@ export default function PainelGestor() {
       setOcorrencias((prev) => prev.filter((item) => item.id !== id));
       if (ocorrenciaOficio?.id === id) setOcorrenciaOficio(null);
     } catch (err) {
-      console.error('Erro ao eliminar ocorrência:', err);
-      alert('Não foi possível eliminar o registo.');
+      console.error('Erro ao excluir ocorrência:', err);
+      alert('Não foi possível excluir o registro.');
     }
   };
 
   const exportarCSV = () => {
     if (ocorrencias.length === 0) {
-      alert('Nenhum registo disponível para exportação.');
+      alert('Nenhum registro disponível para exportação.');
       return;
     }
 
@@ -184,7 +183,6 @@ export default function PainelGestor() {
     document.body.removeChild(link);
   };
 
-  // Gerador de texto formal de ofício com base na ocorrência
   const gerarTextoOficio = (item) => {
     if (!item) return '';
     const coords = extrairCoordenadas(item.localizacao);
@@ -205,14 +203,14 @@ Por intermédio da presente manifestação de interesse público, a comunidade v
 
 DADOS TÉCNICOS DA OCORRÊNCIA:
 -----------------------------------------------------------------------------
-- Identificador do Registo: #${item.id.slice(0, 8)}
+- Identificador do Registro: #${item.id.slice(0, 8)}
 - Classificação: ${item.categoria}
-- Data de Registo: ${dataCriacao}
+- Data de Registro: ${dataCriacao}
 - Nível de Mobilização: ${item.total_apoios || 0} manifestações/apoios de moradores
 - Coordenadas Geográficas (GPS): ${coordenadasTexto}
 - Rota / Localização no Mapa: ${linkMaps}
 - Detalhamento e Referência: ${item.descricao || 'Conforme vistoria in loco.'}
-- Evidência Fotográfica: ${item.foto_url || 'Sem registo fotográfico em anexo.'}
+- Evidência Fotográfica: ${item.foto_url || 'Sem registro fotográfico em anexo.'}
 -----------------------------------------------------------------------------
 
 Considerando que a situação acima descrita acarreta transtornos diretos à saúde coletiva, segurança viária e mobilidade dos moradores e transeuntes da localidade, solicitamos a inclusão prioritária do presente ponto no cronograma de manutenções e reparos deste órgão.
@@ -295,16 +293,16 @@ Zelador Digital - Gestão Participativa`;
         <div>
           <div className="flex items-center gap-2">
             <h2 className="text-xl font-bold text-gray-900">Painel de Gestão e Moderação</h2>
-            <span className="text-[10px] bg-green-50 text-green-700 border border-green-200 px-2 py-0.5 rounded-full font-medium">
+            <span className="text-[10px] bg-green-50 text-green-700 border border-green-200 px-2 py-0.5 rounded-full font-medium nao-imprimir">
               Autenticado
             </span>
           </div>
           <p className="text-xs text-gray-500 mt-1">
-            Controlo de demandas comunitárias, ofícios formais e moderação.
+            Controle de demandas comunitárias, dossiê em PDF, ofícios formais e moderação.
           </p>
         </div>
 
-        <div className="flex items-center gap-2 w-full sm:w-auto">
+        <div className="flex flex-wrap items-center gap-2 w-full sm:w-auto nao-imprimir">
           <button
             onClick={carregarOcorrencias}
             className="p-2.5 text-gray-600 bg-gray-50 hover:bg-gray-100 rounded-xl border border-gray-200 transition"
@@ -312,10 +310,19 @@ Zelador Digital - Gestão Participativa`;
           >
             <RefreshCw size={16} className={carregando ? 'animate-spin' : ''} />
           </button>
+
+          <button
+            onClick={() => window.print()}
+            className="inline-flex items-center gap-1.5 px-3 py-2.5 bg-gray-100 hover:bg-gray-200 text-gray-700 text-xs font-semibold rounded-xl border border-gray-300 transition shadow-sm"
+            title="Imprimir ou Salvar Dossiê em PDF"
+          >
+            <Printer size={15} />
+            <span>Dossiê PDF</span>
+          </button>
           
           <button
             onClick={exportarCSV}
-            className="flex-1 sm:flex-initial inline-flex items-center justify-center gap-2 px-4 py-2.5 bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold rounded-xl transition shadow-sm"
+            className="inline-flex items-center gap-1.5 px-3 py-2.5 bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold rounded-xl transition shadow-sm"
           >
             <Download size={15} />
             <span>Exportar CSV</span>
@@ -335,7 +342,7 @@ Zelador Digital - Gestão Participativa`;
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
         <div className="bg-white p-4 rounded-xl border border-gray-200 shadow-sm flex items-center justify-between">
           <div>
-            <span className="text-xs text-gray-500 font-medium">Total de Registos</span>
+            <span className="text-xs text-gray-500 font-medium">Total de Registros</span>
             <p className="text-2xl font-bold text-gray-900 mt-0.5">{totalRegistros}</p>
           </div>
           <div className="p-3 bg-blue-50 text-blue-600 rounded-xl">
@@ -364,8 +371,8 @@ Zelador Digital - Gestão Participativa`;
         </div>
       </div>
 
-      {/* Filtros */}
-      <div className="bg-white p-4 rounded-xl border border-gray-200 shadow-sm flex flex-wrap gap-4 items-center justify-between">
+      {/* Barra de Filtros */}
+      <div className="bg-white p-4 rounded-xl border border-gray-200 shadow-sm flex flex-wrap gap-4 items-center justify-between nao-imprimir">
         <div className="flex items-center gap-2 text-xs font-semibold text-gray-600">
           <Filter size={15} />
           <span>Filtrar Exibição:</span>
@@ -400,7 +407,7 @@ Zelador Digital - Gestão Participativa`;
       {/* Listagem */}
       {carregando ? (
         <div className="bg-white p-12 text-center rounded-2xl border border-gray-200 text-gray-500 text-sm">
-          A carregar dados da comunidade...
+          Carregando dados da comunidade...
         </div>
       ) : ocorrenciasFiltradas.length === 0 ? (
         <div className="bg-white p-12 text-center rounded-2xl border border-gray-200 text-gray-500 text-sm">
@@ -466,8 +473,7 @@ Zelador Digital - Gestão Participativa`;
                   </div>
                 </div>
 
-                <div className="flex items-center gap-2 self-end md:self-center w-full md:w-auto justify-end border-t md:border-t-0 pt-3 md:pt-0">
-                  {/* Botão Gerar Ofício */}
+                <div className="flex items-center gap-2 self-end md:self-center w-full md:w-auto justify-end border-t md:border-t-0 pt-3 md:pt-0 nao-imprimir">
                   <button
                     onClick={() => setOcorrenciaOficio(item)}
                     className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-blue-50 hover:bg-blue-100 text-blue-700 rounded-lg text-xs font-semibold transition border border-blue-200"
@@ -490,7 +496,7 @@ Zelador Digital - Gestão Participativa`;
                   <button
                     onClick={() => excluirOcorrencia(item.id, item.foto_url)}
                     className="p-2 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition"
-                    title="Eliminar permanentemente"
+                    title="Excluir permanentemente"
                   >
                     <Trash2 size={16} />
                   </button>
@@ -501,11 +507,10 @@ Zelador Digital - Gestão Participativa`;
         </div>
       )}
 
-      {/* Modal de Exibição e Cópia do Ofício */}
+      {/* Modal de Exibição do Ofício */}
       {ocorrenciaOficio && (
-        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4">
+        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 nao-imprimir">
           <div className="bg-white rounded-2xl w-full max-w-2xl max-h-[90vh] flex flex-col shadow-2xl overflow-hidden border border-gray-200">
-            {/* Topo do Modal */}
             <div className="flex items-center justify-between p-4 border-b border-gray-100 bg-gray-50">
               <div className="flex items-center gap-2">
                 <FileText size={18} className="text-blue-600" />
@@ -521,12 +526,10 @@ Zelador Digital - Gestão Participativa`;
               </button>
             </div>
 
-            {/* Conteúdo Pré-formatado */}
             <div className="p-4 overflow-y-auto flex-1 bg-gray-900 text-gray-100 text-xs font-mono rounded-lg m-4 whitespace-pre-wrap leading-relaxed select-all">
               {gerarTextoOficio(ocorrenciaOficio)}
             </div>
 
-            {/* Ações do Modal */}
             <div className="p-4 border-t border-gray-100 bg-gray-50 flex items-center justify-between">
               <span className="text-[11px] text-gray-500">
                 {copiado ? 'Texto copiado com sucesso!' : 'Clique para copiar e colar no Word ou Docs.'}
