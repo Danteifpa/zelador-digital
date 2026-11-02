@@ -1,6 +1,6 @@
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { supabase } from '../lib/supabase';
-import { Camera, Image as ImageIcon, MapPin, CheckCircle, AlertTriangle, X, Loader2 } from 'lucide-react';
+import { Camera, Image as ImageIcon, MapPin, CheckCircle, AlertTriangle, X, Loader2, Clock } from 'lucide-react';
 
 const SUBCATEGORIAS = {
   'Lixo / Entulho': ['Lixo doméstico acumulado', 'Entulho de construção', 'Poda de árvores', 'Foco crónico'],
@@ -8,6 +8,8 @@ const SUBCATEGORIAS = {
   'Buraco na via / Pavimentação': ['Cratera na via', 'Afundamento de pista', 'Bueiro sem tampa / entupido', 'Trecho sem asfalto'],
   'Outros': ['Esgoto a céu aberto', 'Mato alto', 'Invasão irregular']
 };
+
+const TEMPO_ESPERA_SEGUNDOS = 60; // Janela de proteção anti-spam por dispositivo
 
 export default function FormularioOcorrencia({ aoSalvarSucesso }) {
   const [categoria, setCategoria] = useState('Lixo / Entulho');
@@ -22,10 +24,36 @@ export default function FormularioOcorrencia({ aoSalvarSucesso }) {
   const [erroMsg, setErroMsg] = useState('');
   const [sucessoMsg, setSucessoMsg] = useState(false);
 
+  // Estado para controlo de Rate Limit local
+  const [segundosRestantes, setSegundosRestantes] = useState(0);
+
   const inputCameraRef = useRef(null);
   const inputGaleriaRef = useRef(null);
 
-  // Compressão no cliente usando HTML5 Canvas (limita a 1280px e 0.75 de qualidade JPEG)
+  // Verifica se há bloqueio ativo ao carregar ou a cada segundo
+  useEffect(() => {
+    const verificarBloqueio = () => {
+      const ultimoEnvio = localStorage.getItem('zelador_ultimo_envio');
+      if (!ultimoEnvio) {
+        setSegundosRestantes(0);
+        return;
+      }
+
+      const decorrido = Math.floor((Date.now() - parseInt(ultimoEnvio, 10)) / 1000);
+      const restante = TEMPO_ESPERA_SEGUNDOS - decorrido;
+
+      if (restante > 0) {
+        setSegundosRestantes(restante);
+      } else {
+        setSegundosRestantes(0);
+      }
+    };
+
+    verificarBloqueio();
+    const intervalo = setInterval(verificarBloqueio, 1000);
+    return () => clearInterval(intervalo);
+  }, []);
+
   const comprimirImagem = (file) => {
     return new Promise((resolve, reject) => {
       const reader = new FileReader();
@@ -72,7 +100,7 @@ export default function FormularioOcorrencia({ aoSalvarSucesso }) {
     if (!file) return;
 
     if (!file.type.startsWith('image/')) {
-      setErroMsg('Por favor, seleccione apenas ficheiros de imagem (JPG, PNG ou WebP).');
+      setErroMsg('Por favor, selecione apenas ficheiros de imagem (JPG, PNG ou WebP).');
       return;
     }
 
@@ -116,9 +144,9 @@ export default function FormularioOcorrencia({ aoSalvarSucesso }) {
       (erro) => {
         setObtendoGps(false);
         if (erro.code === erro.PERMISSION_DENIED) {
-          setErroMsg('Permissão de GPS negada. Por favor, autorize a localização no navegador.');
+          setErroMsg('Permissão de GPS negada. Autorize a localização nas definições do navegador.');
         } else {
-          setErroMsg('Não foi possível obter a sua posição. Tente novamente em local aberto.');
+          setErroMsg('Não foi possível obter a sua posição. Tente em local aberto.');
         }
       },
       { enableHighAccuracy: true, timeout: 12000, maximumAge: 0 }
@@ -137,8 +165,14 @@ export default function FormularioOcorrencia({ aoSalvarSucesso }) {
     e.preventDefault();
     setErroMsg('');
 
+    // Validação de intervalo temporal
+    if (segundosRestantes > 0) {
+      setErroMsg(`Aguarde ${segundosRestantes}s para enviar uma nova denúncia deste aparelho.`);
+      return;
+    }
+
     if (!coordenadas) {
-      setErroMsg('É obrigatório capturar a localização GPS para validar o registo comunitário.');
+      setErroMsg('É obrigatório capturar a localização GPS para validar o registo.');
       return;
     }
 
@@ -152,7 +186,6 @@ export default function FormularioOcorrencia({ aoSalvarSucesso }) {
     try {
       let fotoUrl = null;
 
-      // 1. Upload da fotografia comprimida para o Supabase Storage
       if (fotoBlob) {
         const nomeArquivo = `evidencia_${Date.now()}_${Math.random().toString(36).substring(2, 8)}.jpg`;
         const { error: uploadError } = await supabase.storage
@@ -168,7 +201,6 @@ export default function FormularioOcorrencia({ aoSalvarSucesso }) {
         fotoUrl = publicData.publicUrl;
       }
 
-      // 2. Gravação da ocorrência com coordenadas PostGIS
       const pontoWKT = `POINT(${coordenadas.lng} ${coordenadas.lat})`;
 
       const { error: insertError } = await supabase
@@ -185,6 +217,10 @@ export default function FormularioOcorrencia({ aoSalvarSucesso }) {
         ]);
 
       if (insertError) throw insertError;
+
+      // Grava o timestamp no localStorage para acionar a contagem regressiva
+      localStorage.setItem('zelador_ultimo_envio', Date.now().toString());
+      setSegundosRestantes(TEMPO_ESPERA_SEGUNDOS);
 
       setSucessoMsg(true);
       removerFoto();
@@ -208,7 +244,7 @@ export default function FormularioOcorrencia({ aoSalvarSucesso }) {
       <div>
         <h2 className="text-lg font-bold text-gray-900">Registar Ocorrência</h2>
         <p className="text-xs text-gray-500">
-          Mapeie problemas na comunidade para gerar dados precisos aos órgãos competentes.
+          Mapeie problemas na comunidade para gerar dados técnicos aos órgãos competentes.
         </p>
       </div>
 
@@ -342,7 +378,7 @@ export default function FormularioOcorrencia({ aoSalvarSucesso }) {
           </select>
         </div>
 
-        {/* Subcategorias Rápidas (Chips de toque rápido) */}
+        {/* Subcategorias Rápidas */}
         <div>
           <span className="block text-[11px] font-medium text-gray-500 mb-1.5">
             Classificação rápida (toque para adicionar à descrição):
@@ -380,16 +416,27 @@ export default function FormularioOcorrencia({ aoSalvarSucesso }) {
           />
         </div>
 
-        {/* Botão de Envio com Protecção de Carregamento */}
+        {/* Botão de Envio com Bloqueio de Rate Limit e Loading */}
         <button
           type="submit"
-          disabled={enviando}
-          className="w-full py-3 bg-blue-600 hover:bg-blue-700 disabled:bg-blue-300 text-white text-xs font-bold rounded-xl transition shadow-sm flex items-center justify-center gap-2"
+          disabled={enviando || segundosRestantes > 0}
+          className={`w-full py-3 text-xs font-bold rounded-xl transition shadow-sm flex items-center justify-center gap-2 ${
+            segundosRestantes > 0
+              ? 'bg-amber-100 text-amber-800 border border-amber-300 cursor-not-allowed'
+              : enviando
+              ? 'bg-blue-300 text-white cursor-wait'
+              : 'bg-blue-600 hover:bg-blue-700 text-white'
+          }`}
         >
           {enviando ? (
             <>
               <Loader2 size={16} className="animate-spin" />
               <span>A comprimir e registar ocorrência...</span>
+            </>
+          ) : segundosRestantes > 0 ? (
+            <>
+              <Clock size={16} />
+              <span>Aguarde {segundosRestantes}s para nova denúncia</span>
             </>
           ) : (
             <span>Enviar Denúncia</span>
