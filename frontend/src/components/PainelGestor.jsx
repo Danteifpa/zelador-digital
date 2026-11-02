@@ -10,16 +10,53 @@ import {
   Filter, 
   RefreshCw, 
   ThumbsUp,
-  MapPin
+  MapPin,
+  Lock,
+  LogOut,
+  KeyRound
 } from 'lucide-react';
 
+// Senha definida para liberação do painel
+const CHAVE_GESTOR = 'zelador##2026';
+
 export default function PainelGestor() {
+  const [autenticado, setAutenticado] = useState(false);
+  const [senhaInput, setSenhaInput] = useState('');
+  const [erroSenha, setErroSenha] = useState(false);
+
   const [ocorrencias, setOcorrencias] = useState([]);
   const [carregando, setCarregando] = useState(true);
   const [filtroStatus, setFiltroStatus] = useState('todos');
   const [filtroCategoria, setFiltroCategoria] = useState('todas');
 
-  // Extrai latitude e longitude de formatos GeoJSON ou WKT
+  // Mantém autenticado durante a sessão atual no navegador
+  useEffect(() => {
+    const authSessao = sessionStorage.getItem('zelador_gestor_auth');
+    if (authSessao === 'true') {
+      setAutenticado(true);
+      carregarOcorrencias();
+    }
+  }, []);
+
+  const handleLogin = (e) => {
+    e.preventDefault();
+    if (senhaInput.trim() === CHAVE_GESTOR) {
+      sessionStorage.setItem('zelador_gestor_auth', 'true');
+      setAutenticado(true);
+      setErroSenha(false);
+      carregarOcorrencias();
+    } else {
+      setErroSenha(true);
+    }
+  };
+
+  const handleLogout = () => {
+    sessionStorage.removeItem('zelador_gestor_auth');
+    setAutenticado(false);
+    setSenhaInput('');
+  };
+
+  // Conversão de coordenadas (GeoJSON / WKT)
   const extrairCoordenadas = (geom) => {
     if (!geom) return null;
     if (typeof geom === 'string' && geom.startsWith('POINT(')) {
@@ -51,10 +88,6 @@ export default function PainelGestor() {
     }
   };
 
-  useEffect(() => {
-    carregarOcorrencias();
-  }, []);
-
   const atualizarStatus = async (id, novoStatus) => {
     try {
       const { error } = await supabase
@@ -80,7 +113,7 @@ export default function PainelGestor() {
     if (!confirmar) return;
 
     try {
-      // 1. Apaga a imagem do Storage caso exista
+      // 1. Remove a imagem do Storage caso exista
       if (fotoUrl) {
         try {
           const partesUrl = fotoUrl.split('/evidencias/');
@@ -93,7 +126,7 @@ export default function PainelGestor() {
         }
       }
 
-      // 2. Apaga o registro da tabela
+      // 2. Remove da base de dados
       const { error } = await supabase
         .from('ocorrencias')
         .delete()
@@ -101,7 +134,7 @@ export default function PainelGestor() {
 
       if (error) throw error;
 
-      // 3. Atualiza o estado da lista localmente
+      // 3. Atualiza o estado da lista
       setOcorrencias((prev) => prev.filter((item) => item.id !== id));
     } catch (err) {
       console.error('Erro ao excluir ocorrência:', err);
@@ -148,6 +181,54 @@ export default function PainelGestor() {
     document.body.removeChild(link);
   };
 
+  // Bloqueio por senha
+  if (!autenticado) {
+    return (
+      <div className="w-full max-w-sm mx-auto my-12 bg-white p-6 rounded-2xl border border-gray-200 shadow-sm text-center">
+        <div className="w-12 h-12 bg-blue-50 text-blue-600 rounded-2xl flex items-center justify-center mx-auto mb-4">
+          <Lock size={24} />
+        </div>
+        
+        <h2 className="text-lg font-bold text-gray-900">Acesso Restrito ao Gestor</h2>
+        <p className="text-xs text-gray-500 mt-1 mb-6">
+          Área destinada à liderança comunitária para moderação e relatórios.
+        </p>
+
+        <form onSubmit={handleLogin} className="space-y-4">
+          <div className="relative text-left">
+            <span className="text-[11px] font-semibold text-gray-600 block mb-1">Senha de Acesso</span>
+            <div className="relative">
+              <input
+                type="password"
+                value={senhaInput}
+                onChange={(e) => {
+                  setSenhaInput(e.target.value);
+                  setErroSenha(false);
+                }}
+                placeholder="Digite a senha..."
+                className="w-full pl-9 pr-3 py-2 text-sm border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none"
+                autoFocus
+              />
+              <KeyRound size={16} className="absolute left-3 top-2.5 text-gray-400" />
+            </div>
+            {erroSenha && (
+              <span className="text-[11px] text-red-500 mt-1 block">
+                Senha incorreta. Verifique e tente novamente.
+              </span>
+            )}
+          </div>
+
+          <button
+            type="submit"
+            className="w-full py-2.5 bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold rounded-xl transition shadow-sm"
+          >
+            Acessar Painel
+          </button>
+        </form>
+      </div>
+    );
+  }
+
   // Filtros combinados
   const ocorrenciasFiltradas = ocorrencias.filter((item) => {
     const matchStatus = filtroStatus === 'todos' || item.status === filtroStatus;
@@ -155,17 +236,21 @@ export default function PainelGestor() {
     return matchStatus && matchCategoria;
   });
 
-  // Métricas
   const totalRegistros = ocorrencias.length;
   const totalPendentes = ocorrencias.filter((i) => i.status === 'pendente').length;
   const totalResolvidos = ocorrencias.filter((i) => i.status === 'resolvido').length;
 
   return (
     <div className="w-full max-w-5xl mx-auto space-y-6 pb-12">
-      {/* Cabeçalho e Métricas Rápidas */}
+      {/* Cabeçalho */}
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-white p-5 rounded-2xl border border-gray-200 shadow-sm">
         <div>
-          <h2 className="text-xl font-bold text-gray-900">Painel de Gestão e Moderação</h2>
+          <div className="flex items-center gap-2">
+            <h2 className="text-xl font-bold text-gray-900">Painel de Gestão e Moderação</h2>
+            <span className="text-[10px] bg-green-50 text-green-700 border border-green-200 px-2 py-0.5 rounded-full font-medium">
+              Autenticado
+            </span>
+          </div>
           <p className="text-xs text-gray-500 mt-1">
             Controle de demandas comunitárias, relatórios para ofícios e moderação de conteúdo.
           </p>
@@ -179,12 +264,21 @@ export default function PainelGestor() {
           >
             <RefreshCw size={16} className={carregando ? 'animate-spin' : ''} />
           </button>
+          
           <button
             onClick={exportarCSV}
             className="flex-1 sm:flex-initial inline-flex items-center justify-center gap-2 px-4 py-2.5 bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold rounded-xl transition shadow-sm"
           >
             <Download size={15} />
             <span>Exportar CSV</span>
+          </button>
+
+          <button
+            onClick={handleLogout}
+            className="p-2.5 text-red-600 bg-red-50 hover:bg-red-100 rounded-xl border border-red-200 transition"
+            title="Sair do painel"
+          >
+            <LogOut size={16} />
           </button>
         </div>
       </div>
@@ -255,7 +349,7 @@ export default function PainelGestor() {
         </div>
       </div>
 
-      {/* Listagem de Ocorrências */}
+      {/* Listagem */}
       {carregando ? (
         <div className="bg-white p-12 text-center rounded-2xl border border-gray-200 text-gray-500 text-sm">
           Carregando dados da comunidade...
@@ -277,7 +371,6 @@ export default function PainelGestor() {
                 key={item.id}
                 className="bg-white p-4 rounded-xl border border-gray-200 shadow-sm hover:border-gray-300 transition flex flex-col md:flex-row gap-4 items-start md:items-center justify-between"
               >
-                {/* Imagem + Informações Principais */}
                 <div className="flex gap-4 items-center">
                   {item.foto_url ? (
                     <img
@@ -325,7 +418,6 @@ export default function PainelGestor() {
                   </div>
                 </div>
 
-                {/* Moderação e Ações de Status */}
                 <div className="flex items-center gap-2 self-end md:self-center w-full md:w-auto justify-end border-t md:border-t-0 pt-3 md:pt-0">
                   <select
                     value={item.status || 'pendente'}
