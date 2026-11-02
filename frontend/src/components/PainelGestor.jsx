@@ -13,10 +13,13 @@ import {
   MapPin,
   Lock,
   LogOut,
-  KeyRound
+  KeyRound,
+  FileText,
+  Copy,
+  Printer,
+  X
 } from 'lucide-react';
 
-// Senha definida para liberação do painel
 const CHAVE_GESTOR = 'zelador##2026';
 
 export default function PainelGestor() {
@@ -29,7 +32,10 @@ export default function PainelGestor() {
   const [filtroStatus, setFiltroStatus] = useState('todos');
   const [filtroCategoria, setFiltroCategoria] = useState('todas');
 
-  // Mantém autenticado durante a sessão atual no navegador
+  // Estado para o Modal de Ofício Formal
+  const [ocorrenciaOficio, setOcorrenciaOficio] = useState(null);
+  const [copiado, setCopiado] = useState(false);
+
   useEffect(() => {
     const authSessao = sessionStorage.getItem('zelador_gestor_auth');
     if (authSessao === 'true') {
@@ -56,7 +62,6 @@ export default function PainelGestor() {
     setSenhaInput('');
   };
 
-  // Conversão de coordenadas (GeoJSON / WKT)
   const extrairCoordenadas = (geom) => {
     if (!geom) return null;
     if (typeof geom === 'string' && geom.startsWith('POINT(')) {
@@ -108,12 +113,11 @@ export default function PainelGestor() {
 
   const excluirOcorrencia = async (id, fotoUrl) => {
     const confirmar = window.confirm(
-      'Tem certeza que deseja excluir esta denúncia permanentemente? Essa ação não pode ser desfeita.'
+      'Tem a certeza de que pretende eliminar esta denúncia permanentemente?'
     );
     if (!confirmar) return;
 
     try {
-      // 1. Remove a imagem do Storage caso exista
       if (fotoUrl) {
         try {
           const partesUrl = fotoUrl.split('/evidencias/');
@@ -122,11 +126,10 @@ export default function PainelGestor() {
             await supabase.storage.from('evidencias').remove([nomeArquivo]);
           }
         } catch (storageErr) {
-          console.warn('Aviso: imagem não encontrada no Storage ou já removida:', storageErr);
+          console.warn('Aviso ao remover ficheiro do Storage:', storageErr);
         }
       }
 
-      // 2. Remove da base de dados
       const { error } = await supabase
         .from('ocorrencias')
         .delete()
@@ -134,17 +137,17 @@ export default function PainelGestor() {
 
       if (error) throw error;
 
-      // 3. Atualiza o estado da lista
       setOcorrencias((prev) => prev.filter((item) => item.id !== id));
+      if (ocorrenciaOficio?.id === id) setOcorrenciaOficio(null);
     } catch (err) {
-      console.error('Erro ao excluir ocorrência:', err);
-      alert('Não foi possível excluir o registro. Verifique as permissões no Supabase.');
+      console.error('Erro ao eliminar ocorrência:', err);
+      alert('Não foi possível eliminar o registo.');
     }
   };
 
   const exportarCSV = () => {
     if (ocorrencias.length === 0) {
-      alert('Nenhum registro disponível para exportação.');
+      alert('Nenhum registo disponível para exportação.');
       return;
     }
 
@@ -181,7 +184,53 @@ export default function PainelGestor() {
     document.body.removeChild(link);
   };
 
-  // Bloqueio por senha
+  // Gerador de texto formal de ofício com base na ocorrência
+  const gerarTextoOficio = (item) => {
+    if (!item) return '';
+    const coords = extrairCoordenadas(item.localizacao);
+    const dataCriacao = new Date(item.created_at).toLocaleDateString('pt-BR');
+    const coordenadasTexto = coords ? `${coords.lat}, ${coords.lng}` : 'Não especificadas';
+    const linkMaps = coords ? `https://www.google.com/maps?q=${coords.lat},${coords.lng}` : 'N/A';
+
+    return `OFÍCIO COMUNITÁRIO Nº ____/2026
+
+Ao Ilustríssimo(a) Senhor(a) Secretário(a) / Gestor(a) Responsável
+Setor de Manutenção Urbana e Infraestrutura
+
+Assunto: Requerimento Comunitário de Providências Urgentes - ${item.categoria.toUpperCase()}
+
+Prezado(a) Senhor(a),
+
+Por intermédio da presente manifestação de interesse público, a comunidade vem respeitosamente à presença de V. Sa. relatar uma ocorrência de infraestrutura urbana identificada e georreferenciada pelo sistema participativo "Zelador Digital", demandando vistorias e providências corretivas no local indicado.
+
+DADOS TÉCNICOS DA OCORRÊNCIA:
+-----------------------------------------------------------------------------
+- Identificador do Registo: #${item.id.slice(0, 8)}
+- Classificação: ${item.categoria}
+- Data de Registo: ${dataCriacao}
+- Nível de Mobilização: ${item.total_apoios || 0} manifestações/apoios de moradores
+- Coordenadas Geográficas (GPS): ${coordenadasTexto}
+- Rota / Localização no Mapa: ${linkMaps}
+- Detalhamento e Referência: ${item.descricao || 'Conforme vistoria in loco.'}
+- Evidência Fotográfica: ${item.foto_url || 'Sem registo fotográfico em anexo.'}
+-----------------------------------------------------------------------------
+
+Considerando que a situação acima descrita acarreta transtornos diretos à saúde coletiva, segurança viária e mobilidade dos moradores e transeuntes da localidade, solicitamos a inclusão prioritária do presente ponto no cronograma de manutenções e reparos deste órgão.
+
+Certos da costumeira atenção e do compromisso com o bem-estar da coletividade, subscrevemo-nos atenciosamente.
+
+
+_________________________________________________________
+Comissão Comunitária de Monitoramento Urbano
+Zelador Digital - Gestão Participativa`;
+  };
+
+  const copiarOficio = (texto) => {
+    navigator.clipboard.writeText(texto);
+    setCopiado(true);
+    setTimeout(() => setCopiado(false), 3000);
+  };
+
   if (!autenticado) {
     return (
       <div className="w-full max-w-sm mx-auto my-12 bg-white p-6 rounded-2xl border border-gray-200 shadow-sm text-center">
@@ -229,7 +278,6 @@ export default function PainelGestor() {
     );
   }
 
-  // Filtros combinados
   const ocorrenciasFiltradas = ocorrencias.filter((item) => {
     const matchStatus = filtroStatus === 'todos' || item.status === filtroStatus;
     const matchCategoria = filtroCategoria === 'todas' || item.categoria === filtroCategoria;
@@ -252,7 +300,7 @@ export default function PainelGestor() {
             </span>
           </div>
           <p className="text-xs text-gray-500 mt-1">
-            Controle de demandas comunitárias, relatórios para ofícios e moderação de conteúdo.
+            Controlo de demandas comunitárias, ofícios formais e moderação.
           </p>
         </div>
 
@@ -287,7 +335,7 @@ export default function PainelGestor() {
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
         <div className="bg-white p-4 rounded-xl border border-gray-200 shadow-sm flex items-center justify-between">
           <div>
-            <span className="text-xs text-gray-500 font-medium">Total de Registros</span>
+            <span className="text-xs text-gray-500 font-medium">Total de Registos</span>
             <p className="text-2xl font-bold text-gray-900 mt-0.5">{totalRegistros}</p>
           </div>
           <div className="p-3 bg-blue-50 text-blue-600 rounded-xl">
@@ -316,7 +364,7 @@ export default function PainelGestor() {
         </div>
       </div>
 
-      {/* Barra de Filtros */}
+      {/* Filtros */}
       <div className="bg-white p-4 rounded-xl border border-gray-200 shadow-sm flex flex-wrap gap-4 items-center justify-between">
         <div className="flex items-center gap-2 text-xs font-semibold text-gray-600">
           <Filter size={15} />
@@ -352,7 +400,7 @@ export default function PainelGestor() {
       {/* Listagem */}
       {carregando ? (
         <div className="bg-white p-12 text-center rounded-2xl border border-gray-200 text-gray-500 text-sm">
-          Carregando dados da comunidade...
+          A carregar dados da comunidade...
         </div>
       ) : ocorrenciasFiltradas.length === 0 ? (
         <div className="bg-white p-12 text-center rounded-2xl border border-gray-200 text-gray-500 text-sm">
@@ -397,8 +445,8 @@ export default function PainelGestor() {
                     </p>
 
                     <div className="flex items-center gap-3 mt-2 text-[11px] text-gray-500">
-                      <span className="inline-flex items-center gap-1">
-                        <ThumbsUp size={12} className="text-blue-600" />
+                      <span className="inline-flex items-center gap-1 font-semibold text-blue-700 bg-blue-50 px-2 py-0.5 rounded-md">
+                        <ThumbsUp size={11} className="text-blue-600" />
                         {item.total_apoios || 0} apoios
                       </span>
 
@@ -419,6 +467,16 @@ export default function PainelGestor() {
                 </div>
 
                 <div className="flex items-center gap-2 self-end md:self-center w-full md:w-auto justify-end border-t md:border-t-0 pt-3 md:pt-0">
+                  {/* Botão Gerar Ofício */}
+                  <button
+                    onClick={() => setOcorrenciaOficio(item)}
+                    className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-blue-50 hover:bg-blue-100 text-blue-700 rounded-lg text-xs font-semibold transition border border-blue-200"
+                    title="Gerar Ofício Formal"
+                  >
+                    <FileText size={14} />
+                    <span>Ofício</span>
+                  </button>
+
                   <select
                     value={item.status || 'pendente'}
                     onChange={(e) => atualizarStatus(item.id, e.target.value)}
@@ -432,7 +490,7 @@ export default function PainelGestor() {
                   <button
                     onClick={() => excluirOcorrencia(item.id, item.foto_url)}
                     className="p-2 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition"
-                    title="Excluir permanentemente"
+                    title="Eliminar permanentemente"
                   >
                     <Trash2 size={16} />
                   </button>
@@ -440,6 +498,59 @@ export default function PainelGestor() {
               </div>
             );
           })}
+        </div>
+      )}
+
+      {/* Modal de Exibição e Cópia do Ofício */}
+      {ocorrenciaOficio && (
+        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="bg-white rounded-2xl w-full max-w-2xl max-h-[90vh] flex flex-col shadow-2xl overflow-hidden border border-gray-200">
+            {/* Topo do Modal */}
+            <div className="flex items-center justify-between p-4 border-b border-gray-100 bg-gray-50">
+              <div className="flex items-center gap-2">
+                <FileText size={18} className="text-blue-600" />
+                <h3 className="text-sm font-bold text-gray-900">
+                  Minuta de Ofício Técnico Comunitário
+                </h3>
+              </div>
+              <button
+                onClick={() => setOcorrenciaOficio(null)}
+                className="p-1 text-gray-400 hover:text-gray-600 rounded-lg hover:bg-gray-200 transition"
+              >
+                <X size={18} />
+              </button>
+            </div>
+
+            {/* Conteúdo Pré-formatado */}
+            <div className="p-4 overflow-y-auto flex-1 bg-gray-900 text-gray-100 text-xs font-mono rounded-lg m-4 whitespace-pre-wrap leading-relaxed select-all">
+              {gerarTextoOficio(ocorrenciaOficio)}
+            </div>
+
+            {/* Ações do Modal */}
+            <div className="p-4 border-t border-gray-100 bg-gray-50 flex items-center justify-between">
+              <span className="text-[11px] text-gray-500">
+                {copiado ? 'Texto copiado com sucesso!' : 'Clique para copiar e colar no Word ou Docs.'}
+              </span>
+
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={() => window.print()}
+                  className="inline-flex items-center gap-1.5 px-3 py-2 bg-white hover:bg-gray-100 text-gray-700 text-xs font-semibold rounded-xl border border-gray-200 transition"
+                >
+                  <Printer size={14} />
+                  <span>Imprimir</span>
+                </button>
+
+                <button
+                  onClick={() => copiarOficio(gerarTextoOficio(ocorrenciaOficio))}
+                  className="inline-flex items-center gap-1.5 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold rounded-xl transition shadow-sm"
+                >
+                  <Copy size={14} />
+                  <span>{copiado ? 'Copiado!' : 'Copiar Texto Completo'}</span>
+                </button>
+              </div>
+            </div>
+          </div>
         </div>
       )}
     </div>
