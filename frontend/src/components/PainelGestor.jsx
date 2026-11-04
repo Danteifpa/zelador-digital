@@ -20,11 +20,22 @@ const CORES_CATEGORIAS = {
   esgoto: '#0284c7'
 }
 
+const normalizarCategoria = (cat) => {
+  if (!cat) return 'outros'
+  const c = cat.toLowerCase()
+  if (c.includes('lixo') || c.includes('entulho')) return 'lixo'
+  if (c.includes('ilumina') || c.includes('poste') || c.includes('luz')) return 'iluminacao'
+  if (c.includes('buraco') || c.includes('via') || c.includes('asfalto')) return 'buraco'
+  if (c.includes('esgoto') || c.includes('agua') || c.includes('vazamento')) return 'esgoto'
+  return 'outros'
+}
+
 const ROTULOS_CATEGORIAS = {
   lixo: 'Lixo / Entulho',
   iluminacao: 'Iluminação Pública',
   buraco: 'Vias / Buracos',
-  esgoto: 'Esgoto / Água'
+  esgoto: 'Esgoto / Água',
+  outros: 'Outros'
 }
 
 const CORES_STATUS = {
@@ -44,7 +55,6 @@ export default function PainelGestor() {
   const [carregando, setCarregando] = useState(true)
   const [filtroCategoria, setFiltroCategoria] = useState('todas')
   const [filtroStatus, setFiltroStatus] = useState('todos')
-  const [autenticado, setAutenticado] = useState(true)
 
   useEffect(() => {
     carregarDados()
@@ -53,15 +63,16 @@ export default function PainelGestor() {
   const carregarDados = async () => {
     try {
       setCarregando(true)
+      // Consulta a view espacial com latitude e longitude numéricas
       const { data, error } = await supabase
-        .from('ocorrencias')
+        .from('ocorrencias_georreferenciadas')
         .select('*')
-        .order('criado_em', { ascending: false })
+        .order('created_at', { ascending: false })
 
       if (error) throw error
       setOcorrencias(data || [])
     } catch (err) {
-      console.error('Erro ao buscar ocorrências:', err.message)
+      console.error('Erro ao buscar dados georreferenciados:', err.message)
     } finally {
       setCarregando(false)
     }
@@ -69,6 +80,7 @@ export default function PainelGestor() {
 
   const atualizarStatus = async (id, novoStatus) => {
     try {
+      // Atualiza diretamente na tabela principal de ocorrências
       const { error } = await supabase
         .from('ocorrencias')
         .update({ status: novoStatus })
@@ -84,7 +96,7 @@ export default function PainelGestor() {
   }
 
   const eliminarRegisto = async (id) => {
-    if (!window.confirm('Tem certeza de que deseja excluir este registo da base?')) return
+    if (!window.confirm('Confirma a eliminação deste ponto georreferenciado?')) return
 
     try {
       const { error } = await supabase.from('ocorrencias').delete().eq('id', id)
@@ -95,41 +107,15 @@ export default function PainelGestor() {
     }
   }
 
-  const gerarOficio = (item) => {
-    const textoOficio = `OFÍCIO COMUNITÁRIO - ZELADOR DIGITAL
-Data de Emissão: ${new Date().toLocaleDateString('pt-BR')}
-Localidade: Novo Cristo / Icuí, Ananindeua - PA
-
-Assunto: Reivindicação Comunitária - ${ROTULOS_CATEGORIAS[item.categoria] || item.categoria}
-Identificador da Demanda: #${item.id}
-
-Prezados(as) Senhores(as),
-
-Vimos por meio deste documento registrar oficialmente a ocorrência cadastrada pelos moradores:
-- Tipo: ${ROTULOS_CATEGORIAS[item.categoria] || item.categoria}
-- Descrição / Ponto de Referência: ${item.descricao || 'Conforme relatório fotográfico georreferenciado'}
-- Coordenadas de Localização: ${item.latitude ? `${item.latitude}, ${item.longitude}` : 'Não mapeadas'}
-- Apoios Comunitários Recebidos: ${item.apoios || 0} moradores
-
-Solicitamos providências e inclusão no cronograma de zeladoria urbana municipal.
-
-Atenciosamente,
-Iniciativa Comunitária Zelador Digital`
-
-    const janela = window.open('', '_blank')
-    janela.document.write(`<pre style="font-family: monospace; white-space: pre-wrap; padding: 24px;">${textoOficio}</pre>`)
-    janela.document.close()
-    janela.print()
-  }
-
-  // Filtragem
+  // Filtragem local
   const filtradas = ocorrencias.filter((item) => {
-    const atendeCategoria = filtroCategoria === 'todas' || item.categoria === filtroCategoria
-    const atendeStatus = filtroStatus === 'todos' || item.status === filtroStatus
+    const catNormalizada = normalizarCategoria(item.categoria)
+    const atendeCategoria = filtroCategoria === 'todas' || catNormalizada === filtroCategoria
+    const atendeStatus = filtroStatus === 'todos' || (item.status || 'pendente') === filtroStatus
     return atendeCategoria && atendeStatus
   })
 
-  // Agregações analíticas
+  // Métricas agregadas
   const total = ocorrencias.length
   const resolvidos = ocorrencias.filter((o) => o.status === 'resolvido').length
   const pendentes = ocorrencias.filter((o) => o.status === 'pendente' || !o.status).length
@@ -137,8 +123,8 @@ Iniciativa Comunitária Zelador Digital`
   const taxaResolucao = total > 0 ? ((resolvidos / total) * 100).toFixed(1) : 0
 
   const contagemCategorias = ocorrencias.reduce((acc, curr) => {
-    const cat = curr.categoria || 'outros'
-    acc[cat] = (acc[cat] || 0) + 1
+    const chave = normalizarCategoria(curr.categoria)
+    acc[chave] = (acc[chave] || 0) + 1
     return acc
   }, {})
 
@@ -155,23 +141,22 @@ Iniciativa Comunitária Zelador Digital`
     { nome: 'Resolvidos', valor: resolvidos, cor: CORES_STATUS.resolvido }
   ].filter((item) => item.valor > 0)
 
-  // Exportação CSV formatada para QGIS / SPSS / Excel
+  // Exportação CSV espacial pronta para SIG (QGIS)
   const exportarCSV = () => {
     if (ocorrencias.length === 0) {
       alert('Não há dados disponíveis para exportar.')
       return
     }
 
-    const cabecalho = ['ID', 'Categoria', 'Descricao', 'Latitude', 'Longitude', 'Status', 'Apoios', 'Data_Hora']
+    const cabecalho = ['ID', 'Categoria', 'Descricao', 'Latitude', 'Longitude', 'Status', 'Data_Hora']
     const linhas = filtradas.map((o) => [
       o.id,
-      `"${o.categoria || ''}"`,
+      `"${ROTULOS_CATEGORIAS[normalizarCategoria(o.categoria)] || o.categoria}"`,
       `"${(o.descricao || '').replace(/"/g, '""')}"`,
-      o.latitude || '',
-      o.longitude || '',
+      o.latitude ?? '',
+      o.longitude ?? '',
       o.status || 'pendente',
-      o.apoios || 0,
-      o.criado_em || ''
+      o.created_at || ''
     ])
 
     const csvContent = [cabecalho.join(','), ...linhas.map((e) => e.join(','))].join('\n')
@@ -179,37 +164,41 @@ Iniciativa Comunitária Zelador Digital`
     const url = URL.createObjectURL(blob)
     const link = document.createElement('a')
     link.href = url
-    link.setAttribute('download', `zelador_diagnostico_urbano_${Date.now()}.csv`)
+    link.setAttribute('download', `dossie_territorial_${Date.now()}.csv`)
     document.body.appendChild(link)
     link.click()
     document.body.removeChild(link)
   }
 
-  const imprimirDossie = () => {
+  const gerarDossieTerritorial = () => {
     window.print()
   }
 
   return (
     <div className="max-w-6xl mx-auto space-y-6 pb-16 print:p-0 print:space-y-4 print:max-w-full">
-      {/* Cabeçalho do Dossiê para Impressão */}
-      <div className="hidden print:block border-b-2 border-slate-800 pb-4 mb-4">
+      {/* ===================== CABEÇALHO DO RELATÓRIO DE IMPRESSÃO (PDF) ===================== */}
+      <div className="hidden print:block border-b-2 border-slate-900 pb-4 mb-4">
         <div className="flex justify-between items-start">
           <div>
             <h1 className="text-xl font-black text-slate-900 uppercase tracking-tight">
               Zelador Digital Comunitário
             </h1>
-            <p className="text-xs text-slate-600">
-              Dossiê Diagnóstico Territorial de Infraestrutura Urbana e Saneamento
+            <p className="text-sm font-semibold text-slate-700">
+              Relatório de Diagnóstico Urbano Territorial e Gestão Territorial Independente
+            </p>
+            <p className="text-xs text-slate-500">
+              Recorte Espacial: Residencial Novo Cristo / Icuí — Ananindeua, Pará
             </p>
           </div>
-          <div className="text-right text-[10px] text-slate-500">
-            <p>Data do Dossiê: {new Date().toLocaleDateString('pt-BR')}</p>
-            <p>Idealizado e desenvolvido por Dante Dias Monteiro</p>
+          <div className="text-right text-[11px] text-slate-600 font-mono space-y-0.5">
+            <p><strong>Emissão:</strong> {new Date().toLocaleDateString('pt-BR')} às {new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}</p>
+            <p><strong>Projetado por:</strong> Dante Dias Monteiro</p>
+            <p><strong>Projeção:</strong> EPSG:4326 (WGS84)</p>
           </div>
         </div>
       </div>
 
-      {/* Barra de Ações Superior */}
+      {/* ===================== CABEÇALHO PADRÃO NO ECRÃ ===================== */}
       <div className="bg-white rounded-3xl p-6 border border-slate-200 flex flex-col md:flex-row items-start md:items-center justify-between gap-4 print:hidden shadow-xs">
         <div>
           <div className="flex items-center space-x-2">
@@ -219,7 +208,7 @@ Iniciativa Comunitária Zelador Digital`
             </span>
           </div>
           <p className="text-xs text-slate-500 mt-1">
-            Controle de demandas comunitárias, dossiê em PDF, ofícios formais e diagnóstico urbano.
+            Controle de demandas comunitárias, dossiê em PDF, ofícios formais e moderação.
           </p>
         </div>
 
@@ -227,55 +216,74 @@ Iniciativa Comunitária Zelador Digital`
           <button
             onClick={carregarDados}
             className="p-2.5 text-slate-600 bg-slate-100 hover:bg-slate-200 rounded-xl transition-all"
-            title="Atualizar lista de ocorrências"
+            title="Atualizar lista de dados espaciais"
           >
             🔄
           </button>
           <button
-            onClick={imprimirDossie}
-            className="px-4 py-2.5 text-xs font-bold bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl border border-slate-200 transition-all flex items-center space-x-1.5"
+            onClick={gerarDossieTerritorial}
+            className="px-4 py-2.5 text-xs font-bold bg-slate-800 hover:bg-slate-900 text-white rounded-xl shadow-xs transition-all flex items-center space-x-1.5"
           >
-            <span>🖨️ Dossiê PDF</span>
+            <span>📄 Gerar Dossiê PDF</span>
           </button>
           <button
             onClick={exportarCSV}
             className="px-4 py-2.5 text-xs font-bold bg-blue-600 hover:bg-blue-700 text-white rounded-xl shadow-xs transition-all flex items-center space-x-1.5"
           >
-            <span>📥 Exportar CSV (SIG)</span>
+            <span>📥 Exportar CSV (SIG / QGIS)</span>
           </button>
         </div>
       </div>
 
-      {/* Cards de Métricas */}
+      {/* ===================== CARDS DE INDICADORES TERRITORIAIS ===================== */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4 print:grid-cols-4 print:gap-2">
-        <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-xs print:p-3">
-          <p className="text-xs font-bold text-slate-400 uppercase tracking-wider print:text-[10px]">Total de Registros</p>
+        <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-xs print:p-3 print:border-slate-300">
+          <p className="text-xs font-bold text-slate-400 uppercase tracking-wider print:text-[10px]">Total de Registos</p>
           <p className="text-3xl font-black text-slate-800 mt-1 print:text-lg">{total}</p>
-          <span className="text-[11px] text-slate-500 print:text-[9px]">Amostragem no bairro</span>
+          <span className="text-[11px] text-slate-500 print:text-[9px]">Amostragem no setor</span>
         </div>
 
-        <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-xs print:p-3">
-          <p className="text-xs font-bold text-slate-400 uppercase tracking-wider print:text-[10px]">Pendentes / Análise</p>
+        <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-xs print:p-3 print:border-slate-300">
+          <p className="text-xs font-bold text-slate-400 uppercase tracking-wider print:text-[10px]">Pendentes / Em Análise</p>
           <p className="text-3xl font-black text-amber-600 mt-1 print:text-lg">{pendentes + emAnalise}</p>
-          <span className="text-[11px] text-amber-600 font-medium print:text-[9px]">Aguardando intervenção</span>
+          <span className="text-[11px] text-amber-600 font-medium print:text-[9px]">Pontos críticos ativos</span>
         </div>
 
-        <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-xs print:p-3">
+        <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-xs print:p-3 print:border-slate-300">
           <p className="text-xs font-bold text-slate-400 uppercase tracking-wider print:text-[10px]">Demandas Resolvidas</p>
           <p className="text-3xl font-black text-emerald-600 mt-1 print:text-lg">{resolvidos}</p>
           <span className="text-[11px] text-emerald-600 font-medium print:text-[9px]">Pontos solucionados</span>
         </div>
 
-        <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-xs print:p-3">
-          <p className="text-xs font-bold text-slate-400 uppercase tracking-wider print:text-[10px]">Taxa de Eficácia</p>
+        <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-xs print:p-3 print:border-slate-300">
+          <p className="text-xs font-bold text-slate-400 uppercase tracking-wider print:text-[10px]">Taxa de Resolução</p>
           <p className="text-3xl font-black text-blue-600 mt-1 print:text-lg">{taxaResolucao}%</p>
-          <span className="text-[11px] text-blue-600 font-medium print:text-[9px]">Resolução de demandas</span>
+          <span className="text-[11px] text-blue-600 font-medium print:text-[9px]">Eficácia das ações</span>
         </div>
       </div>
 
-      {/* Gráficos Estatísticos (Visíveis no ecrã) */}
+      {/* ===================== QUADRO ESTATÍSTICO DE TIPOLOGIAS (SÍNTESE PARA RELATÓRIO) ===================== */}
+      <div className="bg-white p-5 rounded-3xl border border-slate-200 print:border-slate-300 print:p-3 shadow-xs">
+        <h3 className="text-sm font-bold text-slate-800 mb-3 print:text-xs">
+          Síntese de Tipologias Urbanas Identificadas
+        </h3>
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 print:grid-cols-4 print:gap-2">
+          {Object.entries(ROTULOS_CATEGORIAS).filter(([k]) => k !== 'outros').map(([chave, label]) => {
+            const qtd = contagemCategorias[chave] || 0
+            const pct = total > 0 ? ((qtd / total) * 100).toFixed(1) : 0
+            return (
+              <div key={chave} className="p-3 rounded-2xl border border-slate-100 bg-slate-50/70 print:p-2 print:border-slate-300">
+                <p className="text-xs font-semibold text-slate-600 print:text-[10px]">{label}</p>
+                <p className="text-2xl font-black text-slate-900 mt-0.5 print:text-base">{qtd}</p>
+                <span className="text-[10px] text-slate-400 font-medium">{pct}% da carga local</span>
+              </div>
+            )
+          })}
+        </div>
+      </div>
+
+      {/* ===================== GRÁFICOS (VISÍVEIS APENAS EM TELA) ===================== */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6 print:hidden">
-        {/* Gráfico 1: Concentração */}
         <div className="bg-white p-6 rounded-3xl border border-slate-200 shadow-xs">
           <h3 className="text-sm font-bold text-slate-800 mb-1">Concentração por Tipologia Urbana</h3>
           <p className="text-xs text-slate-500 mb-4">Volume total identificado pela comunidade</p>
@@ -304,7 +312,6 @@ Iniciativa Comunitária Zelador Digital`
           </div>
         </div>
 
-        {/* Gráfico 2: Ciclo de Resolução */}
         <div className="bg-white p-6 rounded-3xl border border-slate-200 shadow-xs">
           <h3 className="text-sm font-bold text-slate-800 mb-1">Ciclo de Resolução das Demandas</h3>
           <p className="text-xs text-slate-500 mb-4">Proporção entre pendências e resoluções</p>
@@ -342,9 +349,9 @@ Iniciativa Comunitária Zelador Digital`
         </div>
       </div>
 
-      {/* Filtros de Exibição */}
+      {/* ===================== FILTROS INTERATIVOS (ESCONDIDOS NA IMPRESSÃO) ===================== */}
       <div className="bg-white p-4 rounded-2xl border border-slate-200 flex flex-wrap items-center justify-between gap-3 print:hidden shadow-xs">
-        <div className="flex items-center space-x-2 text-xs font-bold text-slate-700">
+        <div className="text-xs font-bold text-slate-700">
           <span>🔍 Filtrar Exibição:</span>
         </div>
 
@@ -374,100 +381,105 @@ Iniciativa Comunitária Zelador Digital`
         </div>
       </div>
 
-      {/* Lista de Demandas Estilo Cartão com Botão de Ofício e Maps */}
-      {carregando ? (
-        <div className="py-16 text-center text-sm text-slate-500">A carregar ocorrências...</div>
-      ) : filtradas.length === 0 ? (
-        <div className="py-16 text-center text-sm text-slate-500">Nenhuma ocorrência encontrada.</div>
-      ) : (
-        <div className="space-y-3">
-          {filtradas.map((item) => (
-            <div
-              key={item.id}
-              className="bg-white rounded-2xl p-4 border border-slate-200 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 shadow-xs hover:border-slate-300 transition-all print:border-slate-300 print:p-3"
-            >
-              <div className="flex items-start space-x-3.5">
-                {item.foto_url ? (
-                  <img
-                    src={item.foto_url}
-                    alt="Comprovativo"
-                    className="w-16 h-16 rounded-xl object-cover border border-slate-100 shrink-0"
-                  />
-                ) : (
-                  <div className="w-16 h-16 rounded-xl bg-slate-100 flex items-center justify-center text-xl shrink-0">
-                    📍
-                  </div>
-                )}
-
-                <div>
-                  <div className="flex items-center space-x-2">
-                    <h4 className="text-sm font-bold text-slate-800">
-                      {ROTULOS_CATEGORIAS[item.categoria] || item.categoria}
-                    </h4>
-                    <span className="text-[11px] text-slate-400">
-                      • {item.criado_em ? new Date(item.criado_em).toLocaleDateString('pt-BR') : ''}
-                    </span>
-                  </div>
-
-                  <p className="text-xs text-slate-600 mt-1 max-w-md">
-                    {item.descricao || 'Sem descrição detalhada'}
-                  </p>
-
-                  <div className="flex items-center space-x-3 mt-2 text-[11px]">
-                    <span className="bg-slate-100 text-slate-700 px-2 py-0.5 rounded-md font-medium">
-                      👍 {item.apoios || 0} apoios
-                    </span>
-
-                    {item.latitude && item.longitude ? (
-                      <a
-                        href={`https://www.google.com/maps/search/?api=1&query=${item.latitude},${item.longitude}`}
-                        target="_blank"
-                        rel="noreferrer"
-                        className="text-blue-600 hover:underline flex items-center space-x-0.5 print:text-slate-700"
-                      >
-                        <span>📍 Ver no Maps</span>
-                      </a>
-                    ) : (
-                      <span className="text-slate-400">Sem GPS</span>
-                    )}
-                  </div>
-                </div>
-              </div>
-
-              {/* Controles de Ação do Gestor */}
-              <div className="flex items-center space-x-2 w-full sm:w-auto justify-end pt-2 sm:pt-0 border-t sm:border-t-0 border-slate-100 print:hidden">
-                <button
-                  onClick={() => gerarOficio(item)}
-                  className="px-3 py-1.5 text-xs font-semibold bg-blue-50 text-blue-700 hover:bg-blue-100 rounded-lg transition-all flex items-center space-x-1"
-                >
-                  <span>📄 Ofício</span>
-                </button>
-
-                <select
-                  value={item.status || 'pendente'}
-                  onChange={(e) => atualizarStatus(item.id, e.target.value)}
-                  className="text-xs bg-white border border-slate-300 rounded-lg px-2.5 py-1.5 text-slate-700"
-                >
-                  <option value="pendente">Pendente</option>
-                  <option value="em_analise">Em Análise</option>
-                  <option value="resolvido">Resolvido</option>
-                </select>
-
-                <button
-                  onClick={() => eliminarRegisto(item.id)}
-                  className="p-1.5 text-slate-400 hover:text-rose-600 rounded-lg transition-colors"
-                  title="Eliminar registo"
-                >
-                  🗑️
-                </button>
-              </div>
-            </div>
-          ))}
+      {/* ===================== TABELA / INVENTÁRIO CARTOGRÁFICO DE PONTOS ===================== */}
+      <div className="bg-white rounded-3xl border border-slate-200 overflow-hidden shadow-xs print:rounded-xl print:border-slate-300">
+        <div className="p-5 border-b border-slate-100 flex items-center justify-between print:p-2.5">
+          <h3 className="text-sm font-bold text-slate-800 print:text-xs">
+            Inventário de Registos Espaciais Coletados ({filtradas.length})
+          </h3>
+          <span className="text-xs text-slate-400 print:text-[10px]">Base Territorial Normalizada</span>
         </div>
-      )}
 
-      {/* Rodapé da Aplicação */}
-      <div className="pt-8 text-center text-xs text-slate-400 space-y-1">
+        {carregando ? (
+          <div className="py-16 text-center text-sm text-slate-500">A carregar ocorrências espaciais...</div>
+        ) : filtradas.length === 0 ? (
+          <div className="py-16 text-center text-sm text-slate-500">Nenhum registo atende aos filtros definidos.</div>
+        ) : (
+          <div className="overflow-x-auto">
+            <table className="w-full text-left text-xs text-slate-700 print:text-[10px]">
+              <thead className="bg-slate-50 text-slate-500 uppercase tracking-wider text-[10px] border-b border-slate-200 print:bg-slate-100 print:text-[9px]">
+                <tr>
+                  <th className="px-4 py-3 print:px-2 print:py-1.5">Tipologia</th>
+                  <th className="px-4 py-3 print:px-2 print:py-1.5">Descrição / Referência</th>
+                  <th className="px-4 py-3 print:px-2 print:py-1.5">Coordenadas (Lat, Long)</th>
+                  <th className="px-4 py-3 print:px-2 print:py-1.5">Registo</th>
+                  <th className="px-4 py-3 print:px-2 print:py-1.5">Estado</th>
+                  <th className="px-4 py-3 text-right print:hidden">Ação</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-100 print:divide-slate-200">
+                {filtradas.map((item) => {
+                  const catNormal = normalizarCategoria(item.categoria)
+                  return (
+                    <tr key={item.id} className="hover:bg-slate-50/80 transition-colors">
+                      <td className="px-4 py-3 font-semibold text-slate-800 print:px-2 print:py-1.5">
+                        {ROTULOS_CATEGORIAS[catNormal] || item.categoria}
+                      </td>
+                      <td className="px-4 py-3 max-w-xs truncate print:max-w-none print:whitespace-normal print:px-2 print:py-1.5">
+                        {item.descricao || 'Sem descrição cadastrada'}
+                      </td>
+                      <td className="px-4 py-3 font-mono text-[11px] text-slate-600 print:px-2 print:py-1.5 print:text-[9px]">
+                        {item.latitude != null && item.longitude != null
+                          ? `${Number(item.latitude).toFixed(5)}, ${Number(item.longitude).toFixed(5)}`
+                          : 'Sem coordenadas'}
+                      </td>
+                      <td className="px-4 py-3 text-slate-500 print:px-2 print:py-1.5 print:text-[9px]">
+                        {item.created_at ? new Date(item.created_at).toLocaleDateString('pt-BR') : '-'}
+                      </td>
+                      <td className="px-4 py-3 print:px-2 print:py-1.5">
+                        <span
+                          className={`px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider print:border print:border-slate-400 print:bg-transparent print:text-slate-800 ${
+                            item.status === 'resolvido'
+                              ? 'bg-emerald-100 text-emerald-800'
+                              : item.status === 'em_analise'
+                              ? 'bg-blue-100 text-blue-800'
+                              : 'bg-amber-100 text-amber-800'
+                          }`}
+                        >
+                          {ROTULOS_STATUS[item.status] || 'Pendente'}
+                        </span>
+                      </td>
+                      <td className="px-4 py-3 text-right print:hidden">
+                        <div className="flex items-center justify-end space-x-1.5">
+                          <select
+                            value={item.status || 'pendente'}
+                            onChange={(e) => atualizarStatus(item.id, e.target.value)}
+                            className="text-[11px] bg-white border border-slate-300 rounded-lg px-2 py-1 text-slate-700"
+                          >
+                            <option value="pendente">Pendente</option>
+                            <option value="em_analise">Em Análise</option>
+                            <option value="resolvido">Resolvido</option>
+                          </select>
+                          <button
+                            onClick={() => eliminarRegisto(item.id)}
+                            className="p-1 text-slate-400 hover:text-rose-600"
+                            title="Eliminar"
+                          >
+                            🗑️
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  )
+                })}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </div>
+
+      {/* ===================== NOTA DE ENCERRAMENTO INSTITUCIONAL ===================== */}
+      <div className="hidden print:block pt-4 border-t border-slate-300 text-[10px] text-slate-600 space-y-1">
+        <p>
+          <strong>Finalidade Técnica:</strong> Este documento consolida dados territoriais de fonte primária obtidos via plataforma Zelador Digital Comunitário para suporte a diagnósticos socioambientais, estudos de infraestrutura e priorização de ações locais.
+        </p>
+        <p className="text-slate-400 text-[9px]">
+          Iniciativa civil independente — Registrado sob responsabilidade técnica de Dante Dias Monteiro.
+        </p>
+      </div>
+
+      {/* Rodapé da Aplicação (Visível no ecrã) */}
+      <div className="pt-8 text-center text-xs text-slate-400 space-y-1 print:hidden">
         <p className="font-semibold text-slate-600">
           Zelador Digital © 2026 — Plataforma de Gestão Comunitária
         </p>
