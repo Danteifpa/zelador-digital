@@ -13,6 +13,9 @@ import {
   Legend
 } from 'recharts'
 
+// Senha mestra configurada para a moderação comunitária
+const PIN_GESTOR = '2026'
+
 const CORES_CATEGORIAS = {
   lixo: '#f59e0b',
   iluminacao: '#6366f1',
@@ -70,15 +73,48 @@ const ROTULOS_STATUS = {
 }
 
 export default function PainelGestor() {
+  const [autenticado, setAutenticado] = useState(false)
+  const [pinEntrada, setPinEntrada] = useState('')
+  const [erroPin, setErroPin] = useState(false)
+
   const [ocorrencias, setOcorrencias] = useState([])
-  const [carregando, setCarregando] = useState(true)
+  const [carregando, setCarregando] = useState(false)
   const [filtroCategoria, setFiltroCategoria] = useState('todas')
   const [filtroStatus, setFiltroStatus] = useState('todos')
   const [fotoModal, setFotoModal] = useState(null)
 
+  // Recupera o estado de sessão já validado nesta aba
   useEffect(() => {
-    carregarDados()
+    const authSalva = sessionStorage.getItem('zelador_gestor_autenticado')
+    if (authSalva === 'true') {
+      setAutenticado(true)
+    }
   }, [])
+
+  useEffect(() => {
+    if (autenticado) {
+      carregarDados()
+    }
+  }, [autenticado])
+
+  const validarPin = (e) => {
+    e.preventDefault()
+    if (pinEntrada.trim() === PIN_GESTOR) {
+      setAutenticado(true)
+      setErroPin(false)
+      sessionStorage.setItem('zelador_gestor_autenticado', 'true')
+    } else {
+      setErroPin(true)
+      setPinEntrada('')
+    }
+  }
+
+  const sairGestao = () => {
+    sessionStorage.removeItem('zelador_gestor_autenticado')
+    setAutenticado(false)
+    setPinEntrada('')
+    setErroPin(false)
+  }
 
   const carregarDados = async () => {
     try {
@@ -125,38 +161,6 @@ export default function PainelGestor() {
     }
   }
 
-  const filtradas = ocorrencias.filter((item) => {
-    const catNormalizada = normalizarCategoria(item.categoria)
-    const atendeCategoria = filtroCategoria === 'todas' || catNormalizada === filtroCategoria
-    const atendeStatus = filtroStatus === 'todos' || (item.status || 'pendente') === filtroStatus
-    return atendeCategoria && atendeStatus
-  })
-
-  const total = ocorrencias.length
-  const resolvidos = ocorrencias.filter((o) => o.status === 'resolvido').length
-  const pendentes = ocorrencias.filter((o) => o.status === 'pendente' || !o.status).length
-  const emAnalise = ocorrencias.filter((o) => o.status === 'em_analise').length
-  const taxaResolucao = total > 0 ? ((resolvidos / total) * 100).toFixed(1) : 0
-
-  const contagemCategorias = ocorrencias.reduce((acc, curr) => {
-    const chave = normalizarCategoria(curr.categoria)
-    acc[chave] = (acc[chave] || 0) + 1
-    return acc
-  }, {})
-
-  const dadosGraficoCategorias = Object.keys(contagemCategorias).map((cat) => ({
-    chave: cat,
-    nome: CONFIG_CATEGORIAS[cat]?.nome || cat,
-    total: contagemCategorias[cat],
-    cor: CORES_CATEGORIAS[cat] || '#64748b'
-  }))
-
-  const dadosGraficoStatus = [
-    { nome: 'Pendentes', valor: pendentes, cor: '#f59e0b' },
-    { nome: 'Em Análise', valor: emAnalise, cor: '#3b82f6' },
-    { nome: 'Resolvidos', valor: resolvidos, cor: '#10b981' }
-  ].filter((item) => item.valor > 0)
-
   const exportarCSV = () => {
     if (ocorrencias.length === 0) {
       alert('Não há dados disponíveis para exportar.')
@@ -189,9 +193,88 @@ export default function PainelGestor() {
     window.print()
   }
 
+  // ===================== TELA DE BLOQUEIO POR SENHA (PIN) =====================
+  if (!autenticado) {
+    return (
+      <div className="max-w-md mx-auto my-12 bg-white rounded-3xl p-8 border border-slate-200/80 shadow-md text-center space-y-6">
+        <div className="w-16 h-16 bg-slate-100 rounded-2xl flex items-center justify-center text-3xl mx-auto shadow-inner">
+          🔒
+        </div>
+        <div>
+          <h2 className="text-xl font-black text-slate-800">Acesso Restrito ao Gestor</h2>
+          <p className="text-xs text-slate-500 mt-1.5">
+            Insira o PIN de moderação para gerir ocorrências e emitir relatórios territoriais.
+          </p>
+        </div>
+
+        <form onSubmit={validarPin} className="space-y-4">
+          <div>
+            <input
+              type="password"
+              inputMode="numeric"
+              placeholder="Digite o PIN de acesso"
+              value={pinEntrada}
+              onChange={(e) => {
+                setPinEntrada(e.target.value)
+                setErroPin(false)
+              }}
+              className="w-full text-center tracking-widest text-lg font-bold py-3 px-4 rounded-xl border border-slate-200 bg-slate-50 focus:bg-white focus:outline-none focus:ring-2 focus:ring-slate-900 transition-all"
+              autoFocus
+            />
+            {erroPin && (
+              <p className="text-xs font-semibold text-rose-600 mt-2">
+                PIN incorreto. Tente novamente.
+              </p>
+            )}
+          </div>
+
+          <button
+            type="submit"
+            className="w-full py-3 bg-slate-900 hover:bg-slate-800 text-white rounded-xl text-xs font-bold transition-all shadow-xs cursor-pointer"
+          >
+            Aceder ao Painel
+          </button>
+        </form>
+      </div>
+    )
+  }
+
+  // ===================== CONTEÚDO AUTENTICADO =====================
+  const filtradas = ocorrencias.filter((item) => {
+    const catNormalizada = normalizarCategoria(item.categoria)
+    const atendeCategoria = filtroCategoria === 'todas' || catNormalizada === filtroCategoria
+    const atendeStatus = filtroStatus === 'todos' || (item.status || 'pendente') === filtroStatus
+    return atendeCategoria && atendeStatus
+  })
+
+  const total = ocorrencias.length
+  const resolvidos = ocorrencias.filter((o) => o.status === 'resolvido').length
+  const pendentes = ocorrencias.filter((o) => o.status === 'pendente' || !o.status).length
+  const emAnalise = ocorrencias.filter((o) => o.status === 'em_analise').length
+  const taxaResolucao = total > 0 ? ((resolvidos / total) * 100).toFixed(1) : 0
+
+  const contagemCategorias = ocorrencias.reduce((acc, curr) => {
+    const chave = normalizarCategoria(curr.categoria)
+    acc[chave] = (acc[chave] || 0) + 1
+    return acc
+  }, {})
+
+  const dadosGraficoCategorias = Object.keys(contagemCategorias).map((cat) => ({
+    chave: cat,
+    nome: CONFIG_CATEGORIAS[cat]?.nome || cat,
+    total: contagemCategorias[cat],
+    cor: CORES_CATEGORIAS[cat] || '#64748b'
+  }))
+
+  const dadosGraficoStatus = [
+    { nome: 'Pendentes', valor: pendentes, cor: '#f59e0b' },
+    { nome: 'Em Análise', valor: emAnalise, cor: '#3b82f6' },
+    { nome: 'Resolvidos', valor: resolvidos, cor: '#10b981' }
+  ].filter((item) => item.valor > 0)
+
   return (
     <div className="max-w-6xl mx-auto space-y-6 pb-6 print:p-0 print:space-y-4 print:max-w-full">
-      {/* Modal de Imagem */}
+      {/* Modal de Zoom de Imagem */}
       {fotoModal && (
         <div
           onClick={() => setFotoModal(null)}
@@ -219,9 +302,6 @@ export default function PainelGestor() {
             <p className="text-sm font-semibold text-slate-700">
               Relatório de Diagnóstico Urbano Territorial e Gestão Comunitária
             </p>
-            <p className="text-xs text-slate-500">
-              Recorte Espacial: Residencial Novo Cristo / Icuí — Ananindeua, Pará
-            </p>
           </div>
           <div className="text-right text-[11px] text-slate-600 font-mono space-y-0.5">
             <p><strong>Emissão:</strong> {new Date().toLocaleDateString('pt-BR')} às {new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}</p>
@@ -231,7 +311,7 @@ export default function PainelGestor() {
         </div>
       </div>
 
-      {/* Cabeçalho no Ecrã */}
+      {/* Barra de Ações Superior */}
       <div className="bg-white rounded-3xl p-6 border border-slate-200/80 shadow-xs flex flex-col md:flex-row items-start md:items-center justify-between gap-4 print:hidden">
         <div>
           <div className="flex flex-wrap items-center gap-2">
@@ -241,10 +321,8 @@ export default function PainelGestor() {
               Sincronizado
             </span>
           </div>
-          <p className="text-xs text-slate-500 mt-1 flex items-center gap-1">
-            <span>📍 Residencial Novo Cristo — Monitorização Ativa</span>
-            <span>•</span>
-            <span>Diagnóstico espacial e gestão comunitária</span>
+          <p className="text-xs text-slate-500 mt-1">
+            Controlo de demandas comunitárias, dossiê em PDF e diagnóstico espacial.
           </p>
         </div>
 
@@ -268,10 +346,17 @@ export default function PainelGestor() {
           >
             <span>📥 Exportar CSV (SIG)</span>
           </button>
+          <button
+            onClick={sairGestao}
+            className="p-2.5 text-rose-600 bg-rose-50 hover:bg-rose-100 rounded-xl transition-all"
+            title="Sair da Gestão (Bloquear)"
+          >
+            🔒
+          </button>
         </div>
       </div>
 
-      {/* Indicadores com Barra de Progresso */}
+      {/* Cartões de Indicadores */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4 print:grid-cols-4 print:gap-2">
         <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-xs hover:border-slate-300 transition-all print:p-3 print:border-slate-300">
           <p className="text-xs font-bold text-slate-400 uppercase tracking-wider print:text-[10px]">Total de Registos</p>
@@ -430,7 +515,7 @@ export default function PainelGestor() {
         </div>
       </div>
 
-      {/* Lista de Ocorrências com Badges, Quick Zoom e Borda */}
+      {/* Lista de Registos */}
       {carregando ? (
         <div className="py-16 text-center text-sm text-slate-500">A carregar registos espaciais...</div>
       ) : filtradas.length === 0 ? (
@@ -448,7 +533,6 @@ export default function PainelGestor() {
                 className={`bg-white rounded-2xl p-4 border border-slate-200/90 border-l-4 ${cfg.borda} flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 shadow-xs hover:-translate-y-0.5 hover:shadow-md transition-all duration-200 print:border-slate-300 print:p-3 print:hover:translate-y-0`}
               >
                 <div className="flex items-start space-x-3.5">
-                  {/* Foto com Zoom */}
                   {item.foto_url ? (
                     <button
                       onClick={() => setFotoModal(item.foto_url)}
@@ -509,7 +593,6 @@ export default function PainelGestor() {
                   </div>
                 </div>
 
-                {/* Ações */}
                 <div className="flex items-center space-x-2 w-full sm:w-auto justify-end pt-2 sm:pt-0 border-t sm:border-t-0 border-slate-100 print:hidden">
                   <select
                     value={item.status || 'pendente'}
