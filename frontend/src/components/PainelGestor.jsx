@@ -63,7 +63,6 @@ export default function PainelGestor() {
   const carregarDados = async () => {
     try {
       setCarregando(true)
-      // Consulta a view espacial com latitude e longitude numéricas
       const { data, error } = await supabase
         .from('ocorrencias_georreferenciadas')
         .select('*')
@@ -80,7 +79,6 @@ export default function PainelGestor() {
 
   const atualizarStatus = async (id, novoStatus) => {
     try {
-      // Atualiza diretamente na tabela principal de ocorrências
       const { error } = await supabase
         .from('ocorrencias')
         .update({ status: novoStatus })
@@ -107,7 +105,6 @@ export default function PainelGestor() {
     }
   }
 
-  // Filtragem local
   const filtradas = ocorrencias.filter((item) => {
     const catNormalizada = normalizarCategoria(item.categoria)
     const atendeCategoria = filtroCategoria === 'todas' || catNormalizada === filtroCategoria
@@ -115,7 +112,6 @@ export default function PainelGestor() {
     return atendeCategoria && atendeStatus
   })
 
-  // Métricas agregadas
   const total = ocorrencias.length
   const resolvidos = ocorrencias.filter((o) => o.status === 'resolvido').length
   const pendentes = ocorrencias.filter((o) => o.status === 'pendente' || !o.status).length
@@ -141,7 +137,6 @@ export default function PainelGestor() {
     { nome: 'Resolvidos', valor: resolvidos, cor: CORES_STATUS.resolvido }
   ].filter((item) => item.valor > 0)
 
-  // Exportação CSV espacial pronta para SIG (QGIS)
   const exportarCSV = () => {
     if (ocorrencias.length === 0) {
       alert('Não há dados disponíveis para exportar.')
@@ -175,8 +170,8 @@ export default function PainelGestor() {
   }
 
   return (
-    <div className="max-w-6xl mx-auto space-y-6 pb-16 print:p-0 print:space-y-4 print:max-w-full">
-      {/* ===================== CABEÇALHO DO RELATÓRIO DE IMPRESSÃO (PDF) ===================== */}
+    <div className="max-w-6xl mx-auto space-y-6 pb-6 print:p-0 print:space-y-4 print:max-w-full">
+      {/* Cabeçalho de Impressão */}
       <div className="hidden print:block border-b-2 border-slate-900 pb-4 mb-4">
         <div className="flex justify-between items-start">
           <div>
@@ -184,7 +179,7 @@ export default function PainelGestor() {
               Zelador Digital Comunitário
             </h1>
             <p className="text-sm font-semibold text-slate-700">
-              Relatório de Diagnóstico Urbano Territorial e Gestão Territorial Independente
+              Relatório de Diagnóstico Urbano Territorial e Gestão Comunitária
             </p>
             <p className="text-xs text-slate-500">
               Recorte Espacial: Residencial Novo Cristo / Icuí — Ananindeua, Pará
@@ -198,7 +193,7 @@ export default function PainelGestor() {
         </div>
       </div>
 
-      {/* ===================== CABEÇALHO PADRÃO NO ECRÃ ===================== */}
+      {/* Cabeçalho Normal em Ecrã */}
       <div className="bg-white rounded-3xl p-6 border border-slate-200 flex flex-col md:flex-row items-start md:items-center justify-between gap-4 print:hidden shadow-xs">
         <div>
           <div className="flex items-center space-x-2">
@@ -208,7 +203,7 @@ export default function PainelGestor() {
             </span>
           </div>
           <p className="text-xs text-slate-500 mt-1">
-            Controle de demandas comunitárias, dossiê em PDF, ofícios formais e moderação.
+            Controlo de ocorrências comunitárias, emissão de dossiê territorial em PDF e exportação espacial.
           </p>
         </div>
 
@@ -216,7 +211,7 @@ export default function PainelGestor() {
           <button
             onClick={carregarDados}
             className="p-2.5 text-slate-600 bg-slate-100 hover:bg-slate-200 rounded-xl transition-all"
-            title="Atualizar lista de dados espaciais"
+            title="Atualizar dados"
           >
             🔄
           </button>
@@ -235,7 +230,7 @@ export default function PainelGestor() {
         </div>
       </div>
 
-      {/* ===================== CARDS DE INDICADORES TERRITORIAIS ===================== */}
+      {/* Cartões de Indicadores */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4 print:grid-cols-4 print:gap-2">
         <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-xs print:p-3 print:border-slate-300">
           <p className="text-xs font-bold text-slate-400 uppercase tracking-wider print:text-[10px]">Total de Registos</p>
@@ -246,7 +241,7 @@ export default function PainelGestor() {
         <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-xs print:p-3 print:border-slate-300">
           <p className="text-xs font-bold text-slate-400 uppercase tracking-wider print:text-[10px]">Pendentes / Em Análise</p>
           <p className="text-3xl font-black text-amber-600 mt-1 print:text-lg">{pendentes + emAnalise}</p>
-          <span className="text-[11px] text-amber-600 font-medium print:text-[9px]">Pontos críticos ativos</span>
+          <span className="text-[11px] text-amber-600 font-medium print:text-[9px]">Pontos ativos</span>
         </div>
 
         <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-xs print:p-3 print:border-slate-300">
@@ -262,7 +257,7 @@ export default function PainelGestor() {
         </div>
       </div>
 
-      {/* ===================== QUADRO ESTATÍSTICO DE TIPOLOGIAS (SÍNTESE PARA RELATÓRIO) ===================== */}
+      {/* Quadro de Tipologias Urbanas */}
       <div className="bg-white p-5 rounded-3xl border border-slate-200 print:border-slate-300 print:p-3 shadow-xs">
         <h3 className="text-sm font-bold text-slate-800 mb-3 print:text-xs">
           Síntese de Tipologias Urbanas Identificadas
@@ -282,7 +277,7 @@ export default function PainelGestor() {
         </div>
       </div>
 
-      {/* ===================== GRÁFICOS (VISÍVEIS APENAS EM TELA) ===================== */}
+      {/* Gráficos Recharts */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6 print:hidden">
         <div className="bg-white p-6 rounded-3xl border border-slate-200 shadow-xs">
           <h3 className="text-sm font-bold text-slate-800 mb-1">Concentração por Tipologia Urbana</h3>
@@ -290,7 +285,7 @@ export default function PainelGestor() {
           <div className="h-60 w-full">
             {dadosGraficoCategorias.length === 0 ? (
               <div className="h-full flex items-center justify-center text-xs text-slate-400">
-                Sem registros para análise estatística.
+                Sem registos para análise estatística.
               </div>
             ) : (
               <ResponsiveContainer width="100%" height="100%">
@@ -338,7 +333,7 @@ export default function PainelGestor() {
                     ))}
                   </Pie>
                   <Tooltip
-                    formatter={(val) => [`${val} demandas`, 'Total']}
+                    formatter={(val) => [`${val} ocorrências`, 'Total']}
                     contentStyle={{ borderRadius: '12px', fontSize: '12px', border: '1px solid #e2e8f0' }}
                   />
                   <Legend verticalAlign="bottom" height={36} iconType="circle" wrapperStyle={{ fontSize: '11px' }} />
@@ -349,7 +344,7 @@ export default function PainelGestor() {
         </div>
       </div>
 
-      {/* ===================== FILTROS INTERATIVOS (ESCONDIDOS NA IMPRESSÃO) ===================== */}
+      {/* Filtros de Exibição */}
       <div className="bg-white p-4 rounded-2xl border border-slate-200 flex flex-wrap items-center justify-between gap-3 print:hidden shadow-xs">
         <div className="text-xs font-bold text-slate-700">
           <span>🔍 Filtrar Exibição:</span>
@@ -381,27 +376,27 @@ export default function PainelGestor() {
         </div>
       </div>
 
-      {/* ===================== TABELA / INVENTÁRIO CARTOGRÁFICO DE PONTOS ===================== */}
+      {/* Tabela de Registos */}
       <div className="bg-white rounded-3xl border border-slate-200 overflow-hidden shadow-xs print:rounded-xl print:border-slate-300">
         <div className="p-5 border-b border-slate-100 flex items-center justify-between print:p-2.5">
           <h3 className="text-sm font-bold text-slate-800 print:text-xs">
-            Inventário de Registos Espaciais Coletados ({filtradas.length})
+            Inventário de Registos Espaciais ({filtradas.length})
           </h3>
-          <span className="text-xs text-slate-400 print:text-[10px]">Base Territorial Normalizada</span>
+          <span className="text-xs text-slate-400 print:text-[10px]">Base Territorial</span>
         </div>
 
         {carregando ? (
-          <div className="py-16 text-center text-sm text-slate-500">A carregar ocorrências espaciais...</div>
+          <div className="py-16 text-center text-sm text-slate-500">A carregar registos...</div>
         ) : filtradas.length === 0 ? (
-          <div className="py-16 text-center text-sm text-slate-500">Nenhum registo atende aos filtros definidos.</div>
+          <div className="py-16 text-center text-sm text-slate-500">Nenhuma ocorrência encontrada.</div>
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full text-left text-xs text-slate-700 print:text-[10px]">
               <thead className="bg-slate-50 text-slate-500 uppercase tracking-wider text-[10px] border-b border-slate-200 print:bg-slate-100 print:text-[9px]">
                 <tr>
                   <th className="px-4 py-3 print:px-2 print:py-1.5">Tipologia</th>
-                  <th className="px-4 py-3 print:px-2 print:py-1.5">Descrição / Referência</th>
-                  <th className="px-4 py-3 print:px-2 print:py-1.5">Coordenadas (Lat, Long)</th>
+                  <th className="px-4 py-3 print:px-2 print:py-1.5">Descrição / Ponto</th>
+                  <th className="px-4 py-3 print:px-2 print:py-1.5">Coordenadas</th>
                   <th className="px-4 py-3 print:px-2 print:py-1.5">Registo</th>
                   <th className="px-4 py-3 print:px-2 print:py-1.5">Estado</th>
                   <th className="px-4 py-3 text-right print:hidden">Ação</th>
@@ -416,12 +411,12 @@ export default function PainelGestor() {
                         {ROTULOS_CATEGORIAS[catNormal] || item.categoria}
                       </td>
                       <td className="px-4 py-3 max-w-xs truncate print:max-w-none print:whitespace-normal print:px-2 print:py-1.5">
-                        {item.descricao || 'Sem descrição cadastrada'}
+                        {item.descricao || 'Sem descrição'}
                       </td>
                       <td className="px-4 py-3 font-mono text-[11px] text-slate-600 print:px-2 print:py-1.5 print:text-[9px]">
                         {item.latitude != null && item.longitude != null
                           ? `${Number(item.latitude).toFixed(5)}, ${Number(item.longitude).toFixed(5)}`
-                          : 'Sem coordenadas'}
+                          : 'Sem GPS'}
                       </td>
                       <td className="px-4 py-3 text-slate-500 print:px-2 print:py-1.5 print:text-[9px]">
                         {item.created_at ? new Date(item.created_at).toLocaleDateString('pt-BR') : '-'}
@@ -468,26 +463,10 @@ export default function PainelGestor() {
         )}
       </div>
 
-      {/* ===================== NOTA DE ENCERRAMENTO INSTITUCIONAL ===================== */}
+      {/* Nota de Impressão */}
       <div className="hidden print:block pt-4 border-t border-slate-300 text-[10px] text-slate-600 space-y-1">
         <p>
-          <strong>Finalidade Técnica:</strong> Este documento consolida dados territoriais de fonte primária obtidos via plataforma Zelador Digital Comunitário para suporte a diagnósticos socioambientais, estudos de infraestrutura e priorização de ações locais.
-        </p>
-        <p className="text-slate-400 text-[9px]">
-          Iniciativa civil independente — Registrado sob responsabilidade técnica de Dante Dias Monteiro.
-        </p>
-      </div>
-
-      {/* Rodapé da Aplicação (Visível no ecrã) */}
-      <div className="pt-8 text-center text-xs text-slate-400 space-y-1 print:hidden">
-        <p className="font-semibold text-slate-600">
-          Zelador Digital © 2026 — Plataforma de Gestão Comunitária
-        </p>
-        <p className="text-[11px]">
-          Idealizado, projetado e desenvolvido por <span className="font-bold text-slate-700">Dante Dias Monteiro</span>
-        </p>
-        <p className="text-[10px] text-slate-400">
-          Iniciativa civil independente para mapeamento urbano, saneamento e zeladoria social.
+          <strong>Finalidade Técnica:</strong> Relatório territorial para estudos urbanos e diagnóstico comunitário independente.
         </p>
       </div>
     </div>
