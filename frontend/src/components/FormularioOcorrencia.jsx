@@ -74,27 +74,51 @@ export default function FormularioOcorrencia({ onSucesso }) {
     }
   }
 
+  // Captura inicial ao abrir o formulário
   useEffect(() => {
-    capturarLocalizacao()
+    capturarLocalizacao(false)
   }, [])
 
-  const capturarLocalizacao = () => {
-    if (navigator.geolocation) {
-      setACarregarLocalizacao(true)
-      navigator.geolocation.getCurrentPosition(
-        (pos) => {
-          setLocalizacao({
-            latitude: pos.coords.latitude,
-            longitude: pos.coords.longitude
-          })
-          setACarregarLocalizacao(false)
-        },
-        () => {
-          setACarregarLocalizacao(false)
-        },
-        { enableHighAccuracy: true, timeout: 10000 }
-      )
+  // Função aprimorada com limpeza de cache (maximumAge: 0) e feedback de voz
+  const capturarLocalizacao = (porClique = true) => {
+    if (!navigator.geolocation) {
+      if (porClique) alert('Geolocalização não é suportada pelo seu navegador.')
+      return
     }
+
+    setACarregarLocalizacao(true)
+    if (modoAcessivel && porClique) {
+      narrarTexto('Buscando localização exata do aparelho...')
+    }
+
+    navigator.geolocation.getCurrentPosition(
+      (pos) => {
+        setLocalizacao({
+          latitude: pos.coords.latitude,
+          longitude: pos.coords.longitude
+        })
+        setACarregarLocalizacao(false)
+        if (modoAcessivel && porClique) {
+          narrarTexto('Localização atualizada com sucesso!')
+        }
+      },
+      (erro) => {
+        setACarregarLocalizacao(false)
+        console.warn('Erro ao obter GPS:', erro.message)
+        if (porClique) {
+          if (modoAcessivel) {
+            narrarTexto('Não foi possível obter a localização. Verifique se o GPS está ativado.')
+          } else {
+            alert('Não foi possível obter a localização. Verifique se o GPS está ativado e com permissão.')
+          }
+        }
+      },
+      {
+        enableHighAccuracy: true,
+        timeout: 12000,
+        maximumAge: 0 // Força leitura em tempo real sem reaproveitar cache antigo
+      }
+    )
   }
 
   const iniciarDitadoPorVoz = () => {
@@ -299,31 +323,39 @@ export default function FormularioOcorrencia({ onSucesso }) {
             )}
           </div>
 
-          <div className="bg-slate-50 p-3 rounded-2xl border border-slate-200 flex items-center justify-between">
+          {/* CARD DE LOCALIZAÇÃO REFORÇADO */}
+          <div className="bg-slate-50 p-3.5 rounded-2xl border border-slate-200 flex items-center justify-between">
             <div className="flex items-center space-x-2.5">
-              <span className="text-xl">📍</span>
+              <span className={`text-xl ${aCarregarLocalizacao ? 'animate-bounce' : ''}`}>📍</span>
               <div>
                 <p className="text-xs font-bold text-slate-800">
-                  {localizacao
-                    ? 'Localização capturada!'
-                    : aCarregarLocalizacao
-                    ? 'A procurar sinal GPS...'
+                  {aCarregarLocalizacao
+                    ? 'Buscando satélites GPS...'
+                    : localizacao
+                    ? 'Localização exata capturada!'
                     : 'Localização pendente'}
                 </p>
                 <p className="text-[11px] text-slate-500">
-                  {localizacao
-                    ? `${localizacao.latitude.toFixed(4)}, ${localizacao.longitude.toFixed(4)}`
-                    : 'Permita o acesso ao GPS do telemóvel'}
+                  {aCarregarLocalizacao
+                    ? 'Aguarde calculando posição...'
+                    : localizacao
+                    ? `Lat: ${localizacao.latitude.toFixed(5)}, Long: ${localizacao.longitude.toFixed(5)}`
+                    : 'Toque em atualizar se estiver no local'}
                 </p>
               </div>
             </div>
 
             <button
               type="button"
-              onClick={capturarLocalizacao}
-              className="px-2.5 py-1 text-xs font-semibold bg-white border border-slate-300 rounded-lg hover:bg-slate-100 text-slate-700"
+              disabled={aCarregarLocalizacao}
+              onClick={() => capturarLocalizacao(true)}
+              className={`px-3 py-1.5 text-xs font-semibold rounded-xl border transition-all ${
+                aCarregarLocalizacao
+                  ? 'bg-blue-50 text-blue-500 border-blue-200 cursor-wait'
+                  : 'bg-white border-slate-300 hover:bg-slate-100 text-slate-700 active:scale-95'
+              }`}
             >
-              🔄 Atualizar
+              {aCarregarLocalizacao ? 'Buscando...' : '🔄 Atualizar'}
             </button>
           </div>
 
