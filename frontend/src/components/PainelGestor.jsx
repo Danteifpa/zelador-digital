@@ -14,7 +14,7 @@ import {
 } from 'recharts'
 
 // Senha mestra configurada para a moderação comunitária
-const PIN_GESTOR = '2026'
+const PIN_GESTOR = 'zelador##2027'
 
 const CORES_CATEGORIAS = {
   lixo: '#f59e0b',
@@ -83,7 +83,6 @@ export default function PainelGestor() {
   const [filtroStatus, setFiltroStatus] = useState('todos')
   const [fotoModal, setFotoModal] = useState(null)
 
-  // Recupera o estado de sessão já validado nesta aba
   useEffect(() => {
     const authSalva = sessionStorage.getItem('zelador_gestor_autenticado')
     if (authSalva === 'true') {
@@ -203,7 +202,7 @@ export default function PainelGestor() {
         <div>
           <h2 className="text-xl font-black text-slate-800">Acesso Restrito ao Gestor</h2>
           <p className="text-xs text-slate-500 mt-1.5">
-            Insira o PIN de moderação para gerir ocorrências e emitir relatórios territoriais.
+            Insira a senha de moderação para gerir ocorrências e emitir relatórios territoriais.
           </p>
         </div>
 
@@ -211,19 +210,18 @@ export default function PainelGestor() {
           <div>
             <input
               type="password"
-              inputMode="numeric"
-              placeholder="Digite o PIN de acesso"
+              placeholder="Digite a senha de acesso"
               value={pinEntrada}
               onChange={(e) => {
                 setPinEntrada(e.target.value)
                 setErroPin(false)
               }}
-              className="w-full text-center tracking-widest text-lg font-bold py-3 px-4 rounded-xl border border-slate-200 bg-slate-50 focus:bg-white focus:outline-none focus:ring-2 focus:ring-slate-900 transition-all"
+              className="w-full text-center tracking-wider text-base font-bold py-3 px-4 rounded-xl border border-slate-200 bg-slate-50 focus:bg-white focus:outline-none focus:ring-2 focus:ring-slate-900 transition-all"
               autoFocus
             />
             {erroPin && (
               <p className="text-xs font-semibold text-rose-600 mt-2">
-                PIN incorreto. Tente novamente.
+                Senha incorreta. Tente novamente.
               </p>
             )}
           </div>
