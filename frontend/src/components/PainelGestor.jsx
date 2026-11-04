@@ -30,24 +30,43 @@ const normalizarCategoria = (cat) => {
   return 'outros'
 }
 
-const ROTULOS_CATEGORIAS = {
-  lixo: 'Lixo / Entulho',
-  iluminacao: 'Iluminação Pública',
-  buraco: 'Vias / Buracos',
-  esgoto: 'Esgoto / Água',
-  outros: 'Outros'
-}
-
-const CORES_STATUS = {
-  pendente: '#f59e0b',
-  em_analise: '#3b82f6',
-  resolvido: '#10b981'
+const CONFIG_CATEGORIAS = {
+  lixo: {
+    nome: 'Lixo / Entulho',
+    icone: '🗑️',
+    badge: 'bg-amber-50 text-amber-700 border-amber-200',
+    borda: 'border-l-amber-500'
+  },
+  iluminacao: {
+    nome: 'Iluminação Pública',
+    icone: '💡',
+    badge: 'bg-indigo-50 text-indigo-700 border-indigo-200',
+    borda: 'border-l-indigo-500'
+  },
+  buraco: {
+    nome: 'Vias / Buracos',
+    icone: '🕳️',
+    badge: 'bg-orange-50 text-orange-700 border-orange-200',
+    borda: 'border-l-orange-500'
+  },
+  esgoto: {
+    nome: 'Esgoto / Água',
+    icone: '💧',
+    badge: 'bg-sky-50 text-sky-700 border-sky-200',
+    borda: 'border-l-sky-500'
+  },
+  outros: {
+    nome: 'Outros',
+    icone: '📍',
+    badge: 'bg-slate-50 text-slate-700 border-slate-200',
+    borda: 'border-l-slate-400'
+  }
 }
 
 const ROTULOS_STATUS = {
-  pendente: 'Pendente',
-  em_analise: 'Em Análise',
-  resolvido: 'Resolvido'
+  pendente: { nome: 'Pendente', cor: 'bg-amber-100 text-amber-800 border-amber-200', dot: 'bg-amber-500' },
+  em_analise: { nome: 'Em Análise', cor: 'bg-blue-100 text-blue-800 border-blue-200', dot: 'bg-blue-500' },
+  resolvido: { nome: 'Resolvido', cor: 'bg-emerald-100 text-emerald-800 border-emerald-200', dot: 'bg-emerald-500' }
 }
 
 export default function PainelGestor() {
@@ -55,6 +74,7 @@ export default function PainelGestor() {
   const [carregando, setCarregando] = useState(true)
   const [filtroCategoria, setFiltroCategoria] = useState('todas')
   const [filtroStatus, setFiltroStatus] = useState('todos')
+  const [fotoModal, setFotoModal] = useState(null)
 
   useEffect(() => {
     carregarDados()
@@ -71,7 +91,7 @@ export default function PainelGestor() {
       if (error) throw error
       setOcorrencias(data || [])
     } catch (err) {
-      console.error('Erro ao buscar dados georreferenciados:', err.message)
+      console.error('Erro ao buscar dados:', err.message)
     } finally {
       setCarregando(false)
     }
@@ -94,7 +114,7 @@ export default function PainelGestor() {
   }
 
   const eliminarRegisto = async (id) => {
-    if (!window.confirm('Confirma a eliminação deste ponto georreferenciado?')) return
+    if (!window.confirm('Confirma a eliminação deste ponto territorial?')) return
 
     try {
       const { error } = await supabase.from('ocorrencias').delete().eq('id', id)
@@ -126,15 +146,15 @@ export default function PainelGestor() {
 
   const dadosGraficoCategorias = Object.keys(contagemCategorias).map((cat) => ({
     chave: cat,
-    nome: ROTULOS_CATEGORIAS[cat] || cat,
+    nome: CONFIG_CATEGORIAS[cat]?.nome || cat,
     total: contagemCategorias[cat],
     cor: CORES_CATEGORIAS[cat] || '#64748b'
   }))
 
   const dadosGraficoStatus = [
-    { nome: 'Pendentes', valor: pendentes, cor: CORES_STATUS.pendente },
-    { nome: 'Em Análise', valor: emAnalise, cor: CORES_STATUS.em_analise },
-    { nome: 'Resolvidos', valor: resolvidos, cor: CORES_STATUS.resolvido }
+    { nome: 'Pendentes', valor: pendentes, cor: '#f59e0b' },
+    { nome: 'Em Análise', valor: emAnalise, cor: '#3b82f6' },
+    { nome: 'Resolvidos', valor: resolvidos, cor: '#10b981' }
   ].filter((item) => item.valor > 0)
 
   const exportarCSV = () => {
@@ -146,7 +166,7 @@ export default function PainelGestor() {
     const cabecalho = ['ID', 'Categoria', 'Descricao', 'Latitude', 'Longitude', 'Status', 'Data_Hora']
     const linhas = filtradas.map((o) => [
       o.id,
-      `"${ROTULOS_CATEGORIAS[normalizarCategoria(o.categoria)] || o.categoria}"`,
+      `"${CONFIG_CATEGORIAS[normalizarCategoria(o.categoria)]?.nome || o.categoria}"`,
       `"${(o.descricao || '').replace(/"/g, '""')}"`,
       o.latitude ?? '',
       o.longitude ?? '',
@@ -171,6 +191,24 @@ export default function PainelGestor() {
 
   return (
     <div className="max-w-6xl mx-auto space-y-6 pb-6 print:p-0 print:space-y-4 print:max-w-full">
+      {/* Modal de Imagem */}
+      {fotoModal && (
+        <div
+          onClick={() => setFotoModal(null)}
+          className="fixed inset-0 z-50 bg-black/80 backdrop-blur-xs flex items-center justify-center p-4 transition-all"
+        >
+          <div className="relative max-w-3xl max-h-[90vh] bg-white rounded-2xl overflow-hidden shadow-2xl">
+            <button
+              onClick={() => setFotoModal(null)}
+              className="absolute top-3 right-3 bg-black/60 hover:bg-black text-white rounded-full p-2 text-sm z-10 transition-all"
+            >
+              ✕
+            </button>
+            <img src={fotoModal} alt="Evidência ampliada" className="w-full h-auto max-h-[85vh] object-contain" />
+          </div>
+        </div>
+      )}
+
       {/* Cabeçalho de Impressão */}
       <div className="hidden print:block border-b-2 border-slate-900 pb-4 mb-4">
         <div className="flex justify-between items-start">
@@ -193,17 +231,20 @@ export default function PainelGestor() {
         </div>
       </div>
 
-      {/* Cabeçalho Normal em Ecrã */}
-      <div className="bg-white rounded-3xl p-6 border border-slate-200 flex flex-col md:flex-row items-start md:items-center justify-between gap-4 print:hidden shadow-xs">
+      {/* Cabeçalho no Ecrã */}
+      <div className="bg-white rounded-3xl p-6 border border-slate-200/80 shadow-xs flex flex-col md:flex-row items-start md:items-center justify-between gap-4 print:hidden">
         <div>
-          <div className="flex items-center space-x-2">
-            <h2 className="text-xl font-bold text-slate-800">Painel de Gestão e Moderação</h2>
-            <span className="bg-emerald-100 text-emerald-800 text-[10px] font-bold px-2 py-0.5 rounded-full">
-              Autenticado
+          <div className="flex flex-wrap items-center gap-2">
+            <h2 className="text-xl font-black text-slate-800 tracking-tight">Painel de Gestão e Moderação</h2>
+            <span className="inline-flex items-center gap-1.5 bg-emerald-50 text-emerald-700 border border-emerald-200/60 text-[11px] font-bold px-2.5 py-0.5 rounded-full">
+              <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
+              Sincronizado
             </span>
           </div>
-          <p className="text-xs text-slate-500 mt-1">
-            Controlo de ocorrências comunitárias, emissão de dossiê territorial em PDF e exportação espacial.
+          <p className="text-xs text-slate-500 mt-1 flex items-center gap-1">
+            <span>📍 Residencial Novo Cristo — Monitorização Ativa</span>
+            <span>•</span>
+            <span>Diagnóstico espacial e gestão comunitária</span>
           </p>
         </div>
 
@@ -225,51 +266,64 @@ export default function PainelGestor() {
             onClick={exportarCSV}
             className="px-4 py-2.5 text-xs font-bold bg-blue-600 hover:bg-blue-700 text-white rounded-xl shadow-xs transition-all flex items-center space-x-1.5"
           >
-            <span>📥 Exportar CSV (SIG / QGIS)</span>
+            <span>📥 Exportar CSV (SIG)</span>
           </button>
         </div>
       </div>
 
-      {/* Cartões de Indicadores */}
+      {/* Indicadores com Barra de Progresso */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4 print:grid-cols-4 print:gap-2">
-        <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-xs print:p-3 print:border-slate-300">
+        <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-xs hover:border-slate-300 transition-all print:p-3 print:border-slate-300">
           <p className="text-xs font-bold text-slate-400 uppercase tracking-wider print:text-[10px]">Total de Registos</p>
           <p className="text-3xl font-black text-slate-800 mt-1 print:text-lg">{total}</p>
           <span className="text-[11px] text-slate-500 print:text-[9px]">Amostragem no setor</span>
         </div>
 
-        <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-xs print:p-3 print:border-slate-300">
+        <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-xs hover:border-amber-200 transition-all print:p-3 print:border-slate-300">
           <p className="text-xs font-bold text-slate-400 uppercase tracking-wider print:text-[10px]">Pendentes / Em Análise</p>
           <p className="text-3xl font-black text-amber-600 mt-1 print:text-lg">{pendentes + emAnalise}</p>
           <span className="text-[11px] text-amber-600 font-medium print:text-[9px]">Pontos ativos</span>
         </div>
 
-        <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-xs print:p-3 print:border-slate-300">
+        <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-xs hover:border-emerald-200 transition-all print:p-3 print:border-slate-300">
           <p className="text-xs font-bold text-slate-400 uppercase tracking-wider print:text-[10px]">Demandas Resolvidas</p>
           <p className="text-3xl font-black text-emerald-600 mt-1 print:text-lg">{resolvidos}</p>
           <span className="text-[11px] text-emerald-600 font-medium print:text-[9px]">Pontos solucionados</span>
         </div>
 
-        <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-xs print:p-3 print:border-slate-300">
-          <p className="text-xs font-bold text-slate-400 uppercase tracking-wider print:text-[10px]">Taxa de Resolução</p>
-          <p className="text-3xl font-black text-blue-600 mt-1 print:text-lg">{taxaResolucao}%</p>
-          <span className="text-[11px] text-blue-600 font-medium print:text-[9px]">Eficácia das ações</span>
+        <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-xs hover:border-blue-200 transition-all print:p-3 print:border-slate-300 flex flex-col justify-between">
+          <div>
+            <p className="text-xs font-bold text-slate-400 uppercase tracking-wider print:text-[10px]">Taxa de Resolução</p>
+            <p className="text-3xl font-black text-blue-600 mt-1 print:text-lg">{taxaResolucao}%</p>
+          </div>
+          <div className="w-full bg-slate-100 rounded-full h-1.5 mt-2 overflow-hidden print:hidden">
+            <div
+              className="bg-gradient-to-r from-blue-500 to-emerald-500 h-1.5 rounded-full transition-all duration-500"
+              style={{ width: `${Math.min(Number(taxaResolucao), 100)}%` }}
+            ></div>
+          </div>
         </div>
       </div>
 
-      {/* Quadro de Tipologias Urbanas */}
+      {/* Tipologias Urbanas */}
       <div className="bg-white p-5 rounded-3xl border border-slate-200 print:border-slate-300 print:p-3 shadow-xs">
         <h3 className="text-sm font-bold text-slate-800 mb-3 print:text-xs">
           Síntese de Tipologias Urbanas Identificadas
         </h3>
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 print:grid-cols-4 print:gap-2">
-          {Object.entries(ROTULOS_CATEGORIAS).filter(([k]) => k !== 'outros').map(([chave, label]) => {
+          {Object.entries(CONFIG_CATEGORIAS).filter(([k]) => k !== 'outros').map(([chave, cfg]) => {
             const qtd = contagemCategorias[chave] || 0
             const pct = total > 0 ? ((qtd / total) * 100).toFixed(1) : 0
             return (
-              <div key={chave} className="p-3 rounded-2xl border border-slate-100 bg-slate-50/70 print:p-2 print:border-slate-300">
-                <p className="text-xs font-semibold text-slate-600 print:text-[10px]">{label}</p>
-                <p className="text-2xl font-black text-slate-900 mt-0.5 print:text-base">{qtd}</p>
+              <div
+                key={chave}
+                className="p-3 rounded-2xl border border-slate-100 bg-slate-50/70 hover:bg-slate-50 transition-colors print:p-2 print:border-slate-300"
+              >
+                <div className="flex items-center space-x-1.5">
+                  <span className="text-sm">{cfg.icone}</span>
+                  <p className="text-xs font-semibold text-slate-700 print:text-[10px]">{cfg.nome}</p>
+                </div>
+                <p className="text-2xl font-black text-slate-900 mt-1 print:text-base">{qtd}</p>
                 <span className="text-[10px] text-slate-400 font-medium">{pct}% da carga local</span>
               </div>
             )
@@ -344,7 +398,7 @@ export default function PainelGestor() {
         </div>
       </div>
 
-      {/* Filtros de Exibição */}
+      {/* Filtros */}
       <div className="bg-white p-4 rounded-2xl border border-slate-200 flex flex-wrap items-center justify-between gap-3 print:hidden shadow-xs">
         <div className="text-xs font-bold text-slate-700">
           <span>🔍 Filtrar Exibição:</span>
@@ -376,94 +430,112 @@ export default function PainelGestor() {
         </div>
       </div>
 
-      {/* Tabela de Registos */}
-      <div className="bg-white rounded-3xl border border-slate-200 overflow-hidden shadow-xs print:rounded-xl print:border-slate-300">
-        <div className="p-5 border-b border-slate-100 flex items-center justify-between print:p-2.5">
-          <h3 className="text-sm font-bold text-slate-800 print:text-xs">
-            Inventário de Registos Espaciais ({filtradas.length})
-          </h3>
-          <span className="text-xs text-slate-400 print:text-[10px]">Base Territorial</span>
-        </div>
+      {/* Lista de Ocorrências com Badges, Quick Zoom e Borda */}
+      {carregando ? (
+        <div className="py-16 text-center text-sm text-slate-500">A carregar registos espaciais...</div>
+      ) : filtradas.length === 0 ? (
+        <div className="py-16 text-center text-sm text-slate-500">Nenhuma ocorrência encontrada.</div>
+      ) : (
+        <div className="space-y-3">
+          {filtradas.map((item) => {
+            const catNormal = normalizarCategoria(item.categoria)
+            const cfg = CONFIG_CATEGORIAS[catNormal] || CONFIG_CATEGORIAS.outros
+            const stCfg = ROTULOS_STATUS[item.status] || ROTULOS_STATUS.pendente
 
-        {carregando ? (
-          <div className="py-16 text-center text-sm text-slate-500">A carregar registos...</div>
-        ) : filtradas.length === 0 ? (
-          <div className="py-16 text-center text-sm text-slate-500">Nenhuma ocorrência encontrada.</div>
-        ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full text-left text-xs text-slate-700 print:text-[10px]">
-              <thead className="bg-slate-50 text-slate-500 uppercase tracking-wider text-[10px] border-b border-slate-200 print:bg-slate-100 print:text-[9px]">
-                <tr>
-                  <th className="px-4 py-3 print:px-2 print:py-1.5">Tipologia</th>
-                  <th className="px-4 py-3 print:px-2 print:py-1.5">Descrição / Ponto</th>
-                  <th className="px-4 py-3 print:px-2 print:py-1.5">Coordenadas</th>
-                  <th className="px-4 py-3 print:px-2 print:py-1.5">Registo</th>
-                  <th className="px-4 py-3 print:px-2 print:py-1.5">Estado</th>
-                  <th className="px-4 py-3 text-right print:hidden">Ação</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-slate-100 print:divide-slate-200">
-                {filtradas.map((item) => {
-                  const catNormal = normalizarCategoria(item.categoria)
-                  return (
-                    <tr key={item.id} className="hover:bg-slate-50/80 transition-colors">
-                      <td className="px-4 py-3 font-semibold text-slate-800 print:px-2 print:py-1.5">
-                        {ROTULOS_CATEGORIAS[catNormal] || item.categoria}
-                      </td>
-                      <td className="px-4 py-3 max-w-xs truncate print:max-w-none print:whitespace-normal print:px-2 print:py-1.5">
-                        {item.descricao || 'Sem descrição'}
-                      </td>
-                      <td className="px-4 py-3 font-mono text-[11px] text-slate-600 print:px-2 print:py-1.5 print:text-[9px]">
-                        {item.latitude != null && item.longitude != null
-                          ? `${Number(item.latitude).toFixed(5)}, ${Number(item.longitude).toFixed(5)}`
-                          : 'Sem GPS'}
-                      </td>
-                      <td className="px-4 py-3 text-slate-500 print:px-2 print:py-1.5 print:text-[9px]">
-                        {item.created_at ? new Date(item.created_at).toLocaleDateString('pt-BR') : '-'}
-                      </td>
-                      <td className="px-4 py-3 print:px-2 print:py-1.5">
-                        <span
-                          className={`px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider print:border print:border-slate-400 print:bg-transparent print:text-slate-800 ${
-                            item.status === 'resolvido'
-                              ? 'bg-emerald-100 text-emerald-800'
-                              : item.status === 'em_analise'
-                              ? 'bg-blue-100 text-blue-800'
-                              : 'bg-amber-100 text-amber-800'
-                          }`}
+            return (
+              <div
+                key={item.id}
+                className={`bg-white rounded-2xl p-4 border border-slate-200/90 border-l-4 ${cfg.borda} flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 shadow-xs hover:-translate-y-0.5 hover:shadow-md transition-all duration-200 print:border-slate-300 print:p-3 print:hover:translate-y-0`}
+              >
+                <div className="flex items-start space-x-3.5">
+                  {/* Foto com Zoom */}
+                  {item.foto_url ? (
+                    <button
+                      onClick={() => setFotoModal(item.foto_url)}
+                      className="group relative w-16 h-16 rounded-xl overflow-hidden border border-slate-200 shrink-0 cursor-zoom-in"
+                      title="Clique para ampliar"
+                    >
+                      <img
+                        src={item.foto_url}
+                        alt="Comprovativo"
+                        className="w-full h-full object-cover group-hover:scale-105 transition-transform"
+                      />
+                      <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 flex items-center justify-center transition-colors">
+                        <span className="opacity-0 group-hover:opacity-100 text-white text-xs">🔍</span>
+                      </div>
+                    </button>
+                  ) : (
+                    <div className="w-16 h-16 rounded-xl bg-slate-50 border border-slate-200 flex items-center justify-center text-2xl shrink-0">
+                      {cfg.icone}
+                    </div>
+                  )}
+
+                  <div>
+                    <div className="flex flex-wrap items-center gap-2">
+                      <span className={`inline-flex items-center gap-1 text-[11px] font-bold px-2.5 py-0.5 rounded-full border ${cfg.badge}`}>
+                        <span>{cfg.icone}</span>
+                        <span>{cfg.nome}</span>
+                      </span>
+
+                      <span className={`inline-flex items-center gap-1.5 text-[10px] font-bold px-2 py-0.5 rounded-full border ${stCfg.cor}`}>
+                        <span className={`w-1.5 h-1.5 rounded-full ${stCfg.dot}`}></span>
+                        <span>{stCfg.nome}</span>
+                      </span>
+
+                      <span className="text-[11px] text-slate-400">
+                        {item.created_at ? new Date(item.created_at).toLocaleDateString('pt-BR') : ''}
+                      </span>
+                    </div>
+
+                    <p className="text-xs text-slate-700 font-medium mt-1.5 max-w-lg leading-relaxed">
+                      {item.descricao || 'Sem descrição registada'}
+                    </p>
+
+                    <div className="flex items-center space-x-3 mt-2 text-[11px]">
+                      {item.latitude != null && item.longitude != null ? (
+                        <a
+                          href={`https://www.google.com/maps/search/?api=1&query=${item.latitude},${item.longitude}`}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="text-blue-600 hover:text-blue-800 hover:underline flex items-center space-x-1 font-mono text-[10.5px]"
                         >
-                          {ROTULOS_STATUS[item.status] || 'Pendente'}
-                        </span>
-                      </td>
-                      <td className="px-4 py-3 text-right print:hidden">
-                        <div className="flex items-center justify-end space-x-1.5">
-                          <select
-                            value={item.status || 'pendente'}
-                            onChange={(e) => atualizarStatus(item.id, e.target.value)}
-                            className="text-[11px] bg-white border border-slate-300 rounded-lg px-2 py-1 text-slate-700"
-                          >
-                            <option value="pendente">Pendente</option>
-                            <option value="em_analise">Em Análise</option>
-                            <option value="resolvido">Resolvido</option>
-                          </select>
-                          <button
-                            onClick={() => eliminarRegisto(item.id)}
-                            className="p-1 text-slate-400 hover:text-rose-600"
-                            title="Eliminar"
-                          >
-                            🗑️
-                          </button>
-                        </div>
-                      </td>
-                    </tr>
-                  )
-                })}
-              </tbody>
-            </table>
-          </div>
-        )}
-      </div>
+                          <span>📍</span>
+                          <span>{Number(item.latitude).toFixed(5)}, {Number(item.longitude).toFixed(5)}</span>
+                        </a>
+                      ) : (
+                        <span className="text-slate-400">Sem coordenadas GPS</span>
+                      )}
+                    </div>
+                  </div>
+                </div>
 
-      {/* Nota de Impressão */}
+                {/* Ações */}
+                <div className="flex items-center space-x-2 w-full sm:w-auto justify-end pt-2 sm:pt-0 border-t sm:border-t-0 border-slate-100 print:hidden">
+                  <select
+                    value={item.status || 'pendente'}
+                    onChange={(e) => atualizarStatus(item.id, e.target.value)}
+                    className="text-xs bg-slate-50 border border-slate-200 rounded-xl px-2.5 py-1.5 text-slate-700 font-medium hover:bg-slate-100 transition-colors"
+                  >
+                    <option value="pendente">Pendente</option>
+                    <option value="em_analise">Em Análise</option>
+                    <option value="resolvido">Resolvido</option>
+                  </select>
+
+                  <button
+                    onClick={() => eliminarRegisto(item.id)}
+                    className="p-1.5 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-xl transition-all"
+                    title="Eliminar ocorrência"
+                  >
+                    🗑️
+                  </button>
+                </div>
+              </div>
+            )
+          })}
+        </div>
+      )}
+
+      {/* Nota Técnica de Impressão */}
       <div className="hidden print:block pt-4 border-t border-slate-300 text-[10px] text-slate-600 space-y-1">
         <p>
           <strong>Finalidade Técnica:</strong> Relatório territorial para estudos urbanos e diagnóstico comunitário independente.
