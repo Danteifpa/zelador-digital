@@ -1,448 +1,376 @@
-import { useState, useRef, useEffect } from 'react';
-import { supabase } from '../lib/supabase';
-import { Camera, Image as ImageIcon, MapPin, CheckCircle, AlertTriangle, X, Loader2, Clock } from 'lucide-react';
+﻿import React, { useState, useEffect } from 'react'
+import { supabase } from '../lib/supabase'
 
-const SUBCATEGORIAS = {
-  'Lixo / Entulho': ['Lixo doméstico acumulado', 'Entulho de construção', 'Poda de árvores', 'Foco crónico'],
-  'Iluminação Pública': ['Lâmpada apagada', 'Lâmpada acesa de dia', 'Poste sem fiação', 'Poste danificado'],
-  'Buraco na via / Pavimentação': ['Cratera na via', 'Afundamento de pista', 'Bueiro sem tampa / entupido', 'Trecho sem asfalto'],
-  'Outros': ['Esgoto a céu aberto', 'Mato alto', 'Invasão irregular']
-};
+const CATEGORIAS = [
+  {
+    id: 'lixo',
+    nome: 'Descarte Irregular de Lixo / Entulho',
+    curto: 'Lixo / Entulho',
+    falar: 'Lixo e entulho acumulado',
+    icone: '🗑️',
+    cor: 'border-amber-500 bg-amber-50 text-amber-900',
+    corAtiva: 'bg-amber-500 text-white border-amber-600 shadow-md shadow-amber-200'
+  },
+  {
+    id: 'iluminacao',
+    nome: 'Falha na Iluminação Pública (Poste Apagado)',
+    curto: 'Poste Apagado',
+    falar: 'Poste apagado ou lâmpada partida',
+    icone: '💡',
+    cor: 'border-indigo-500 bg-indigo-50 text-indigo-900',
+    corAtiva: 'bg-indigo-600 text-white border-indigo-700 shadow-md shadow-indigo-200'
+  },
+  {
+    id: 'buraco',
+    nome: 'Buraco ou Dano na Via Pública',
+    curto: 'Buraco na Rua',
+    falar: 'Buraco ou dano na rua',
+    icone: '🕳️',
+    cor: 'border-orange-500 bg-orange-50 text-orange-900',
+    corAtiva: 'bg-orange-600 text-white border-orange-700 shadow-md shadow-orange-200'
+  },
+  {
+    id: 'esgoto',
+    nome: 'Esgoto / Fuga de Água',
+    curto: 'Esgoto / Água',
+    falar: 'Fuga de água ou esgoto a céu aberto',
+    icone: '💧',
+    cor: 'border-sky-500 bg-sky-50 text-sky-900',
+    corAtiva: 'bg-sky-600 text-white border-sky-700 shadow-md shadow-sky-200'
+  }
+]
 
-const TEMPO_ESPERA_SEGUNDOS = 60; // Janela de proteção anti-spam por dispositivo
+export default function FormularioOcorrencia({ onSucesso }) {
+  const [modoAcessivel, setModoAcessivel] = useState(() => {
+    return localStorage.getItem('zelador_modo_acessivel') === 'true'
+  })
 
-export default function FormularioOcorrencia({ aoSalvarSucesso }) {
-  const [categoria, setCategoria] = useState('Lixo / Entulho');
-  const [descricao, setDescricao] = useState('');
-  const [coordenadas, setCoordenadas] = useState(null);
-  const [precisaoGps, setPrecisaoGps] = useState(null);
-  const [obtendoGps, setObtendoGps] = useState(false);
+  const [categoria, setCategoria] = useState('lixo')
+  const [descricao, setDescricao] = useState('')
+  const [foto, setFoto] = useState(null)
+  const [fotoPreview, setFotoPreview] = useState(null)
+  const [localizacao, setLocalizacao] = useState(null)
+  const [aCarregarLocalizacao, setACarregarLocalizacao] = useState(false)
+  const [aEnviar, setAEnviar] = useState(false)
+  const [mensagemSucesso, setMensagemSucesso] = useState(false)
+  const [aGravarVoz, setAGravarVoz] = useState(false)
 
-  const [fotoBlob, setFotoBlob] = useState(null);
-  const [fotoPreview, setFotoPreview] = useState(null);
-  const [enviando, setEnviando] = useState(false);
-  const [erroMsg, setErroMsg] = useState('');
-  const [sucessoMsg, setSucessoMsg] = useState(false);
+  const alternarModoAcessibilidade = () => {
+    const novoValor = !modoAcessivel
+    setModoAcessivel(novoValor)
+    localStorage.setItem('zelador_modo_acessivel', String(novoValor))
+    if (novoValor) {
+      narrarTexto('Modo simplificado e acessível ativado')
+    }
+  }
 
-  // Estado para controlo de Rate Limit local
-  const [segundosRestantes, setSegundosRestantes] = useState(0);
+  const narrarTexto = (texto) => {
+    if ('speechSynthesis' in window) {
+      window.speechSynthesis.cancel()
+      const sintese = new SpeechSynthesisUtterance(texto)
+      sintese.lang = 'pt-BR'
+      sintese.rate = 1.0
+      window.speechSynthesis.speak(sintese)
+    }
+  }
 
-  const inputCameraRef = useRef(null);
-  const inputGaleriaRef = useRef(null);
-
-  // Verifica se há bloqueio ativo ao carregar ou a cada segundo
   useEffect(() => {
-    const verificarBloqueio = () => {
-      const ultimoEnvio = localStorage.getItem('zelador_ultimo_envio');
-      if (!ultimoEnvio) {
-        setSegundosRestantes(0);
-        return;
-      }
-
-      const decorrido = Math.floor((Date.now() - parseInt(ultimoEnvio, 10)) / 1000);
-      const restante = TEMPO_ESPERA_SEGUNDOS - decorrido;
-
-      if (restante > 0) {
-        setSegundosRestantes(restante);
-      } else {
-        setSegundosRestantes(0);
-      }
-    };
-
-    verificarBloqueio();
-    const intervalo = setInterval(verificarBloqueio, 1000);
-    return () => clearInterval(intervalo);
-  }, []);
-
-  const comprimirImagem = (file) => {
-    return new Promise((resolve, reject) => {
-      const reader = new FileReader();
-      reader.readAsDataURL(file);
-      reader.onload = (event) => {
-        const img = new Image();
-        img.src = event.target.result;
-        img.onload = () => {
-          const maxDim = 1280;
-          let largura = img.width;
-          let altura = img.height;
-
-          if (largura > altura && largura > maxDim) {
-            altura = Math.round((altura * maxDim) / largura);
-            largura = maxDim;
-          } else if (altura > maxDim) {
-            largura = Math.round((largura * maxDim) / altura);
-            altura = maxDim;
-          }
-
-          const canvas = document.createElement('canvas');
-          canvas.width = largura;
-          canvas.height = altura;
-          const ctx = canvas.getContext('2d');
-          ctx.drawImage(img, 0, 0, largura, altura);
-
-          canvas.toBlob(
-            (blob) => {
-              if (blob) resolve(blob);
-              else reject(new Error('Falha na compressão da imagem'));
-            },
-            'image/jpeg',
-            0.75
-          );
-        };
-        img.onerror = (err) => reject(err);
-      };
-      reader.onerror = (err) => reject(err);
-    });
-  };
-
-  const processarSelecaoImagem = async (e) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-
-    if (!file.type.startsWith('image/')) {
-      setErroMsg('Por favor, selecione apenas ficheiros de imagem (JPG, PNG ou WebP).');
-      return;
-    }
-
-    try {
-      setErroMsg('');
-      const blobComprimido = await comprimirImagem(file);
-      setFotoBlob(blobComprimido);
-      setFotoPreview(URL.createObjectURL(blobComprimido));
-    } catch (err) {
-      console.error(err);
-      setErroMsg('Erro ao preparar e comprimir a fotografia.');
-    }
-  };
-
-  const removerFoto = () => {
-    setFotoBlob(null);
-    if (fotoPreview) URL.revokeObjectURL(fotoPreview);
-    setFotoPreview(null);
-    if (inputCameraRef.current) inputCameraRef.current.value = '';
-    if (inputGaleriaRef.current) inputGaleriaRef.current.value = '';
-  };
+    capturarLocalizacao()
+  }, [])
 
   const capturarLocalizacao = () => {
-    if (!navigator.geolocation) {
-      setErroMsg('O seu navegador não suporta geolocalização.');
-      return;
+    if (navigator.geolocation) {
+      setACarregarLocalizacao(true)
+      navigator.geolocation.getCurrentPosition(
+        (pos) => {
+          setLocalizacao({
+            latitude: pos.coords.latitude,
+            longitude: pos.coords.longitude
+          })
+          setACarregarLocalizacao(false)
+        },
+        () => {
+          setACarregarLocalizacao(false)
+        },
+        { enableHighAccuracy: true, timeout: 10000 }
+      )
+    }
+  }
+
+  const iniciarDitadoPorVoz = () => {
+    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition
+    if (!SpeechRecognition) {
+      alert('O seu navegador não possui suporte para ditado por voz. Pode enviar a fotografia e o local diretamente!')
+      return
     }
 
-    setObtendoGps(true);
-    setErroMsg('');
+    const recognition = new SpeechRecognition()
+    recognition.lang = 'pt-BR'
+    recognition.interimResults = false
 
-    navigator.geolocation.getCurrentPosition(
-      (posicao) => {
-        setCoordenadas({
-          lat: posicao.coords.latitude,
-          lng: posicao.coords.longitude
-        });
-        setPrecisaoGps(Math.round(posicao.coords.accuracy));
-        setObtendoGps(false);
-      },
-      (erro) => {
-        setObtendoGps(false);
-        if (erro.code === erro.PERMISSION_DENIED) {
-          setErroMsg('Permissão de GPS negada. Autorize a localização nas definições do navegador.');
-        } else {
-          setErroMsg('Não foi possível obter a sua posição. Tente em local aberto.');
-        }
-      },
-      { enableHighAccuracy: true, timeout: 12000, maximumAge: 0 }
-    );
-  };
-
-  const adicionarTagDescricao = (tag) => {
-    if (descricao.includes(tag)) return;
-    const novaDesc = descricao.trim() ? `${descricao.trim()} - ${tag}` : tag;
-    if (novaDesc.length <= 300) {
-      setDescricao(novaDesc);
-    }
-  };
-
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    setErroMsg('');
-
-    // Validação de intervalo temporal
-    if (segundosRestantes > 0) {
-      setErroMsg(`Aguarde ${segundosRestantes}s para enviar uma nova denúncia deste aparelho.`);
-      return;
+    recognition.onstart = () => {
+      setAGravarVoz(true)
+      narrarTexto('Fale agora o ponto de referência')
     }
 
-    if (!coordenadas) {
-      setErroMsg('É obrigatório capturar a localização GPS para validar o registo.');
-      return;
+    recognition.onresult = (evento) => {
+      const textoDitado = evento.results[0][0].transcript
+      setDescricao((prev) => (prev ? `${prev} ${textoDitado}` : textoDitado))
+      setAGravarVoz(false)
     }
 
-    if (descricao.trim().length < 10) {
-      setErroMsg('Forneça uma descrição ou ponto de referência com pelo menos 10 caracteres.');
-      return;
-    }
+    recognition.onerror = () => setAGravarVoz(false)
+    recognition.onend = () => setAGravarVoz(false)
+    recognition.start()
+  }
 
-    setEnviando(true);
+  const manipularFoto = (e) => {
+    const file = e.target.files[0]
+    if (file) {
+      setFoto(file)
+      setFotoPreview(URL.createObjectURL(file))
+      if (modoAcessivel) narrarTexto('Fotografia adicionada com sucesso')
+    }
+  }
+
+  const submeterDenuncia = async (e) => {
+    e.preventDefault()
 
     try {
-      let fotoUrl = null;
+      setAEnviar(true)
+      let fotoUrl = null
 
-      if (fotoBlob) {
-        const nomeArquivo = `evidencia_${Date.now()}_${Math.random().toString(36).substring(2, 8)}.jpg`;
-        const { error: uploadError } = await supabase.storage
-          .from('evidencias')
-          .upload(nomeArquivo, fotoBlob, { contentType: 'image/jpeg' });
+      if (foto) {
+        const nomeArquivo = `denuncia_${Date.now()}_${foto.name}`
+        const { error: erroUpload } = await supabase.storage
+          .from('ocorrencias')
+          .upload(nomeArquivo, foto)
 
-        if (uploadError) throw uploadError;
-
-        const { data: publicData } = supabase.storage
-          .from('evidencias')
-          .getPublicUrl(nomeArquivo);
-
-        fotoUrl = publicData.publicUrl;
+        if (!erroUpload) {
+          const { data: dadosPublicos } = supabase.storage
+            .from('ocorrencias')
+            .getPublicUrl(nomeArquivo)
+          fotoUrl = dadosPublicos.publicUrl
+        }
       }
 
-      const pontoWKT = `POINT(${coordenadas.lng} ${coordenadas.lat})`;
+      const payload = {
+        categoria,
+        descricao: descricao.trim() || 'Registo sem detalhe de texto',
+        foto_url: fotoUrl,
+        latitude: localizacao ? localizacao.latitude : null,
+        longitude: localizacao ? localizacao.longitude : null,
+        status: 'pendente',
+        criado_em: new Date().toISOString()
+      }
 
-      const { error: insertError } = await supabase
-        .from('ocorrencias')
-        .insert([
-          {
-            categoria,
-            descricao: descricao.trim(),
-            foto_url: fotoUrl,
-            localizacao: pontoWKT,
-            status: 'pendente',
-            total_apoios: 0
-          }
-        ]);
+      const { error: erroInsert } = await supabase.from('ocorrencias').insert([payload])
+      if (erroInsert) throw erroInsert
 
-      if (insertError) throw insertError;
+      if (modoAcessivel) {
+        narrarTexto('Registo enviado com sucesso! Muito obrigado pela ajuda!')
+      }
 
-      // Grava o timestamp no localStorage para acionar a contagem regressiva
-      localStorage.setItem('zelador_ultimo_envio', Date.now().toString());
-      setSegundosRestantes(TEMPO_ESPERA_SEGUNDOS);
-
-      setSucessoMsg(true);
-      removerFoto();
-      setDescricao('');
-      setCoordenadas(null);
-      setPrecisaoGps(null);
-
-      if (aoSalvarSucesso) aoSalvarSucesso();
-
-      setTimeout(() => setSucessoMsg(false), 5000);
+      setMensagemSucesso(true)
+      setTimeout(() => {
+        setMensagemSucesso(false)
+        if (onSucesso) onSucesso()
+      }, 2000)
     } catch (err) {
-      console.error(err);
-      setErroMsg('Erro ao guardar ocorrência. Verifique a sua ligação à internet.');
+      console.error(err)
+      alert('Erro ao enviar o registo. Verifique a ligação à internet.')
     } finally {
-      setEnviando(false);
+      setAEnviar(false)
     }
-  };
+  }
 
   return (
-    <div className="w-full max-w-lg mx-auto bg-white rounded-2xl border border-gray-200 shadow-sm p-5 space-y-5">
-      <div>
-        <h2 className="text-lg font-bold text-gray-900">Registar Ocorrência</h2>
-        <p className="text-xs text-gray-500">
-          Mapeie problemas na comunidade para gerar dados técnicos aos órgãos competentes.
-        </p>
+    <div className="max-w-xl mx-auto bg-white rounded-3xl p-5 sm:p-7 shadow-xs border border-slate-200">
+      <div className="flex items-center justify-between pb-4 mb-5 border-b border-slate-100">
+        <div>
+          <h2 className="text-lg font-bold text-slate-800">Registar Ocorrência</h2>
+          <p className="text-xs text-slate-500">Mapeamento comunitário para melhorias nas ruas</p>
+        </div>
+
+        <button
+          type="button"
+          onClick={alternarModoAcessibilidade}
+          className={`flex items-center space-x-1.5 px-3 py-1.5 rounded-full text-xs font-semibold transition-all border ${
+            modoAcessivel
+              ? 'bg-blue-600 text-white border-blue-700 shadow-xs'
+              : 'bg-slate-100 text-slate-700 border-slate-200 hover:bg-slate-200'
+          }`}
+          title="Alternar modo de acessibilidade com botões maiores e voz"
+        >
+          <span>{modoAcessivel ? '🔊 Modo Fácil' : '👓 Modo Padrão'}</span>
+        </button>
       </div>
 
-      {erroMsg && (
-        <div className="flex items-center gap-2 p-3 bg-red-50 border border-red-200 text-red-700 text-xs rounded-xl">
-          <AlertTriangle size={16} className="flex-shrink-0" />
-          <span>{erroMsg}</span>
+      {mensagemSucesso ? (
+        <div className="py-12 text-center space-y-4 animate-in zoom-in-95 duration-200">
+          <div className="w-16 h-16 bg-emerald-100 text-emerald-600 rounded-full flex items-center justify-center text-3xl mx-auto">
+            ✓
+          </div>
+          <h3 className="text-xl font-bold text-slate-800">Ocorrência Registada!</h3>
+          <p className="text-slate-500 text-sm">Obrigado por ajudar a cuidar do nosso bairro.</p>
         </div>
-      )}
-
-      {sucessoMsg && (
-        <div className="flex items-center gap-2 p-3 bg-green-50 border border-green-200 text-green-700 text-xs rounded-xl">
-          <CheckCircle size={16} className="flex-shrink-0" />
-          <span>Denúncia registada com sucesso no sistema comunitário!</span>
-        </div>
-      )}
-
-      <form onSubmit={handleSubmit} className="space-y-4">
-        {/* Gestão de Fotografia */}
-        <div>
-          <span className="block text-xs font-semibold text-gray-700 mb-1.5">
-            Evidência Fotográfica (Opcional)
-          </span>
-
-          {fotoPreview ? (
-            <div className="relative rounded-xl overflow-hidden border border-gray-200 w-full h-44 bg-gray-50 flex items-center justify-center">
-              <img src={fotoPreview} alt="Evidência" className="w-full h-full object-cover" />
-              <button
-                type="button"
-                onClick={removerFoto}
-                className="absolute top-2 right-2 p-1.5 bg-black/60 hover:bg-black/80 text-white rounded-full transition"
-                title="Remover fotografia"
-              >
-                <X size={14} />
-              </button>
+      ) : (
+        <form onSubmit={submeterDenuncia} className="space-y-5">
+          {modoAcessivel ? (
+            <div>
+              <div className="flex items-center justify-between mb-2">
+                <label className="text-sm font-bold text-slate-800">
+                  1. Toque no tipo de problema:
+                </label>
+                <span className="text-[11px] text-blue-600 font-medium">Toque para ouvir 🔊</span>
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                {CATEGORIAS.map((cat) => {
+                  const ativa = categoria === cat.id
+                  return (
+                    <button
+                      key={cat.id}
+                      type="button"
+                      onClick={() => {
+                        setCategoria(cat.id)
+                        narrarTexto(cat.falar)
+                      }}
+                      className={`p-4 rounded-2xl border-2 flex flex-col items-center justify-center text-center transition-all active:scale-95 cursor-pointer ${
+                        ativa ? cat.corAtiva : `${cat.cor} border-dashed`
+                      }`}
+                    >
+                      <span className="text-3xl mb-1">{cat.icone}</span>
+                      <span className="text-xs font-bold">{cat.curto}</span>
+                    </button>
+                  )
+                })}
+              </div>
             </div>
           ) : (
-            <div className="grid grid-cols-2 gap-3">
-              <button
-                type="button"
-                onClick={() => inputCameraRef.current?.click()}
-                className="flex flex-col items-center justify-center p-4 border border-dashed border-gray-300 rounded-xl hover:bg-gray-50 text-gray-600 transition"
+            <div>
+              <label className="block text-xs font-bold text-slate-700 mb-1">
+                Categoria do Problema
+              </label>
+              <select
+                value={categoria}
+                onChange={(e) => setCategoria(e.target.value)}
+                className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 text-sm bg-slate-50/50 focus:bg-white focus:outline-hidden focus:ring-2 focus:ring-blue-500"
               >
-                <Camera size={22} className="text-blue-600 mb-1" />
-                <span className="text-xs font-medium">Tirar Fotografia</span>
-              </button>
-
-              <button
-                type="button"
-                onClick={() => inputGaleriaRef.current?.click()}
-                className="flex flex-col items-center justify-center p-4 border border-dashed border-gray-300 rounded-xl hover:bg-gray-50 text-gray-600 transition"
-              >
-                <ImageIcon size={22} className="text-gray-500 mb-1" />
-                <span className="text-xs font-medium">Da Galeria</span>
-              </button>
+                {CATEGORIAS.map((cat) => (
+                  <option key={cat.id} value={cat.id}>
+                    {cat.icone} {cat.nome}
+                  </option>
+                ))}
+              </select>
             </div>
           )}
 
-          <input
-            type="file"
-            accept="image/*"
-            capture="environment"
-            ref={inputCameraRef}
-            onChange={processarSelecaoImagem}
-            className="hidden"
-          />
-          <input
-            type="file"
-            accept="image/*"
-            ref={inputGaleriaRef}
-            onChange={processarSelecaoImagem}
-            className="hidden"
-          />
-        </div>
+          <div>
+            <label className="block text-xs font-bold text-slate-700 mb-1.5">
+              {modoAcessivel ? '2. Tire uma fotografia do local:' : 'Fotografia Comprovativa'}
+            </label>
 
-        {/* Localização GPS Obrigatória */}
-        <div>
-          <span className="block text-xs font-semibold text-gray-700 mb-1.5">
-            Localização da Demanda *
-          </span>
+            {fotoPreview ? (
+              <div className="relative rounded-2xl overflow-hidden border border-slate-200">
+                <img src={fotoPreview} alt="Fotografia selecionada" className="w-full h-44 object-cover" />
+                <button
+                  type="button"
+                  onClick={() => {
+                    setFoto(null)
+                    setFotoPreview(null)
+                  }}
+                  className="absolute top-2 right-2 bg-rose-600 text-white rounded-full px-3 py-1 text-xs font-semibold shadow-md"
+                >
+                  ✕ Trocar Fotografia
+                </button>
+              </div>
+            ) : (
+              <label className="flex flex-col items-center justify-center w-full h-28 border-2 border-dashed border-slate-300 rounded-2xl cursor-pointer bg-slate-50 hover:bg-blue-50/50 hover:border-blue-400 transition-colors">
+                <span className="text-2xl mb-1">📸</span>
+                <span className="text-xs font-semibold text-slate-700">Tirar fotografia ou escolher</span>
+                <input
+                  type="file"
+                  accept="image/*"
+                  capture="environment"
+                  onChange={manipularFoto}
+                  className="hidden"
+                />
+              </label>
+            )}
+          </div>
+
+          <div className="bg-slate-50 p-3 rounded-2xl border border-slate-200 flex items-center justify-between">
+            <div className="flex items-center space-x-2.5">
+              <span className="text-xl">📍</span>
+              <div>
+                <p className="text-xs font-bold text-slate-800">
+                  {localizacao
+                    ? 'Localização capturada!'
+                    : aCarregarLocalizacao
+                    ? 'A procurar sinal GPS...'
+                    : 'Localização pendente'}
+                </p>
+                <p className="text-[11px] text-slate-500">
+                  {localizacao
+                    ? `${localizacao.latitude.toFixed(4)}, ${localizacao.longitude.toFixed(4)}`
+                    : 'Permita o acesso ao GPS do telemóvel'}
+                </p>
+              </div>
+            </div>
+
+            <button
+              type="button"
+              onClick={capturarLocalizacao}
+              className="px-2.5 py-1 text-xs font-semibold bg-white border border-slate-300 rounded-lg hover:bg-slate-100 text-slate-700"
+            >
+              🔄 Atualizar
+            </button>
+          </div>
+
+          <div>
+            <div className="flex items-center justify-between mb-1">
+              <label className="text-xs font-bold text-slate-700">
+                Ponto de Referência {modoAcessivel ? '(Opcional)' : ''}
+              </label>
+
+              <button
+                type="button"
+                onClick={iniciarDitadoPorVoz}
+                className={`text-xs px-2.5 py-1 rounded-full font-bold flex items-center space-x-1 transition-all ${
+                  aGravarVoz
+                    ? 'bg-rose-500 text-white animate-pulse'
+                    : 'bg-blue-50 text-blue-700 hover:bg-blue-100'
+                }`}
+                title="Ditar texto falando ao microfone"
+              >
+                <span>🎙️</span>
+                <span>{aGravarVoz ? 'A ouvir...' : 'Falar por voz'}</span>
+              </button>
+            </div>
+
+            <input
+              type="text"
+              value={descricao}
+              onChange={(e) => setDescricao(e.target.value)}
+              placeholder="Ex.: Perto do mercadinho, poste na curva..."
+              className="w-full px-3.5 py-2.5 text-sm rounded-xl border border-slate-300 bg-slate-50/50 focus:bg-white focus:outline-hidden focus:ring-2 focus:ring-blue-500"
+            />
+          </div>
+
           <button
-            type="button"
-            onClick={capturarLocalizacao}
-            disabled={obtendoGps}
-            className={`w-full py-2.5 px-3 rounded-xl border text-xs font-semibold flex items-center justify-center gap-2 transition ${
-              coordenadas
-                ? 'bg-blue-50 border-blue-200 text-blue-700'
-                : 'bg-gray-50 border-gray-300 text-gray-700 hover:bg-gray-100'
+            type="submit"
+            disabled={aEnviar}
+            className={`w-full py-3.5 rounded-2xl text-sm font-bold text-white transition-all shadow-md active:scale-98 cursor-pointer flex items-center justify-center space-x-2 ${
+              aEnviar
+                ? 'bg-slate-400 cursor-not-allowed'
+                : 'bg-blue-600 hover:bg-blue-700 shadow-blue-500/20'
             }`}
           >
-            {obtendoGps ? (
-              <>
-                <Loader2 size={15} className="animate-spin text-blue-600" />
-                <span>A calibrar coordenadas GPS...</span>
-              </>
-            ) : coordenadas ? (
-              <>
-                <CheckCircle size={15} className="text-blue-600" />
-                <span>
-                  Coordenadas Capturadas (Precisão: ~{precisaoGps}m)
-                </span>
-              </>
-            ) : (
-              <>
-                <MapPin size={15} className="text-gray-500" />
-                <span>Capturar Localização Atual</span>
-              </>
-            )}
+            <span>{aEnviar ? 'A enviar...' : 'Enviar Registo'}</span>
+            <span>🚀</span>
           </button>
-          {precisaoGps && precisaoGps > 30 && (
-            <span className="block text-[11px] text-amber-600 mt-1">
-              Aviso: Precisão aproximada ({precisaoGps}m). Em locais fechados o GPS pode ter desvio.
-            </span>
-          )}
-        </div>
-
-        {/* Categoria do Problema */}
-        <div>
-          <span className="block text-xs font-semibold text-gray-700 mb-1.5">
-            Tipo de Problema *
-          </span>
-          <select
-            value={categoria}
-            onChange={(e) => setCategoria(e.target.value)}
-            className="w-full text-xs border border-gray-300 rounded-xl px-3 py-2 bg-gray-50 text-gray-800 outline-none focus:ring-2 focus:ring-blue-500"
-          >
-            <option value="Lixo / Entulho">Lixo / Entulho</option>
-            <option value="Iluminação Pública">Iluminação Pública</option>
-            <option value="Buraco na via / Pavimentação">Buraco na via / Pavimentação</option>
-            <option value="Outros">Outros</option>
-          </select>
-        </div>
-
-        {/* Subcategorias Rápidas */}
-        <div>
-          <span className="block text-[11px] font-medium text-gray-500 mb-1.5">
-            Classificação rápida (toque para adicionar à descrição):
-          </span>
-          <div className="flex flex-wrap gap-1.5">
-            {SUBCATEGORIAS[categoria]?.map((tag) => (
-              <button
-                key={tag}
-                type="button"
-                onClick={() => adicionarTagDescricao(tag)}
-                className="text-[11px] bg-gray-100 hover:bg-blue-50 hover:text-blue-700 text-gray-600 px-2.5 py-1 rounded-lg border border-gray-200 transition"
-              >
-                + {tag}
-              </button>
-            ))}
-          </div>
-        </div>
-
-        {/* Descrição e Ponto de Referência */}
-        <div>
-          <div className="flex justify-between items-center mb-1.5">
-            <span className="text-xs font-semibold text-gray-700">
-              Ponto de Referência / Detalhes *
-            </span>
-            <span className={`text-[11px] ${descricao.length > 280 ? 'text-red-500' : 'text-gray-400'}`}>
-              {descricao.length}/300
-            </span>
-          </div>
-          <textarea
-            value={descricao}
-            onChange={(e) => setDescricao(e.target.value.slice(0, 300))}
-            placeholder="Ex.: Em frente à mercearia, próximo ao poste de betão..."
-            rows={3}
-            className="w-full text-xs border border-gray-300 rounded-xl p-3 bg-gray-50 text-gray-800 outline-none focus:ring-2 focus:ring-blue-500 resize-none"
-          />
-        </div>
-
-        {/* Botão de Envio com Bloqueio de Rate Limit e Loading */}
-        <button
-          type="submit"
-          disabled={enviando || segundosRestantes > 0}
-          className={`w-full py-3 text-xs font-bold rounded-xl transition shadow-sm flex items-center justify-center gap-2 ${
-            segundosRestantes > 0
-              ? 'bg-amber-100 text-amber-800 border border-amber-300 cursor-not-allowed'
-              : enviando
-              ? 'bg-blue-300 text-white cursor-wait'
-              : 'bg-blue-600 hover:bg-blue-700 text-white'
-          }`}
-        >
-          {enviando ? (
-            <>
-              <Loader2 size={16} className="animate-spin" />
-              <span>A comprimir e registar ocorrência...</span>
-            </>
-          ) : segundosRestantes > 0 ? (
-            <>
-              <Clock size={16} />
-              <span>Aguarde {segundosRestantes}s para nova denúncia</span>
-            </>
-          ) : (
-            <span>Enviar Denúncia</span>
-          )}
-        </button>
-      </form>
+        </form>
+      )}
     </div>
-  );
+  )
 }
