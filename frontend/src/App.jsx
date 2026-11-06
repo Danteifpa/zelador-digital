@@ -46,6 +46,10 @@ export default function App() {
   const [gravandoVoz, setGravandoVoz] = useState(false)
   const [enviando, setEnviando] = useState(false)
 
+  // Estados de feedback visual (sem alerts nativos)
+  const [sucessoEnvio, setSucessoEnvio] = useState(null)
+  const [mensagemToast, setMensagemToast] = useState(null)
+
   // Filtros
   const [filtroCategoria, setFiltroCategoria] = useState('todas')
   const [filtroStatus, setFiltroStatus] = useState('todos')
@@ -67,6 +71,13 @@ export default function App() {
     obterLocalizacaoAtual()
     carregarRegistos()
   }, [])
+
+  const mostrarAlertaToast = (texto) => {
+    setMensagemToast(texto)
+    setTimeout(() => {
+      setMensagemToast(null)
+    }, 4000)
+  }
 
   const concluirOnboarding = () => {
     localStorage.setItem('zelador_onboarding_concluido', 'true')
@@ -96,7 +107,7 @@ export default function App() {
   const alternarReconhecimentoVoz = () => {
     const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition
     if (!SpeechRecognition) {
-      alert('O seu navegador não suporta reconhecimento de voz.')
+      mostrarAlertaToast('Reconhecimento de voz não suportado neste navegador.')
       return
     }
 
@@ -150,7 +161,7 @@ export default function App() {
 
   const obterLocalizacaoAtual = () => {
     if (!navigator.geolocation) {
-      alert('Geolocalização não suportada no navegador.')
+      mostrarAlertaToast('Geolocalização não suportada no seu dispositivo.')
       return
     }
 
@@ -197,8 +208,8 @@ export default function App() {
     e.preventDefault()
 
     if (!localizacao) {
-      alert('Capture a localização antes de enviar o registo.')
-      if (modo === 'facil') falarTexto('Capture a localização primeiro.')
+      mostrarAlertaToast('Por favor, capture a localização GPS antes de enviar.')
+      if (modo === 'facil') falarTexto('Atenção: capture a localização primeiro.')
       return
     }
 
@@ -222,30 +233,40 @@ export default function App() {
 
       const pontoWKT = `POINT(${localizacao.longitude} ${localizacao.latitude})`
 
-      const { error: insertError } = await supabase.from('ocorrencias').insert([
-        {
-          categoria: categoria,
-          descricao: pontoReferencia.trim() || 'Ocorrência registada pela comunidade',
-          foto_url: urlFotoPublica,
-          localizacao: pontoWKT,
-          status: 'pendente'
-        }
-      ])
+      const { data: novoRegisto, error: insertError } = await supabase
+        .from('ocorrencias')
+        .insert([
+          {
+            categoria: categoria,
+            descricao: pontoReferencia.trim() || 'Ocorrência registada pela comunidade',
+            foto_url: urlFotoPublica,
+            localizacao: pontoWKT,
+            status: 'pendente'
+          }
+        ])
+        .select()
+        .single()
 
       if (insertError) throw new Error(insertError.message)
 
       if (modo === 'facil') {
-        falarTexto('Registo enviado com sucesso! Muito obrigado.')
+        falarTexto('Registo territorial enviado com sucesso! Muito obrigado.')
       }
-      alert('Registo enviado com sucesso!')
+
+      // Ativa modal moderno de sucesso com os dados cadastrados
+      setSucessoEnvio({
+        categoria,
+        foto_url: urlFotoPublica,
+        descricao: pontoReferencia.trim() || 'Ocorrência registada pela comunidade'
+      })
+
       setPontoReferencia('')
       setFoto(null)
       setFotoPreview(null)
       carregarRegistos()
-      setAbaAtiva('registos')
     } catch (err) {
       console.error('Erro de envio:', err)
-      alert(`Falha no registo: ${err.message || 'Erro de comunicação'}`)
+      mostrarAlertaToast(`Falha no registo: ${err.message || 'Erro de comunicação'}`)
     } finally {
       setEnviando(false)
     }
@@ -275,6 +296,90 @@ export default function App() {
 
   return (
     <div className={`min-h-screen flex flex-col justify-between font-sans pb-20 ${modo === 'facil' ? 'bg-amber-50/30 text-slate-900' : 'bg-slate-100/70 text-slate-800'}`}>
+      {/* TOAST FLUTUANTE DE ALERTA */}
+      {mensagemToast && (
+        <div className="fixed top-4 left-4 right-4 z-50 max-w-md mx-auto animate-in slide-in-from-top-4 duration-200">
+          <div className="bg-slate-900/95 text-white p-3.5 rounded-2xl shadow-xl flex items-center justify-between border border-slate-700/80 backdrop-blur-md">
+            <div className="flex items-center space-x-2.5">
+              <span className="text-amber-400 text-lg">⚠️</span>
+              <p className="text-xs font-semibold leading-snug">{mensagemToast}</p>
+            </div>
+            <button
+              onClick={() => setMensagemToast(null)}
+              className="text-slate-400 hover:text-white text-xs font-bold px-2 py-1"
+            >
+              ✕
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* MODAL MODERNO DE SUCESSO NO ENVIO */}
+      {sucessoEnvio && (
+        <div className="fixed inset-0 z-50 bg-slate-950/75 backdrop-blur-sm flex items-center justify-center p-4 animate-in fade-in zoom-in-95 duration-200">
+          <div className="bg-white w-full max-w-sm rounded-3xl p-6 shadow-2xl text-center space-y-5 border border-slate-100">
+            {/* Ícone de Sucesso */}
+            <div className="w-16 h-16 mx-auto rounded-3xl bg-emerald-100 text-emerald-600 flex items-center justify-center text-3xl shadow-inner animate-bounce">
+              ✓
+            </div>
+
+            <div>
+              <h3 className="text-lg font-black text-slate-900">Registo Enviado!</h3>
+              <p className="text-xs text-slate-500 mt-1 leading-relaxed">
+                A sua ocorrência foi georreferenciada e adicionada à base territorial comunitária.
+              </p>
+            </div>
+
+            {/* Mini Cartão Resumo */}
+            <div className="bg-slate-50 rounded-2xl p-3 border border-slate-200 flex items-center space-x-3 text-left">
+              {sucessoEnvio.foto_url ? (
+                <img
+                  src={sucessoEnvio.foto_url}
+                  alt="Comprovativo"
+                  className="w-12 h-12 rounded-xl object-cover shrink-0 border border-slate-200"
+                />
+              ) : (
+                <div className="w-12 h-12 rounded-xl bg-blue-100 text-blue-600 flex items-center justify-center text-xl shrink-0">
+                  📍
+                </div>
+              )}
+              <div className="overflow-hidden">
+                <span className="text-xs font-black text-slate-800 capitalize block truncate">
+                  {sucessoEnvio.categoria}
+                </span>
+                <p className="text-[11px] text-slate-500 truncate mt-0.5">
+                  {sucessoEnvio.descricao}
+                </p>
+              </div>
+            </div>
+
+            {/* Ações */}
+            <div className="space-y-2 pt-1">
+              <button
+                type="button"
+                onClick={() => {
+                  setSucessoEnvio(null)
+                  setAbaAtiva('registos')
+                }}
+                className="w-full py-3.5 bg-blue-600 hover:bg-blue-700 text-white rounded-2xl font-black text-xs uppercase tracking-wider shadow-md transition-all active:scale-[0.99] cursor-pointer"
+              >
+                Acompanhar na Lista de Registos 📋
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setSucessoEnvio(null)
+                  setAbaAtiva('reportar')
+                }}
+                className="w-full py-3 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-2xl font-bold text-xs transition-all cursor-pointer"
+              >
+                Fazer Outro Registo ➕
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* MODAL DE ONBOARDING */}
       {mostrarOnboarding && (
         <div className="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-md flex items-center justify-center p-4 animate-in fade-in duration-300">
@@ -735,7 +840,6 @@ export default function App() {
               </button>
             </div>
 
-            {/* Campo de Busca Rápida */}
             <div className="relative">
               <input
                 type="text"
@@ -755,7 +859,6 @@ export default function App() {
               )}
             </div>
 
-            {/* Filtros: Status */}
             <div className="flex space-x-1.5 overflow-x-auto pb-1 text-xs">
               <button
                 onClick={() => setFiltroStatus('todos')}
@@ -789,7 +892,6 @@ export default function App() {
               </button>
             </div>
 
-            {/* Filtros: Categoria */}
             <div className="flex space-x-1.5 overflow-x-auto pb-1 text-xs">
               <button
                 onClick={() => setFiltroCategoria('todas')}
@@ -817,7 +919,6 @@ export default function App() {
               ))}
             </div>
 
-            {/* Lista filtrada */}
             {carregandoRegistos ? (
               <div className="py-16 text-center text-xs text-slate-400">A carregar ocorrências...</div>
             ) : registosFiltrados.length === 0 ? (
@@ -862,10 +963,9 @@ export default function App() {
           </div>
         )}
 
-        {/* 5. TELA DE PERFIL / IMPACTO CÍVICO */}
+        {/* 5. PERFIL */}
         {abaAtiva === 'perfil' && (
           <div className="bg-white rounded-3xl p-6 border border-slate-200 shadow-xs space-y-6">
-            {/* Cabeçalho do Perfil */}
             <div className="flex items-center space-x-4 border-b border-slate-100 pb-5">
               <div className="w-16 h-16 rounded-3xl bg-gradient-to-tr from-blue-600 to-emerald-500 flex items-center justify-center text-white text-2xl font-black shadow-md">
                 👤
@@ -879,7 +979,6 @@ export default function App() {
               </div>
             </div>
 
-            {/* Estatísticas de Impacto Comunitário */}
             <div>
               <h3 className="text-xs font-black text-slate-500 uppercase tracking-wider mb-3">Impacto no Território</h3>
               <div className="grid grid-cols-2 gap-3">
@@ -897,7 +996,6 @@ export default function App() {
               </div>
             </div>
 
-            {/* Preferências e Apresentação */}
             <div className="space-y-3 pt-1">
               <h3 className="text-xs font-black text-slate-500 uppercase tracking-wider">Ações e Configurações</h3>
 
@@ -934,7 +1032,6 @@ export default function App() {
               </button>
             </div>
 
-            {/* Rodapé Informativo da Aplicação */}
             <div className="pt-3 border-t border-slate-100 text-center">
               <p className="text-[11px] font-bold text-slate-700">Zelador Digital © 2026</p>
               <p className="text-[10px] text-slate-400 mt-0.5">
@@ -951,7 +1048,7 @@ export default function App() {
         {abaAtiva === 'gestao' && <PainelGestor />}
       </main>
 
-      {/* BARRA DE NAVEGAÇÃO INFERIOR COM 5 ABAS */}
+      {/* BARRA DE NAVEGAÇÃO INFERIOR */}
       <nav className="fixed bottom-0 left-0 right-0 z-40 bg-white/90 backdrop-blur-md border-t border-slate-200 shadow-lg">
         <div className="max-w-md mx-auto px-4 h-16 flex items-center justify-between">
           <button
@@ -974,7 +1071,6 @@ export default function App() {
             <span className="text-[9px] font-bold">Mapa</span>
           </button>
 
-          {/* Botão Central de Destaque: Reportar */}
           <button
             onClick={() => { setAbaAtiva('reportar'); setOcorrenciaSelecionada(null); }}
             className="w-12 h-12 rounded-full bg-blue-600 text-white flex items-center justify-center text-xl shadow-md -mt-5 hover:bg-blue-700 active:scale-95 transition-all cursor-pointer border-4 border-white"
