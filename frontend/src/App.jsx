@@ -58,6 +58,58 @@ const NOTIFICACOES_PADRAO = [
   }
 ]
 
+// Utilitário de Feedback Háptico e Sons Sintetizados via Web Audio API
+const feedbackSensorial = {
+  vibrar: (padrao = 15) => {
+    if (typeof window !== 'undefined' && 'vibrate' in navigator) {
+      try {
+        navigator.vibrate(padrao)
+      } catch (e) {
+        console.warn('Vibração indisponível:', e)
+      }
+    }
+  },
+  tocarTom: (frequencia = 440, duracao = 0.08, tipo = 'sine') => {
+    try {
+      const AudioCtx = window.AudioContext || window.webkitAudioContext
+      if (!AudioCtx) return
+      const ctx = new AudioCtx()
+      const osc = ctx.createOscillator()
+      const gain = ctx.createGain()
+
+      osc.type = tipo
+      osc.frequency.setValueAtTime(frequencia, ctx.currentTime)
+      gain.gain.setValueAtTime(0.05, ctx.currentTime)
+      gain.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + duracao)
+
+      osc.connect(gain)
+      gain.connect(ctx.destination)
+      osc.start()
+      osc.stop(ctx.currentTime + duracao)
+    } catch (e) {
+      console.warn('Áudio sintético indisponível:', e)
+    }
+  },
+  toqueSuave: function () {
+    this.vibrar(12)
+    this.tocarTom(520, 0.05)
+  },
+  gpsSucesso: function () {
+    this.vibrar([30, 40, 30])
+    this.tocarTom(660, 0.08)
+    setTimeout(() => this.tocarTom(880, 0.1), 80)
+  },
+  envioSucesso: function () {
+    this.vibrar([50, 70, 120])
+    this.tocarTom(587, 0.08)
+    setTimeout(() => this.tocarTom(880, 0.14), 90)
+  },
+  alertaErro: function () {
+    this.vibrar(150)
+    this.tocarTom(220, 0.15, 'triangle')
+  }
+}
+
 // Utilitário para extrair coordenadas GPS de metadados EXIF
 function extrairGpsExif(arquivo) {
   return new Promise((resolve) => {
@@ -67,7 +119,7 @@ function extrairGpsExif(arquivo) {
       const dataView = new DataView(buffer)
 
       if (dataView.getUint16(0, false) !== 0xffd8) {
-        return resolve(null) // Não é JPEG
+        return resolve(null)
       }
 
       let offset = 2
@@ -78,7 +130,6 @@ function extrairGpsExif(arquivo) {
         const marker = dataView.getUint8(offset + 1)
 
         if (marker === 0xe1) {
-          // APP1 Marker (EXIF)
           const exifOffset = offset + 4
           if (dataView.getUint32(exifOffset, false) === 0x45786966) {
             return resolve(analisarTiffGps(dataView, exifOffset + 6))
@@ -89,7 +140,7 @@ function extrairGpsExif(arquivo) {
       resolve(null)
     }
     reader.onerror = () => resolve(null)
-    reader.readAsArrayBuffer(arquivo.slice(0, 131072)) // Lê os primeiros 128 KB
+    reader.readAsArrayBuffer(arquivo.slice(0, 131072))
   })
 }
 
@@ -105,7 +156,6 @@ function analisarTiffGps(view, tiffOffset) {
       const entryOffset = tiffOffset + firstIFDOffset + 2 + i * 12
       const tag = view.getUint16(entryOffset, isLittleEndian)
       if (tag === 0x8825) {
-        // Tag GPS Info
         gpsInfoOffset = view.getUint32(entryOffset + 8, isLittleEndian)
         break
       }
@@ -227,7 +277,7 @@ export default function App() {
   const [fotoPreview, setFotoPreview] = useState(null)
   const [processandoFoto, setProcessandoFoto] = useState(false)
   const [localizacao, setLocalizacao] = useState(null)
-  const [origemLocalizacao, setOrigemLocalizacao] = useState('gps') // 'gps' ou 'exif'
+  const [origemLocalizacao, setOrigemLocalizacao] = useState('gps')
   const [capturandoGps, setCapturandoGps] = useState(false)
   const [pontoReferencia, setPontoReferencia] = useState('')
   const [gravandoVoz, setGravandoVoz] = useState(false)
@@ -270,6 +320,7 @@ export default function App() {
   }, [])
 
   const instalarAplicacaoPWA = async () => {
+    feedbackSensorial.toqueSuave()
     if (!promptInstalacao) {
       mostrarAlertaToast('Use a opção "Adicionar ao ecrã principal" no menu do navegador.')
       return
@@ -338,6 +389,7 @@ export default function App() {
   }, [])
 
   const marcarNotificacaoComoLida = (id) => {
+    feedbackSensorial.toqueSuave()
     if (!notificacoesLidas.includes(id)) {
       const atualizadas = [...notificacoesLidas, id]
       setNotificacoesLidas(atualizadas)
@@ -346,6 +398,7 @@ export default function App() {
   }
 
   const marcarTodasNotificacoesComoLidas = () => {
+    feedbackSensorial.toqueSuave()
     const todosIds = NOTIFICACOES_PADRAO.map((n) => n.id)
     setNotificacoesLidas(todosIds)
     localStorage.setItem('zelador_notificacoes_lidas', JSON.stringify(todosIds))
@@ -361,11 +414,13 @@ export default function App() {
   }
 
   const concluirOnboarding = () => {
+    feedbackSensorial.toqueSuave()
     localStorage.setItem('zelador_onboarding_concluido', 'true')
     setMostrarOnboarding(false)
   }
 
   const alternarModo = (novoModo) => {
+    feedbackSensorial.toqueSuave()
     setModo(novoModo)
     localStorage.setItem('zelador_modo_interface', novoModo)
     if (novoModo === 'facil') {
@@ -386,8 +441,10 @@ export default function App() {
   }
 
   const alternarReconhecimentoVoz = () => {
+    feedbackSensorial.toqueSuave()
     const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition
     if (!SpeechRecognition) {
+      feedbackSensorial.alertaErro()
       mostrarAlertaToast('Reconhecimento de voz não suportado neste navegador.')
       return
     }
@@ -409,6 +466,7 @@ export default function App() {
       }
 
       recognition.onresult = (event) => {
+        feedbackSensorial.gpsSucesso()
         const textoFalado = event.results[0][0].transcript
         setPontoReferencia((prev) => (prev ? `${prev} ${textoFalado}` : textoFalado))
         setGravandoVoz(false)
@@ -441,7 +499,9 @@ export default function App() {
   }
 
   const obterLocalizacaoAtual = () => {
+    feedbackSensorial.toqueSuave()
     if (!navigator.geolocation) {
+      feedbackSensorial.alertaErro()
       mostrarAlertaToast('Geolocalização não suportada no seu dispositivo.')
       return
     }
@@ -455,6 +515,7 @@ export default function App() {
         })
         setOrigemLocalizacao('gps')
         setCapturandoGps(false)
+        feedbackSensorial.gpsSucesso()
         if (modo === 'facil') {
           falarTexto('Coordenadas capturadas com sucesso.')
         }
@@ -481,23 +542,22 @@ export default function App() {
     return await res.blob()
   }
 
-  // Carregamento de foto com extração de metadados EXIF
   const handleFotoChange = async (e) => {
     const file = e.target.files[0]
     if (file) {
       try {
         setProcessandoFoto(true)
+        feedbackSensorial.toqueSuave()
 
-        // 1. Tenta extrair coordenadas EXIF da foto
         const gpsExif = await extrairGpsExif(file)
         if (gpsExif) {
           setLocalizacao(gpsExif)
           setOrigemLocalizacao('exif')
+          feedbackSensorial.gpsSucesso()
           mostrarAlertaToast('📍 Localização extraída diretamente da fotografia!')
           if (modo === 'facil') falarTexto('Localização da foto identificada.')
         }
 
-        // 2. Comprime a imagem para upload rápido
         const comprimida = await comprimirImagem(file)
         setFoto(comprimida)
         setFotoPreview(URL.createObjectURL(comprimida))
@@ -514,11 +574,13 @@ export default function App() {
   }
 
   const removerFoto = () => {
+    feedbackSensorial.toqueSuave()
     setFoto(null)
     setFotoPreview(null)
   }
 
   const selecionarCategoria = (cat) => {
+    feedbackSensorial.toqueSuave()
     setCategoria(cat.id)
     if (modo === 'facil') falarTexto(cat.fala)
   }
@@ -572,6 +634,7 @@ export default function App() {
     carregarRegistos()
 
     if (filaRestante.length === 0) {
+      feedbackSensorial.envioSucesso()
       mostrarAlertaToast('Todos os registos offline foram sincronizados com sucesso!')
     }
   }
@@ -580,6 +643,7 @@ export default function App() {
     e.preventDefault()
 
     if (!localizacao) {
+      feedbackSensorial.alertaErro()
       mostrarAlertaToast('Por favor, capture a localização GPS antes de enviar.')
       if (modo === 'facil') falarTexto('Atenção: capture a localização primeiro.')
       return
@@ -608,6 +672,7 @@ export default function App() {
         localStorage.setItem('zelador_fila_offline', JSON.stringify(novaFila))
         setFilaOffline(novaFila)
 
+        feedbackSensorial.envioSucesso()
         if (modo === 'facil') {
           falarTexto('Registo guardado no telemóvel. Será enviado logo que tiver ligação à Internet.')
         }
@@ -654,6 +719,7 @@ export default function App() {
 
       if (insertError) throw new Error(insertError.message)
 
+      feedbackSensorial.envioSucesso()
       if (modo === 'facil') {
         falarTexto('Registo territorial enviado com sucesso! Muito obrigado.')
       }
@@ -669,6 +735,7 @@ export default function App() {
       setFotoPreview(null)
       carregarRegistos()
     } catch (err) {
+      feedbackSensorial.alertaErro()
       console.error('Erro de envio:', err)
       mostrarAlertaToast(`Falha no registo: ${err.message || 'Erro de comunicação'}`)
     } finally {
@@ -730,7 +797,10 @@ export default function App() {
               <p className="text-xs font-semibold leading-snug">{mensagemToast}</p>
             </div>
             <button
-              onClick={() => setMensagemToast(null)}
+              onClick={() => {
+                feedbackSensorial.toqueSuave()
+                setMensagemToast(null)
+              }}
               className="text-slate-400 hover:text-white text-xs font-bold px-2 py-1 cursor-pointer"
             >
               ✕
@@ -758,7 +828,10 @@ export default function App() {
                   </button>
                 )}
                 <button
-                  onClick={() => setMostrarNotificacoes(false)}
+                  onClick={() => {
+                    feedbackSensorial.toqueSuave()
+                    setMostrarNotificacoes(false)
+                  }}
                   className="w-8 h-8 rounded-full bg-slate-100 text-slate-500 flex items-center justify-center font-bold text-sm hover:bg-slate-200 cursor-pointer"
                 >
                   ✕
@@ -849,6 +922,7 @@ export default function App() {
               <button
                 type="button"
                 onClick={() => {
+                  feedbackSensorial.toqueSuave()
                   setSucessoEnvio(null)
                   setAbaAtiva('registos')
                 }}
@@ -859,6 +933,7 @@ export default function App() {
               <button
                 type="button"
                 onClick={() => {
+                  feedbackSensorial.toqueSuave()
                   setSucessoEnvio(null)
                   setAbaAtiva('reportar')
                 }}
@@ -914,7 +989,10 @@ export default function App() {
               {etapaOnboarding < ETAPAS_ONBOARDING.length - 1 ? (
                 <button
                   type="button"
-                  onClick={() => setEtapaOnboarding((prev) => prev + 1)}
+                  onClick={() => {
+                    feedbackSensorial.toqueSuave()
+                    setEtapaOnboarding((prev) => prev + 1)
+                  }}
                   className="w-full py-3.5 bg-blue-600 hover:bg-blue-700 text-white rounded-2xl font-black text-xs uppercase tracking-wider shadow-md transition-all active:scale-[0.99] cursor-pointer"
                 >
                   Continuar →
@@ -937,7 +1015,11 @@ export default function App() {
       <header className="bg-white/80 backdrop-blur-md border-b border-slate-200 sticky top-0 z-40 shadow-xs">
         <div className="max-w-md mx-auto px-4 h-16 flex items-center justify-between">
           <button
-            onClick={() => { setAbaAtiva('inicio'); setOcorrenciaSelecionada(null); }}
+            onClick={() => {
+              feedbackSensorial.toqueSuave()
+              setAbaAtiva('inicio')
+              setOcorrenciaSelecionada(null)
+            }}
             className="flex items-center space-x-2 text-left focus:outline-none cursor-pointer"
           >
             <div className="w-8 h-8 rounded-xl bg-gradient-to-tr from-blue-600 to-emerald-500 flex items-center justify-center text-white text-base shadow-2xs">
@@ -951,7 +1033,10 @@ export default function App() {
 
           <div className="flex items-center space-x-2">
             <button
-              onClick={() => setMostrarNotificacoes(true)}
+              onClick={() => {
+                feedbackSensorial.toqueSuave()
+                setMostrarNotificacoes(true)
+              }}
               className="p-2 rounded-xl text-xs font-bold bg-slate-100 text-slate-700 hover:bg-slate-200 border border-slate-200/60 relative cursor-pointer"
               title="Avisos e Notificações"
             >
@@ -964,7 +1049,11 @@ export default function App() {
             </button>
 
             <button
-              onClick={() => { setEtapaOnboarding(0); setMostrarOnboarding(true); }}
+              onClick={() => {
+                feedbackSensorial.toqueSuave()
+                setEtapaOnboarding(0)
+                setMostrarOnboarding(true)
+              }}
               className="p-2 rounded-xl text-xs font-bold bg-slate-100 text-slate-700 hover:bg-slate-200 border border-slate-200/60 cursor-pointer"
               title="Apresentação do Projeto"
             >
@@ -990,7 +1079,11 @@ export default function App() {
             </div>
 
             <button
-              onClick={() => { setAbaAtiva('gestao'); setOcorrenciaSelecionada(null); }}
+              onClick={() => {
+                feedbackSensorial.toqueSuave()
+                setAbaAtiva('gestao')
+                setOcorrenciaSelecionada(null)
+              }}
               className={`p-2 rounded-xl text-xs font-bold transition-all cursor-pointer ${
                 abaAtiva === 'gestao'
                   ? 'bg-slate-900 text-white shadow-xs'
@@ -1018,7 +1111,10 @@ export default function App() {
                   </h3>
                 </div>
                 <button
-                  onClick={() => setOcorrenciaSelecionada(null)}
+                  onClick={() => {
+                    feedbackSensorial.toqueSuave()
+                    setOcorrenciaSelecionada(null)
+                  }}
                   className="w-8 h-8 rounded-full bg-slate-100 text-slate-500 flex items-center justify-center font-bold text-sm hover:bg-slate-200 cursor-pointer"
                 >
                   ✕
@@ -1085,6 +1181,7 @@ export default function App() {
                   href={`https://www.google.com/maps/search/?api=1&query=${ocorrenciaSelecionada.latitude},${ocorrenciaSelecionada.longitude}`}
                   target="_blank"
                   rel="noreferrer"
+                  onClick={() => feedbackSensorial.toqueSuave()}
                   className="w-full py-3 bg-slate-900 text-white rounded-xl text-xs font-bold text-center block shadow-sm hover:bg-slate-800"
                 >
                   Abrir Coordenadas no Google Maps ↗
@@ -1100,7 +1197,10 @@ export default function App() {
             {!pwaInstalado && !bannerPwaIgnorado && (
               <div className="bg-gradient-to-r from-slate-900 to-blue-950 text-white rounded-3xl p-4 shadow-sm border border-slate-800 relative overflow-hidden">
                 <button
-                  onClick={() => setBannerPwaIgnorado(true)}
+                  onClick={() => {
+                    feedbackSensorial.toqueSuave()
+                    setBannerPwaIgnorado(true)
+                  }}
                   className="absolute top-3 right-3 text-slate-400 hover:text-white text-xs font-bold w-6 h-6 flex items-center justify-center rounded-full bg-white/10"
                 >
                   ✕
@@ -1159,7 +1259,10 @@ export default function App() {
               <h2 className="text-xs font-black text-slate-500 uppercase tracking-wider px-1">Ações Rápidas</h2>
 
               <button
-                onClick={() => setAbaAtiva('reportar')}
+                onClick={() => {
+                  feedbackSensorial.toqueSuave()
+                  setAbaAtiva('reportar')
+                }}
                 className="w-full bg-blue-600 hover:bg-blue-700 text-white rounded-3xl p-5 shadow-sm flex items-center justify-between transition-all active:scale-[0.99] cursor-pointer"
               >
                 <div className="flex items-center space-x-3.5">
@@ -1176,7 +1279,10 @@ export default function App() {
 
               <div className="grid grid-cols-2 gap-3">
                 <button
-                  onClick={() => setAbaAtiva('registos')}
+                  onClick={() => {
+                    feedbackSensorial.toqueSuave()
+                    setAbaAtiva('registos')
+                  }}
                   className="bg-white hover:bg-slate-50 border border-slate-200/90 rounded-3xl p-4 shadow-2xs flex flex-col items-start transition-all cursor-pointer text-left"
                 >
                   <div className="w-10 h-10 rounded-2xl bg-emerald-50 text-emerald-600 flex items-center justify-center text-xl mb-3 border border-emerald-100">
@@ -1187,7 +1293,10 @@ export default function App() {
                 </button>
 
                 <button
-                  onClick={() => setAbaAtiva('mapa')}
+                  onClick={() => {
+                    feedbackSensorial.toqueSuave()
+                    setAbaAtiva('mapa')
+                  }}
                   className="bg-white hover:bg-slate-50 border border-slate-200/90 rounded-3xl p-4 shadow-2xs flex flex-col items-start transition-all cursor-pointer text-left"
                 >
                   <div className="w-10 h-10 rounded-2xl bg-sky-50 text-sky-600 flex items-center justify-center text-xl mb-3 border border-sky-100">
@@ -1388,7 +1497,10 @@ export default function App() {
                 </p>
               </div>
               <button
-                onClick={carregarRegistos}
+                onClick={() => {
+                  feedbackSensorial.toqueSuave()
+                  carregarRegistos()
+                }}
                 className="text-xs text-blue-600 font-bold hover:underline cursor-pointer"
               >
                 🔄 Atualizar
@@ -1406,7 +1518,10 @@ export default function App() {
               <span className="absolute left-3 top-2.5 text-slate-400 text-xs">🔍</span>
               {buscaTexto && (
                 <button
-                  onClick={() => setBuscaTexto('')}
+                  onClick={() => {
+                    feedbackSensorial.toqueSuave()
+                    setBuscaTexto('')
+                  }}
                   className="absolute right-3 top-2.5 text-slate-400 hover:text-slate-600 text-xs font-bold cursor-pointer"
                 >
                   ✕
@@ -1416,7 +1531,10 @@ export default function App() {
 
             <div className="flex space-x-1.5 overflow-x-auto pb-1 text-xs">
               <button
-                onClick={() => setFiltroStatus('todos')}
+                onClick={() => {
+                  feedbackSensorial.toqueSuave()
+                  setFiltroStatus('todos')
+                }}
                 className={`px-3 py-1.5 rounded-xl font-bold transition-all shrink-0 cursor-pointer ${
                   filtroStatus === 'todos'
                     ? 'bg-slate-900 text-white'
@@ -1426,7 +1544,10 @@ export default function App() {
                 Todos
               </button>
               <button
-                onClick={() => setFiltroStatus('pendente')}
+                onClick={() => {
+                  feedbackSensorial.toqueSuave()
+                  setFiltroStatus('pendente')
+                }}
                 className={`px-3 py-1.5 rounded-xl font-bold transition-all shrink-0 cursor-pointer ${
                   filtroStatus === 'pendente'
                     ? 'bg-amber-500 text-white'
@@ -1436,7 +1557,10 @@ export default function App() {
                 Pendentes ({totalPendentes})
               </button>
               <button
-                onClick={() => setFiltroStatus('resolvido')}
+                onClick={() => {
+                  feedbackSensorial.toqueSuave()
+                  setFiltroStatus('resolvido')
+                }}
                 className={`px-3 py-1.5 rounded-xl font-bold transition-all shrink-0 cursor-pointer ${
                   filtroStatus === 'resolvido'
                     ? 'bg-emerald-600 text-white'
@@ -1449,7 +1573,10 @@ export default function App() {
 
             <div className="flex space-x-1.5 overflow-x-auto pb-1 text-xs">
               <button
-                onClick={() => setFiltroCategoria('todas')}
+                onClick={() => {
+                  feedbackSensorial.toqueSuave()
+                  setFiltroCategoria('todas')
+                }}
                 className={`px-2.5 py-1 rounded-lg text-[11px] font-semibold transition-all shrink-0 cursor-pointer ${
                   filtroCategoria === 'todas'
                     ? 'bg-blue-600 text-white'
@@ -1461,7 +1588,10 @@ export default function App() {
               {CATEGORIAS.map((cat) => (
                 <button
                   key={cat.id}
-                  onClick={() => setFiltroCategoria(cat.id)}
+                  onClick={() => {
+                    feedbackSensorial.toqueSuave()
+                    setFiltroCategoria(cat.id)
+                  }}
                   className={`px-2.5 py-1 rounded-lg text-[11px] font-semibold flex items-center gap-1 transition-all shrink-0 cursor-pointer ${
                     filtroCategoria === cat.id
                       ? 'bg-blue-600 text-white'
@@ -1486,7 +1616,10 @@ export default function App() {
                 {registosFiltrados.map((reg) => (
                   <div
                     key={reg.id}
-                    onClick={() => setOcorrenciaSelecionada(reg)}
+                    onClick={() => {
+                      feedbackSensorial.toqueSuave()
+                      setOcorrenciaSelecionada(reg)
+                    }}
                     className="p-3.5 rounded-2xl border border-slate-200 bg-white shadow-2xs flex justify-between items-start gap-3 hover:border-blue-400 transition-colors cursor-pointer group"
                   >
                     <div>
@@ -1571,7 +1704,11 @@ export default function App() {
               )}
 
               <button
-                onClick={() => { setEtapaOnboarding(0); setMostrarOnboarding(true); }}
+                onClick={() => {
+                  feedbackSensorial.toqueSuave()
+                  setEtapaOnboarding(0)
+                  setMostrarOnboarding(true)
+                }}
                 className="w-full bg-slate-50 hover:bg-slate-100 border border-slate-200/90 rounded-2xl p-3.5 flex items-center justify-between text-left transition-all cursor-pointer"
               >
                 <div className="flex items-center space-x-3">
@@ -1623,7 +1760,11 @@ export default function App() {
       <nav className="fixed bottom-0 left-0 right-0 z-40 bg-white/90 backdrop-blur-md border-t border-slate-200 shadow-lg">
         <div className="max-w-md mx-auto px-4 h-16 flex items-center justify-between">
           <button
-            onClick={() => { setAbaAtiva('inicio'); setOcorrenciaSelecionada(null); }}
+            onClick={() => {
+              feedbackSensorial.toqueSuave()
+              setAbaAtiva('inicio')
+              setOcorrenciaSelecionada(null)
+            }}
             className={`flex flex-col items-center justify-center space-y-1 transition-colors cursor-pointer ${
               abaAtiva === 'inicio' ? 'text-blue-600' : 'text-slate-400 hover:text-slate-700'
             }`}
@@ -1633,7 +1774,11 @@ export default function App() {
           </button>
 
           <button
-            onClick={() => { setAbaAtiva('mapa'); setOcorrenciaSelecionada(null); }}
+            onClick={() => {
+              feedbackSensorial.toqueSuave()
+              setAbaAtiva('mapa')
+              setOcorrenciaSelecionada(null)
+            }}
             className={`flex flex-col items-center justify-center space-y-1 transition-colors cursor-pointer ${
               abaAtiva === 'mapa' ? 'text-blue-600' : 'text-slate-400 hover:text-slate-700'
             }`}
@@ -1643,7 +1788,11 @@ export default function App() {
           </button>
 
           <button
-            onClick={() => { setAbaAtiva('reportar'); setOcorrenciaSelecionada(null); }}
+            onClick={() => {
+              feedbackSensorial.toqueSuave()
+              setAbaAtiva('reportar')
+              setOcorrenciaSelecionada(null)
+            }}
             className="w-12 h-12 rounded-full bg-blue-600 text-white flex items-center justify-center text-xl shadow-md -mt-5 hover:bg-blue-700 active:scale-95 transition-all cursor-pointer border-4 border-white"
             title="Criar Ocorrência"
           >
@@ -1651,7 +1800,11 @@ export default function App() {
           </button>
 
           <button
-            onClick={() => { setAbaAtiva('registos'); setOcorrenciaSelecionada(null); }}
+            onClick={() => {
+              feedbackSensorial.toqueSuave()
+              setAbaAtiva('registos')
+              setOcorrenciaSelecionada(null)
+            }}
             className={`flex flex-col items-center justify-center space-y-1 transition-colors cursor-pointer ${
               abaAtiva === 'registos' ? 'text-blue-600' : 'text-slate-400 hover:text-slate-700'
             }`}
@@ -1661,7 +1814,11 @@ export default function App() {
           </button>
 
           <button
-            onClick={() => { setAbaAtiva('perfil'); setOcorrenciaSelecionada(null); }}
+            onClick={() => {
+              feedbackSensorial.toqueSuave()
+              setAbaAtiva('perfil')
+              setOcorrenciaSelecionada(null)
+            }}
             className={`flex flex-col items-center justify-center space-y-1 transition-colors cursor-pointer ${
               abaAtiva === 'perfil' ? 'text-blue-600' : 'text-slate-400 hover:text-slate-700'
             }`}
