@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useMemo } from 'react'
 import { supabase } from './lib/supabase'
 import PainelGestor from './components/PainelGestor'
 import MapaOcorrencias from './components/MapaOcorrencias'
@@ -32,8 +32,8 @@ const ETAPAS_ONBOARDING = [
 ]
 
 export default function App() {
-  const [modo, setModo] = useState('normal') // 'normal' ou 'facil'
-  const [abaAtiva, setAbaAtiva] = useState('inicio') // 'inicio', 'reportar', 'mapa', 'registos', 'gestao'
+  const [modo, setModo] = useState('normal')
+  const [abaAtiva, setAbaAtiva] = useState('inicio')
   const [mostrarOnboarding, setMostrarOnboarding] = useState(false)
   const [etapaOnboarding, setEtapaOnboarding] = useState(0)
 
@@ -46,18 +46,21 @@ export default function App() {
   const [gravandoVoz, setGravandoVoz] = useState(false)
   const [enviando, setEnviando] = useState(false)
 
+  // Filtros da aba de registos
+  const [filtroCategoria, setFiltroCategoria] = useState('todas')
+  const [filtroStatus, setFiltroStatus] = useState('todos')
+  const [buscaTexto, setBuscaTexto] = useState('')
+
   const [ocorrenciaSelecionada, setOcorrenciaSelecionada] = useState(null)
   const [registos, setRegistos] = useState([])
   const [carregandoRegistos, setCarregandoRegistos] = useState(false)
 
   useEffect(() => {
-    // 1. Verifica se é o primeiro acesso para exibir o Onboarding
     const onboardingVisto = localStorage.getItem('zelador_onboarding_concluido')
     if (!onboardingVisto) {
       setMostrarOnboarding(true)
     }
 
-    // 2. Recupera preferência de interface
     const modoSalvo = localStorage.getItem('zelador_modo_interface')
     if (modoSalvo) setModo(modoSalvo)
 
@@ -248,17 +251,34 @@ export default function App() {
     }
   }
 
+  // Filtragem dinâmica de registos
+  const registosFiltrados = useMemo(() => {
+    return registos.filter((item) => {
+      const bateuCategoria = filtroCategoria === 'todas' || item.categoria === filtroCategoria
+      const isResolvido = item.status === 'resolvido' || item.status === 'concluido'
+      const bateuStatus =
+        filtroStatus === 'todos' ||
+        (filtroStatus === 'resolvido' && isResolvido) ||
+        (filtroStatus === 'pendente' && !isResolvido)
+      const bateuTexto =
+        !buscaTexto.trim() ||
+        (item.descricao && item.descricao.toLowerCase().includes(buscaTexto.toLowerCase())) ||
+        (item.categoria && item.categoria.toLowerCase().includes(buscaTexto.toLowerCase()))
+
+      return bateuCategoria && bateuStatus && bateuTexto
+    })
+  }, [registos, filtroCategoria, filtroStatus, buscaTexto])
+
   const totalRegistos = registos.length
   const totalResolvidos = registos.filter((r) => r.status === 'resolvido' || r.status === 'concluido').length
   const totalPendentes = registos.filter((r) => r.status !== 'resolvido' && r.status !== 'concluido').length
 
   return (
     <div className={`min-h-screen flex flex-col justify-between font-sans pb-20 ${modo === 'facil' ? 'bg-amber-50/30 text-slate-900' : 'bg-slate-100/70 text-slate-800'}`}>
-      {/* MODAL DE ONBOARDING (BOAS-VINDAS) */}
+      {/* ONBOARDING */}
       {mostrarOnboarding && (
         <div className="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-md flex items-center justify-center p-4 animate-in fade-in duration-300">
           <div className="bg-white w-full max-w-sm rounded-3xl p-6 shadow-2xl flex flex-col justify-between text-center space-y-6 relative border border-slate-100">
-            {/* Botão de Saltar */}
             <div className="flex justify-end w-full">
               <button
                 onClick={concluirOnboarding}
@@ -268,7 +288,6 @@ export default function App() {
               </button>
             </div>
 
-            {/* Conteúdo Dinâmico do Card */}
             <div className="space-y-4">
               <div className={`w-20 h-20 mx-auto rounded-3xl bg-gradient-to-tr ${ETAPAS_ONBOARDING[etapaOnboarding].gradiente} flex items-center justify-center text-4xl shadow-md`}>
                 {ETAPAS_ONBOARDING[etapaOnboarding].icone}
@@ -284,7 +303,6 @@ export default function App() {
               </div>
             </div>
 
-            {/* Indicadores de Progresso (Pontos) */}
             <div className="flex justify-center items-center space-x-2">
               {ETAPAS_ONBOARDING.map((_, idx) => (
                 <span
@@ -296,7 +314,6 @@ export default function App() {
               ))}
             </div>
 
-            {/* Botões de Ação */}
             <div className="pt-2">
               {etapaOnboarding < ETAPAS_ONBOARDING.length - 1 ? (
                 <button
@@ -320,7 +337,7 @@ export default function App() {
         </div>
       )}
 
-      {/* Topo / Navbar */}
+      {/* Header */}
       <header className="bg-white/80 backdrop-blur-md border-b border-slate-200 sticky top-0 z-40 shadow-xs">
         <div className="max-w-md mx-auto px-4 h-16 flex items-center justify-between">
           <button
@@ -378,9 +395,9 @@ export default function App() {
         </div>
       </header>
 
-      {/* Conteúdo Principal */}
+      {/* Main Container */}
       <main className="max-w-md w-full mx-auto px-4 py-4 flex-1">
-        {/* MODAL / STATUS TIMELINE (SELECIONADO) */}
+        {/* DETALHE MODAL */}
         {ocorrenciaSelecionada && (
           <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs flex items-end sm:items-center justify-center p-0 sm:p-4 animate-in fade-in duration-200">
             <div className="bg-white w-full max-w-md rounded-t-3xl sm:rounded-3xl p-6 border border-slate-200 shadow-xl max-h-[90vh] overflow-y-auto space-y-5">
@@ -430,7 +447,7 @@ export default function App() {
                       {ocorrenciaSelecionada.status === 'em_andamento' || ocorrenciaSelecionada.status === 'resolvido' || ocorrenciaSelecionada.status === 'concluido' ? '✓' : '•'}
                     </span>
                     <p className="text-xs font-bold text-slate-800">2. Em Análise Territorial</p>
-                    <p className="text-[10px] text-slate-400">Demandas em triagem pela comunidade</p>
+                    <p className="text-[10px] text-slate-400">Demandas em triagem comunitária</p>
                   </div>
 
                   <div className="relative pl-6">
@@ -441,8 +458,8 @@ export default function App() {
                     }`}>
                       {ocorrenciaSelecionada.status === 'resolvido' || ocorrenciaSelecionada.status === 'concluido' ? '✓' : '•'}
                     </span>
-                    <p className="text-xs font-bold text-slate-800">3. Solução / Conclusão</p>
-                    <p className="text-[10px] text-slate-400">Concluído ou zeladoria executada</p>
+                    <p className="text-xs font-bold text-slate-800">3. Solução Concluída</p>
+                    <p className="text-[10px] text-slate-400">Zeladoria executada</p>
                   </div>
                 </div>
               </div>
@@ -468,7 +485,7 @@ export default function App() {
           </div>
         )}
 
-        {/* 1. TELA INICIAL */}
+        {/* 1. INÍCIO */}
         {abaAtiva === 'inicio' && (
           <div className="space-y-4">
             <div className="rounded-3xl bg-gradient-to-br from-blue-600 via-sky-600 to-emerald-500 p-6 text-white shadow-md relative overflow-hidden">
@@ -544,7 +561,7 @@ export default function App() {
           </div>
         )}
 
-        {/* 2. TELA DE REPORTAR */}
+        {/* 2. REPORTAR */}
         {abaAtiva === 'reportar' && (
           <form onSubmit={handleSubmit} className="bg-white rounded-3xl p-5 border border-slate-200 shadow-xs space-y-5">
             <div className="flex items-center justify-between border-b border-slate-100 pb-3">
@@ -693,20 +710,22 @@ export default function App() {
           </form>
         )}
 
-        {/* 3. TELA DE MAPA */}
+        {/* 3. MAPA */}
         {abaAtiva === 'mapa' && (
           <div className="bg-white rounded-3xl p-4 border border-slate-200 shadow-xs">
             <MapaOcorrencias ocorrencias={registos} onRecarregar={carregarRegistos} />
           </div>
         )}
 
-        {/* 4. TELA DE REGISTOS */}
+        {/* 4. REGISTOS COM FILTROS E BUSCA */}
         {abaAtiva === 'registos' && (
           <div className="bg-white rounded-3xl p-5 border border-slate-200 shadow-xs space-y-4">
             <div className="flex items-center justify-between">
               <div>
                 <h2 className="text-base font-bold text-slate-800">Ocorrências Comunitárias</h2>
-                <p className="text-[11px] text-slate-400">Toque num item para ver o estado completo</p>
+                <p className="text-[11px] text-slate-400">
+                  A exibir {registosFiltrados.length} de {registos.length} registos
+                </p>
               </div>
               <button
                 onClick={carregarRegistos}
@@ -716,13 +735,99 @@ export default function App() {
               </button>
             </div>
 
+            {/* Campo de Busca Rápida */}
+            <div className="relative">
+              <input
+                type="text"
+                placeholder="Buscar por descrição ou referência..."
+                value={buscaTexto}
+                onChange={(e) => setBuscaTexto(e.target.value)}
+                className="w-full px-3.5 py-2.5 pl-9 rounded-xl border border-slate-200 bg-slate-50 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 text-xs text-slate-800"
+              />
+              <span className="absolute left-3 top-2.5 text-slate-400 text-xs">🔍</span>
+              {buscaTexto && (
+                <button
+                  onClick={() => setBuscaTexto('')}
+                  className="absolute right-3 top-2.5 text-slate-400 hover:text-slate-600 text-xs font-bold"
+                >
+                  ✕
+                </button>
+              )}
+            </div>
+
+            {/* Filtros em Chips: Status */}
+            <div className="flex space-x-1.5 overflow-x-auto pb-1 text-xs">
+              <button
+                onClick={() => setFiltroStatus('todos')}
+                className={`px-3 py-1.5 rounded-xl font-bold transition-all shrink-0 ${
+                  filtroStatus === 'todos'
+                    ? 'bg-slate-900 text-white'
+                    : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                }`}
+              >
+                Todos
+              </button>
+              <button
+                onClick={() => setFiltroStatus('pendente')}
+                className={`px-3 py-1.5 rounded-xl font-bold transition-all shrink-0 ${
+                  filtroStatus === 'pendente'
+                    ? 'bg-amber-500 text-white'
+                    : 'bg-amber-50 text-amber-700 border border-amber-200 hover:bg-amber-100'
+                }`}
+              >
+                Pendentes ({totalPendentes})
+              </button>
+              <button
+                onClick={() => setFiltroStatus('resolvido')}
+                className={`px-3 py-1.5 rounded-xl font-bold transition-all shrink-0 ${
+                  filtroStatus === 'resolvido'
+                    ? 'bg-emerald-600 text-white'
+                    : 'bg-emerald-50 text-emerald-700 border border-emerald-200 hover:bg-emerald-100'
+                }`}
+              >
+                Resolvidos ({totalResolvidos})
+              </button>
+            </div>
+
+            {/* Filtros em Chips: Categoria */}
+            <div className="flex space-x-1.5 overflow-x-auto pb-1 text-xs">
+              <button
+                onClick={() => setFiltroCategoria('todas')}
+                className={`px-2.5 py-1 rounded-lg text-[11px] font-semibold transition-all shrink-0 ${
+                  filtroCategoria === 'todas'
+                    ? 'bg-blue-600 text-white'
+                    : 'bg-slate-100 text-slate-500 hover:bg-slate-200'
+                }`}
+              >
+                Todas Tipologias
+              </button>
+              {CATEGORIAS.map((cat) => (
+                <button
+                  key={cat.id}
+                  onClick={() => setFiltroCategoria(cat.id)}
+                  className={`px-2.5 py-1 rounded-lg text-[11px] font-semibold flex items-center gap-1 transition-all shrink-0 ${
+                    filtroCategoria === cat.id
+                      ? 'bg-blue-600 text-white'
+                      : 'bg-slate-100 text-slate-500 hover:bg-slate-200'
+                  }`}
+                >
+                  <span>{cat.icon}</span>
+                  <span>{cat.label}</span>
+                </button>
+              ))}
+            </div>
+
+            {/* Listagem com os resultados filtrados */}
             {carregandoRegistos ? (
               <div className="py-16 text-center text-xs text-slate-400">A carregar ocorrências...</div>
-            ) : registos.length === 0 ? (
-              <div className="py-16 text-center text-xs text-slate-400">Nenhuma ocorrência registada.</div>
+            ) : registosFiltrados.length === 0 ? (
+              <div className="py-12 text-center text-xs text-slate-400 space-y-1">
+                <p className="font-bold">Nenhum registo encontrado com estes filtros.</p>
+                <p className="text-[11px]">Tente limpar a pesquisa ou selecionar outro filtro.</p>
+              </div>
             ) : (
               <div className="space-y-3">
-                {registos.map((reg) => (
+                {registosFiltrados.map((reg) => (
                   <div
                     key={reg.id}
                     onClick={() => setOcorrenciaSelecionada(reg)}
@@ -757,11 +862,11 @@ export default function App() {
           </div>
         )}
 
-        {/* 5. TELA DE GESTÃO */}
+        {/* 5. GESTÃO */}
         {abaAtiva === 'gestao' && <PainelGestor />}
       </main>
 
-      {/* BARRA DE NAVEGAÇÃO INFERIOR FIXA */}
+      {/* BOTTOM NAVIGATION BAR */}
       <nav className="fixed bottom-0 left-0 right-0 z-40 bg-white/90 backdrop-blur-md border-t border-slate-200 shadow-lg">
         <div className="max-w-md mx-auto px-6 h-16 flex items-center justify-between">
           <button
