@@ -22,6 +22,9 @@ export default function App() {
   const [gravandoVoz, setGravandoVoz] = useState(false)
   const [enviando, setEnviando] = useState(false)
 
+  // Ocorrência selecionada para visualização detalhada na Linha do Tempo
+  const [ocorrenciaSelecionada, setOcorrenciaSelecionada] = useState(null)
+
   const [registos, setRegistos] = useState([])
   const [carregandoRegistos, setCarregandoRegistos] = useState(false)
 
@@ -55,7 +58,7 @@ export default function App() {
   const alternarReconhecimentoVoz = () => {
     const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition
     if (!SpeechRecognition) {
-      alert('Seu navegador não suporta reconhecimento de voz.')
+      alert('O seu navegador não suporta reconhecimento de voz.')
       return
     }
 
@@ -210,22 +213,27 @@ export default function App() {
     }
   }
 
-  // Métricas calculadas para os cartões superiores
+  // Contadores
   const totalRegistos = registos.length
   const totalResolvidos = registos.filter((r) => r.status === 'resolvido' || r.status === 'concluido').length
   const totalPendentes = registos.filter((r) => r.status !== 'resolvido' && r.status !== 'concluido').length
 
   return (
-    <div className={`min-h-screen flex flex-col justify-between font-sans ${modo === 'facil' ? 'bg-amber-50/30 text-slate-900' : 'bg-slate-100/70 text-slate-800'}`}>
+    <div className={`min-h-screen flex flex-col justify-between font-sans pb-20 ${modo === 'facil' ? 'bg-amber-50/30 text-slate-900' : 'bg-slate-100/70 text-slate-800'}`}>
       {/* Topo / Navbar */}
-      <header className="bg-white border-b border-slate-200 sticky top-0 z-40">
+      <header className="bg-white/80 backdrop-blur-md border-b border-slate-200 sticky top-0 z-40 shadow-xs">
         <div className="max-w-md mx-auto px-4 h-16 flex items-center justify-between">
           <button
-            onClick={() => setAbaAtiva('inicio')}
+            onClick={() => { setAbaAtiva('inicio'); setOcorrenciaSelecionada(null); }}
             className="flex items-center space-x-2 text-left focus:outline-none cursor-pointer"
           >
-            <span className={`font-black text-blue-600 tracking-tight ${modo === 'facil' ? 'text-3xl' : 'text-2xl'}`}>Zelador</span>
-            <span className={`font-light text-slate-500 ${modo === 'facil' ? 'text-3xl' : 'text-2xl'}`}>Digital</span>
+            <div className="w-8 h-8 rounded-xl bg-gradient-to-tr from-blue-600 to-emerald-500 flex items-center justify-center text-white text-base shadow-2xs">
+              🏙️
+            </div>
+            <div>
+              <span className={`font-black text-blue-600 tracking-tight leading-none ${modo === 'facil' ? 'text-2xl' : 'text-xl'}`}>Zelador</span>
+              <span className={`font-light text-slate-600 tracking-tight leading-none ${modo === 'facil' ? 'text-2xl' : 'text-xl'}`}>Digital</span>
+            </div>
           </button>
 
           <div className="flex items-center space-x-2">
@@ -233,14 +241,14 @@ export default function App() {
               <button
                 type="button"
                 onClick={() => alternarModo('normal')}
-                className={`px-2.5 py-1.5 rounded-lg transition-all ${modo === 'normal' ? 'bg-white text-blue-600 shadow-2xs font-extrabold' : 'text-slate-600'}`}
+                className={`px-2 py-1 rounded-lg transition-all ${modo === 'normal' ? 'bg-white text-blue-600 shadow-2xs font-extrabold' : 'text-slate-600'}`}
               >
                 Normal
               </button>
               <button
                 type="button"
                 onClick={() => alternarModo('facil')}
-                className={`px-2.5 py-1.5 rounded-lg flex items-center gap-1 transition-all ${modo === 'facil' ? 'bg-amber-500 text-white shadow-2xs font-black' : 'text-slate-600'}`}
+                className={`px-2 py-1 rounded-lg flex items-center gap-1 transition-all ${modo === 'facil' ? 'bg-amber-500 text-white shadow-2xs font-black' : 'text-slate-600'}`}
               >
                 <span>🔊</span>
                 <span>Fácil</span>
@@ -248,7 +256,7 @@ export default function App() {
             </div>
 
             <button
-              onClick={() => setAbaAtiva('gestao')}
+              onClick={() => { setAbaAtiva('gestao'); setOcorrenciaSelecionada(null); }}
               className={`p-2 rounded-xl text-xs font-bold transition-all ${
                 abaAtiva === 'gestao'
                   ? 'bg-slate-900 text-white shadow-xs'
@@ -262,16 +270,111 @@ export default function App() {
         </div>
       </header>
 
-      {/* Conteúdo Central */}
+      {/* Conteúdo Principal */}
       <main className="max-w-md w-full mx-auto px-4 py-4 flex-1">
-        {/* TELA INICIAL (ESTILO CITY SERVICES REPORTING) */}
+        {/* MODAL / DETALHES DE STATUS TIMELINE (SELECIONADO) */}
+        {ocorrenciaSelecionada && (
+          <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs flex items-end sm:items-center justify-center p-0 sm:p-4 animate-in fade-in duration-200">
+            <div className="bg-white w-full max-w-md rounded-t-3xl sm:rounded-3xl p-6 border border-slate-200 shadow-xl max-h-[90vh] overflow-y-auto space-y-5">
+              <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+                <div className="flex items-center space-x-2">
+                  <span className="text-xl">📍</span>
+                  <h3 className="font-black text-slate-800 text-sm capitalize">
+                    {ocorrenciaSelecionada.categoria}
+                  </h3>
+                </div>
+                <button
+                  onClick={() => setOcorrenciaSelecionada(null)}
+                  className="w-8 h-8 rounded-full bg-slate-100 text-slate-500 flex items-center justify-center font-bold text-sm hover:bg-slate-200"
+                >
+                  ✕
+                </button>
+              </div>
+
+              {/* Fotografia da ocorrência */}
+              {ocorrenciaSelecionada.foto_url && (
+                <div className="rounded-2xl overflow-hidden border border-slate-200 bg-slate-100">
+                  <img
+                    src={ocorrenciaSelecionada.foto_url}
+                    alt="Comprovativo"
+                    className="w-full h-48 object-cover"
+                  />
+                </div>
+              )}
+
+              {/* Linha do Tempo (Status Tracking) */}
+              <div className="bg-slate-50 rounded-2xl p-4 border border-slate-200/80 space-y-3">
+                <h4 className="text-xs font-black text-slate-500 uppercase tracking-wider">Acompanhamento do Chamado</h4>
+                
+                <div className="relative border-l-2 border-slate-200 ml-3 space-y-4 py-1">
+                  {/* Etapa 1: Submetido */}
+                  <div className="relative pl-6">
+                    <span className="absolute -left-2 top-0.5 w-4 h-4 rounded-full bg-blue-600 border-2 border-white flex items-center justify-center text-[8px] text-white">✓</span>
+                    <p className="text-xs font-bold text-slate-800">1. Ocorrência Submetida</p>
+                    <p className="text-[10px] text-slate-400">
+                      {ocorrenciaSelecionada.created_at ? new Date(ocorrenciaSelecionada.created_at).toLocaleString('pt-BR') : 'Data registada'}
+                    </p>
+                  </div>
+
+                  {/* Etapa 2: Em Análise / Vistoria */}
+                  <div className="relative pl-6">
+                    <span className={`absolute -left-2 top-0.5 w-4 h-4 rounded-full border-2 border-white flex items-center justify-center text-[8px] text-white ${
+                      ocorrenciaSelecionada.status === 'em_andamento' || ocorrenciaSelecionada.status === 'resolvido' || ocorrenciaSelecionada.status === 'concluido'
+                        ? 'bg-amber-500'
+                        : 'bg-slate-300'
+                    }`}>
+                      {ocorrenciaSelecionada.status === 'em_andamento' || ocorrenciaSelecionada.status === 'resolvido' || ocorrenciaSelecionada.status === 'concluido' ? '✓' : '•'}
+                    </span>
+                    <p className="text-xs font-bold text-slate-800">2. Em Análise Territorial</p>
+                    <p className="text-[10px] text-slate-400">Demandas em triagem pela comunidade</p>
+                  </div>
+
+                  {/* Etapa 3: Resolvido */}
+                  <div className="relative pl-6">
+                    <span className={`absolute -left-2 top-0.5 w-4 h-4 rounded-full border-2 border-white flex items-center justify-center text-[8px] text-white ${
+                      ocorrenciaSelecionada.status === 'resolvido' || ocorrenciaSelecionada.status === 'concluido'
+                        ? 'bg-emerald-600'
+                        : 'bg-slate-300'
+                    }`}>
+                      {ocorrenciaSelecionada.status === 'resolvido' || ocorrenciaSelecionada.status === 'concluido' ? '✓' : '•'}
+                    </span>
+                    <p className="text-xs font-bold text-slate-800">3. Solução / Conclusão</p>
+                    <p className="text-[10px] text-slate-400">Concluído ou zeladoria executada</p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Descrição e Ponto de Referência */}
+              <div>
+                <span className="text-[10px] font-bold uppercase text-slate-400 block mb-0.5">Descrição / Referência</span>
+                <p className="text-xs text-slate-700 bg-slate-50 p-3 rounded-xl border border-slate-200">
+                  {ocorrenciaSelecionada.descricao || 'Sem descrição detalhada fornecida.'}
+                </p>
+              </div>
+
+              {/* Botão para ver no Google Maps se houver coordenadas */}
+              {ocorrenciaSelecionada.latitude && ocorrenciaSelecionada.longitude && (
+                <a
+                  href={`https://www.google.com/maps/search/?api=1&query=${ocorrenciaSelecionada.latitude},${ocorrenciaSelecionada.longitude}`}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="w-full py-3 bg-slate-900 text-white rounded-xl text-xs font-bold text-center block shadow-sm hover:bg-slate-800"
+                >
+                  Abrir Coordenadas no Google Maps ↗
+                </a>
+              )}
+            </div>
+          </div>
+        )}
+
+        {/* 1. TELA INICIAL (ESTILO CITY SERVICES) */}
         {abaAtiva === 'inicio' && (
           <div className="space-y-4">
-            {/* Cartão Superior com Gradiente e Contadores */}
+            {/* Card com Gradiente Superior e Métricas */}
             <div className="rounded-3xl bg-gradient-to-br from-blue-600 via-sky-600 to-emerald-500 p-6 text-white shadow-md relative overflow-hidden">
               <div className="flex items-center justify-between mb-5">
                 <div>
-                  <span className="text-xs uppercase tracking-wider text-sky-100 font-bold">Plataforma Comunitária</span>
+                  <span className="text-[11px] uppercase tracking-wider text-sky-100 font-bold">Monitoramento Cívico</span>
                   <h1 className="text-2xl font-black mt-0.5">Visão Geral</h1>
                 </div>
                 <div className="w-11 h-11 rounded-2xl bg-white/20 backdrop-blur-md flex items-center justify-center text-xl shadow-inner">
@@ -279,7 +382,6 @@ export default function App() {
                 </div>
               </div>
 
-              {/* 3 Blocos de Métricas */}
               <div className="grid grid-cols-3 gap-2 text-center">
                 <div className="bg-white/15 backdrop-blur-sm rounded-2xl p-3 border border-white/20">
                   <span className="text-2xl font-black block leading-none">{totalRegistos}</span>
@@ -296,11 +398,11 @@ export default function App() {
               </div>
             </div>
 
-            {/* Ações Rápidas (Quick Actions) */}
+            {/* Ações Rápidas */}
             <div className="space-y-3">
               <h2 className="text-xs font-black text-slate-500 uppercase tracking-wider px-1">Ações Rápidas</h2>
 
-              {/* Botão de Destaque para Criar Registo */}
+              {/* Botão de Destaque */}
               <button
                 onClick={() => setAbaAtiva('reportar')}
                 className="w-full bg-blue-600 hover:bg-blue-700 text-white rounded-3xl p-5 shadow-sm flex items-center justify-between transition-all active:scale-[0.99] cursor-pointer"
@@ -311,13 +413,12 @@ export default function App() {
                   </div>
                   <div className="text-left">
                     <span className="text-base font-black block">Registar Nova Ocorrência</span>
-                    <span className="text-xs text-blue-100">Reporte buracos, iluminação ou lixo</span>
+                    <span className="text-xs text-blue-100">Buraco, poste apagado, lixo ou esgoto</span>
                   </div>
                 </div>
                 <span className="text-2xl">📸</span>
               </button>
 
-              {/* Grid com Cartões de Navegação */}
               <div className="grid grid-cols-2 gap-3">
                 <button
                   onClick={() => setAbaAtiva('registos')}
@@ -327,7 +428,7 @@ export default function App() {
                     📋
                   </div>
                   <span className="text-xs font-black text-slate-800">Registos</span>
-                  <span className="text-[11px] text-slate-400 mt-0.5">Histórico territorial</span>
+                  <span className="text-[11px] text-slate-400 mt-0.5">Histórico e estados</span>
                 </button>
 
                 <button
@@ -338,281 +439,291 @@ export default function App() {
                     🗺️
                   </div>
                   <span className="text-xs font-black text-slate-800">Ver Mapa</span>
-                  <span className="text-[11px] text-slate-400 mt-0.5">Mapa e calor térmico</span>
+                  <span className="text-[11px] text-slate-400 mt-0.5">Pontos e calor térmico</span>
                 </button>
               </div>
-
-              {/* Atalho para o Painel de Gestão */}
-              <button
-                onClick={() => setAbaAtiva('gestao')}
-                className="w-full bg-white hover:bg-slate-50 border border-slate-200/90 rounded-2xl p-3.5 shadow-2xs flex items-center justify-between text-left transition-all cursor-pointer"
-              >
-                <div className="flex items-center space-x-3">
-                  <div className="w-9 h-9 rounded-xl bg-slate-100 text-slate-700 flex items-center justify-center text-lg">
-                    ⚙️
-                  </div>
-                  <div>
-                    <span className="text-xs font-black text-slate-800 block">Painel Administrativo</span>
-                    <span className="text-[10px] text-slate-400">Acesso restrito via PIN</span>
-                  </div>
-                </div>
-                <span className="text-slate-400 font-bold text-xs">Aceder →</span>
-              </button>
             </div>
           </div>
         )}
 
-        {/* TELA DE REPORTAR */}
+        {/* 2. TELA DE REPORTAR */}
         {abaAtiva === 'reportar' && (
-          <div className="space-y-3">
-            <button
-              type="button"
-              onClick={() => setAbaAtiva('inicio')}
-              className="text-xs font-bold text-slate-500 hover:text-slate-800 flex items-center gap-1 cursor-pointer"
-            >
-              ← Voltar ao Início
-            </button>
+          <form onSubmit={handleSubmit} className="bg-white rounded-3xl p-5 border border-slate-200 shadow-xs space-y-5">
+            <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+              <h2 className="text-base font-black text-slate-800">Novo Registo Territorial</h2>
+              <span className="text-[11px] text-slate-400">Etapa Única</span>
+            </div>
 
-            <form onSubmit={handleSubmit} className="bg-white rounded-3xl p-5 border border-slate-200 shadow-xs space-y-5">
-              {modo === 'facil' && (
-                <div className="bg-amber-100/70 border border-amber-300 rounded-2xl p-3 flex items-center justify-between text-amber-900">
-                  <div className="flex items-center space-x-2">
-                    <span className="text-xl">🔊</span>
-                    <span className="text-xs font-bold">Modo Fácil: Botões ampliados e áudio ativo</span>
-                  </div>
-                  <button
-                    type="button"
-                    onClick={() => falarTexto('Escolha o problema, tire a foto e clique no botão enviar.')}
-                    className="text-xs bg-amber-500 text-white font-bold px-2.5 py-1 rounded-xl shadow-2xs"
-                  >
-                    Ouvir Ajuda
-                  </button>
+            {modo === 'facil' && (
+              <div className="bg-amber-100/70 border border-amber-300 rounded-2xl p-3 flex items-center justify-between text-amber-900">
+                <div className="flex items-center space-x-2">
+                  <span className="text-xl">🔊</span>
+                  <span className="text-xs font-bold">Modo Fácil: Botões ampliados e áudio ativo</span>
                 </div>
-              )}
-
-              {/* 1. Categorias */}
-              <div>
-                <label className={`block font-black text-slate-600 uppercase tracking-wider mb-2.5 ${modo === 'facil' ? 'text-sm' : 'text-xs'}`}>
-                  1. Selecione o Tipo:
-                </label>
-                <div className="grid grid-cols-2 gap-2.5">
-                  {CATEGORIAS.map((cat) => {
-                    const ativo = categoria === cat.id
-                    return (
-                      <button
-                        key={cat.id}
-                        type="button"
-                        onClick={() => selecionarCategoria(cat)}
-                        className={`rounded-2xl border-2 flex flex-col items-center justify-center transition-all cursor-pointer ${
-                          modo === 'facil' ? 'p-5' : 'p-3.5'
-                        } ${
-                          ativo
-                            ? `${cat.activeBg} ${cat.border} shadow-sm scale-[1.01]`
-                            : `bg-slate-50 border-slate-200 text-slate-700 hover:bg-slate-100`
-                        }`}
-                      >
-                        <span className={modo === 'facil' ? 'text-3xl mb-1' : 'text-2xl mb-1'}>{cat.icon}</span>
-                        <span className={`font-bold ${modo === 'facil' ? 'text-sm' : 'text-xs'}`}>{cat.label}</span>
-                      </button>
-                    )
-                  })}
-                </div>
-              </div>
-
-              {/* 2. Fotografia */}
-              <div>
-                <label className={`block font-black text-slate-600 uppercase tracking-wider mb-2 ${modo === 'facil' ? 'text-sm' : 'text-xs'}`}>
-                  2. Fotografia do Local:
-                </label>
-
-                {fotoPreview ? (
-                  <div className="relative rounded-2xl overflow-hidden border border-slate-200 bg-slate-100">
-                    <img src={fotoPreview} alt="Visualização" className={`w-full object-cover ${modo === 'facil' ? 'h-64' : 'h-48'}`} />
-                    <button
-                      type="button"
-                      onClick={removerFoto}
-                      className="absolute top-3 right-3 bg-rose-600 hover:bg-rose-700 text-white text-xs font-bold px-3 py-1.5 rounded-full shadow-md transition-all cursor-pointer"
-                    >
-                      ✕ Trocar Foto
-                    </button>
-                  </div>
-                ) : (
-                  <label className={`border-2 border-dashed border-slate-300 hover:border-blue-500 rounded-2xl flex flex-col items-center justify-center cursor-pointer bg-slate-50 transition-all ${modo === 'facil' ? 'p-7' : 'p-5'}`}>
-                    <span className={modo === 'facil' ? 'text-3xl mb-1' : 'text-2xl mb-1'}>📸</span>
-                    <span className={`font-bold text-slate-700 ${modo === 'facil' ? 'text-sm' : 'text-xs'}`}>Tirar foto ou selecionar</span>
-                    <span className="text-[11px] text-slate-400 mt-0.5">JPG, PNG ou WEBP</span>
-                    <input
-                      type="file"
-                      accept="image/*"
-                      capture="environment"
-                      onChange={handleFotoChange}
-                      className="hidden"
-                    />
-                  </label>
-                )}
-              </div>
-
-              {/* 3. GPS */}
-              <div className={`rounded-2xl border border-slate-200 bg-slate-50 flex items-center justify-between ${modo === 'facil' ? 'p-4' : 'p-3.5'}`}>
-                <div className="flex items-center space-x-2.5">
-                  <span className="text-2xl">📍</span>
-                  <div>
-                    <p className={`font-bold text-slate-800 ${modo === 'facil' ? 'text-sm' : 'text-xs'}`}>
-                      {localizacao ? 'Localização capturada!' : capturandoGps ? 'A obter GPS...' : 'GPS pendente'}
-                    </p>
-                    <p className="text-[11px] font-mono text-slate-500 mt-0.5">
-                      {localizacao
-                        ? `Lat: ${localizacao.latitude.toFixed(5)}, Long: ${localizacao.longitude.toFixed(5)}`
-                        : 'Clique em Atualizar para capturar'}
-                    </p>
-                  </div>
-                </div>
-
                 <button
                   type="button"
-                  onClick={obterLocalizacaoAtual}
-                  disabled={capturandoGps}
-                  className="px-3 py-2 text-xs font-bold bg-white border border-slate-200 text-slate-700 hover:bg-slate-100 rounded-xl transition-all shadow-2xs cursor-pointer"
+                  onClick={() => falarTexto('Escolha o problema, tire a foto e clique no botão enviar.')}
+                  className="text-xs bg-amber-500 text-white font-bold px-2.5 py-1 rounded-xl shadow-2xs"
                 >
-                  {capturandoGps ? 'A obter...' : '🔄'}
+                  Ouvir Ajuda
                 </button>
               </div>
+            )}
 
-              {/* 4. Ponto de Referência com microfone */}
-              <div>
-                <div className="flex items-center justify-between mb-2">
-                  <label className={`block font-black text-slate-600 uppercase tracking-wider ${modo === 'facil' ? 'text-sm' : 'text-xs'}`}>
-                    Referência (Opcional):
-                  </label>
+            {/* Categorias */}
+            <div>
+              <label className={`block font-black text-slate-600 uppercase tracking-wider mb-2.5 ${modo === 'facil' ? 'text-sm' : 'text-xs'}`}>
+                1. Selecione o Tipo:
+              </label>
+              <div className="grid grid-cols-2 gap-2.5">
+                {CATEGORIAS.map((cat) => {
+                  const ativo = categoria === cat.id
+                  return (
+                    <button
+                      key={cat.id}
+                      type="button"
+                      onClick={() => selecionarCategoria(cat)}
+                      className={`rounded-2xl border-2 flex flex-col items-center justify-center transition-all cursor-pointer ${
+                        modo === 'facil' ? 'p-5' : 'p-3.5'
+                      } ${
+                        ativo
+                          ? `${cat.activeBg} ${cat.border} shadow-sm scale-[1.01]`
+                          : `bg-slate-50 border-slate-200 text-slate-700 hover:bg-slate-100`
+                      }`}
+                    >
+                      <span className={modo === 'facil' ? 'text-3xl mb-1' : 'text-2xl mb-1'}>{cat.icon}</span>
+                      <span className={`font-bold ${modo === 'facil' ? 'text-sm' : 'text-xs'}`}>{cat.label}</span>
+                    </button>
+                  )
+                })}
+              </div>
+            </div>
+
+            {/* Foto */}
+            <div>
+              <label className={`block font-black text-slate-600 uppercase tracking-wider mb-2 ${modo === 'facil' ? 'text-sm' : 'text-xs'}`}>
+                2. Fotografia do Local:
+              </label>
+
+              {fotoPreview ? (
+                <div className="relative rounded-2xl overflow-hidden border border-slate-200 bg-slate-100">
+                  <img src={fotoPreview} alt="Visualização" className={`w-full object-cover ${modo === 'facil' ? 'h-64' : 'h-48'}`} />
                   <button
                     type="button"
-                    onClick={alternarReconhecimentoVoz}
-                    className={`text-[11px] font-bold px-2.5 py-1 rounded-xl transition-all flex items-center gap-1 cursor-pointer ${
-                      gravandoVoz ? 'bg-rose-600 text-white animate-pulse' : 'bg-blue-50 text-blue-600 border border-blue-200'
-                    }`}
+                    onClick={removerFoto}
+                    className="absolute top-3 right-3 bg-rose-600 hover:bg-rose-700 text-white text-xs font-bold px-3 py-1.5 rounded-full shadow-md transition-all cursor-pointer"
                   >
-                    <span>🎤</span>
-                    <span>{gravandoVoz ? 'A ouvir...' : 'Por voz'}</span>
+                    ✕ Trocar Foto
                   </button>
                 </div>
+              ) : (
+                <label className={`border-2 border-dashed border-slate-300 hover:border-blue-500 rounded-2xl flex flex-col items-center justify-center cursor-pointer bg-slate-50 transition-all ${modo === 'facil' ? 'p-7' : 'p-5'}`}>
+                  <span className={modo === 'facil' ? 'text-3xl mb-1' : 'text-2xl mb-1'}>📸</span>
+                  <span className={`font-bold text-slate-700 ${modo === 'facil' ? 'text-sm' : 'text-xs'}`}>Tirar foto ou selecionar</span>
+                  <span className="text-[11px] text-slate-400 mt-0.5">JPG, PNG ou WEBP</span>
+                  <input
+                    type="file"
+                    accept="image/*"
+                    capture="environment"
+                    onChange={handleFotoChange}
+                    className="hidden"
+                  />
+                </label>
+              )}
+            </div>
 
-                <input
-                  type="text"
-                  placeholder="Ex.: Em frente à mercearia, perto da praça..."
-                  value={pontoReferencia}
-                  onChange={(e) => setPontoReferencia(e.target.value)}
-                  className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 bg-slate-50 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 text-xs text-slate-800 transition-all"
-                />
+            {/* GPS */}
+            <div className={`rounded-2xl border border-slate-200 bg-slate-50 flex items-center justify-between ${modo === 'facil' ? 'p-4' : 'p-3.5'}`}>
+              <div className="flex items-center space-x-2.5">
+                <span className="text-2xl">📍</span>
+                <div>
+                  <p className={`font-bold text-slate-800 ${modo === 'facil' ? 'text-sm' : 'text-xs'}`}>
+                    {localizacao ? 'Localização capturada!' : capturandoGps ? 'A obter GPS...' : 'GPS pendente'}
+                  </p>
+                  <p className="text-[11px] font-mono text-slate-500 mt-0.5">
+                    {localizacao
+                      ? `Lat: ${localizacao.latitude.toFixed(5)}, Long: ${localizacao.longitude.toFixed(5)}`
+                      : 'Clique para atualizar'}
+                  </p>
+                </div>
               </div>
 
-              {/* Botão Enviar */}
               <button
-                type="submit"
-                disabled={enviando}
-                className={`w-full rounded-2xl font-black uppercase tracking-wider text-white shadow-md transition-all ${
-                  modo === 'facil' ? 'py-5 text-base' : 'py-3.5 text-xs'
-                } ${
-                  enviando ? 'bg-blue-400 cursor-not-allowed' : 'bg-blue-600 hover:bg-blue-700 active:scale-[0.99] cursor-pointer'
-                }`}
+                type="button"
+                onClick={obterLocalizacaoAtual}
+                disabled={capturandoGps}
+                className="px-3 py-2 text-xs font-bold bg-white border border-slate-200 text-slate-700 hover:bg-slate-100 rounded-xl transition-all shadow-2xs cursor-pointer"
               >
-                {enviando ? 'A enviar registo... 🚀' : 'Enviar Registo 🚀'}
+                {capturandoGps ? 'A obter...' : '🔄'}
               </button>
-            </form>
-          </div>
-        )}
-
-        {/* TELA DE MAPA */}
-        {abaAtiva === 'mapa' && (
-          <div className="space-y-3">
-            <button
-              type="button"
-              onClick={() => setAbaAtiva('inicio')}
-              className="text-xs font-bold text-slate-500 hover:text-slate-800 flex items-center gap-1 cursor-pointer"
-            >
-              ← Voltar ao Início
-            </button>
-            <div className="bg-white rounded-3xl p-4 border border-slate-200 shadow-xs">
-              <MapaOcorrencias ocorrencias={registos} onRecarregar={carregarRegistos} />
             </div>
-          </div>
-        )}
 
-        {/* TELA DE REGISTOS */}
-        {abaAtiva === 'registos' && (
-          <div className="space-y-3">
-            <button
-              type="button"
-              onClick={() => setAbaAtiva('inicio')}
-              className="text-xs font-bold text-slate-500 hover:text-slate-800 flex items-center gap-1 cursor-pointer"
-            >
-              ← Voltar ao Início
-            </button>
-
-            <div className="bg-white rounded-3xl p-5 border border-slate-200 shadow-xs space-y-4">
-              <div className="flex items-center justify-between">
-                <h2 className="text-base font-bold text-slate-800">Ocorrências Comunitárias</h2>
+            {/* Ponto de Referência */}
+            <div>
+              <div className="flex items-center justify-between mb-2">
+                <label className={`block font-black text-slate-600 uppercase tracking-wider ${modo === 'facil' ? 'text-sm' : 'text-xs'}`}>
+                  Referência (Opcional):
+                </label>
                 <button
-                  onClick={carregarRegistos}
-                  className="text-xs text-blue-600 font-bold hover:underline cursor-pointer"
+                  type="button"
+                  onClick={alternarReconhecimentoVoz}
+                  className={`text-[11px] font-bold px-2.5 py-1 rounded-xl transition-all flex items-center gap-1 cursor-pointer ${
+                    gravandoVoz ? 'bg-rose-600 text-white animate-pulse' : 'bg-blue-50 text-blue-600 border border-blue-200'
+                  }`}
                 >
-                  🔄 Atualizar
+                  <span>🎤</span>
+                  <span>{gravandoVoz ? 'A ouvir...' : 'Por voz'}</span>
                 </button>
               </div>
 
-              {carregandoRegistos ? (
-                <div className="py-16 text-center text-xs text-slate-400">A carregar ocorrências...</div>
-              ) : registos.length === 0 ? (
-                <div className="py-16 text-center text-xs text-slate-400">Nenhuma ocorrência registada.</div>
-              ) : (
-                <div className="space-y-3">
-                  {registos.map((reg) => (
-                    <div key={reg.id} className="p-3.5 rounded-2xl border border-slate-200 bg-white shadow-2xs flex justify-between items-start gap-3">
-                      <div>
-                        <div className="flex items-center space-x-2">
-                          <span className="font-bold text-xs capitalize text-slate-800">{reg.categoria}</span>
-                          <span className="text-[10px] px-2 py-0.5 rounded-full bg-amber-50 text-amber-700 font-semibold border border-amber-200">
-                            {reg.status || 'Pendente'}
-                          </span>
-                        </div>
-                        <p className="text-xs text-slate-600 mt-1">{reg.descricao}</p>
-                        <span className="text-[10px] text-slate-400 mt-1 block">
-                          {reg.created_at ? new Date(reg.created_at).toLocaleDateString('pt-BR') : ''}
+              <input
+                type="text"
+                placeholder="Ex.: Em frente à mercearia, perto da praça..."
+                value={pontoReferencia}
+                onChange={(e) => setPontoReferencia(e.target.value)}
+                className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 bg-slate-50 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 text-xs text-slate-800 transition-all"
+              />
+            </div>
+
+            <button
+              type="submit"
+              disabled={enviando}
+              className={`w-full rounded-2xl font-black uppercase tracking-wider text-white shadow-md transition-all ${
+                modo === 'facil' ? 'py-5 text-base' : 'py-3.5 text-xs'
+              } ${
+                enviando ? 'bg-blue-400 cursor-not-allowed' : 'bg-blue-600 hover:bg-blue-700 active:scale-[0.99] cursor-pointer'
+              }`}
+            >
+              {enviando ? 'A enviar registo... 🚀' : 'Enviar Registo 🚀'}
+            </button>
+          </form>
+        )}
+
+        {/* 3. TELA DE MAPA */}
+        {abaAtiva === 'mapa' && (
+          <div className="bg-white rounded-3xl p-4 border border-slate-200 shadow-xs">
+            <MapaOcorrencias ocorrencias={registos} onRecarregar={carregarRegistos} />
+          </div>
+        )}
+
+        {/* 4. TELA DE REGISTOS */}
+        {abaAtiva === 'registos' && (
+          <div className="bg-white rounded-3xl p-5 border border-slate-200 shadow-xs space-y-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <h2 className="text-base font-bold text-slate-800">Ocorrências Comunitárias</h2>
+                <p className="text-[11px] text-slate-400">Toque num item para ver o estado completo</p>
+              </div>
+              <button
+                onClick={carregarRegistos}
+                className="text-xs text-blue-600 font-bold hover:underline cursor-pointer"
+              >
+                🔄 Atualizar
+              </button>
+            </div>
+
+            {carregandoRegistos ? (
+              <div className="py-16 text-center text-xs text-slate-400">A carregar ocorrências...</div>
+            ) : registos.length === 0 ? (
+              <div className="py-16 text-center text-xs text-slate-400">Nenhuma ocorrência registada.</div>
+            ) : (
+              <div className="space-y-3">
+                {registos.map((reg) => (
+                  <div
+                    key={reg.id}
+                    onClick={() => setOcorrenciaSelecionada(reg)}
+                    className="p-3.5 rounded-2xl border border-slate-200 bg-white shadow-2xs flex justify-between items-start gap-3 hover:border-blue-400 transition-colors cursor-pointer group"
+                  >
+                    <div>
+                      <div className="flex items-center space-x-2">
+                        <span className="font-bold text-xs capitalize text-slate-800 group-hover:text-blue-600 transition-colors">
+                          {reg.categoria}
+                        </span>
+                        <span className={`text-[10px] px-2 py-0.5 rounded-full font-semibold border ${
+                          reg.status === 'resolvido' || reg.status === 'concluido'
+                            ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
+                            : 'bg-amber-50 text-amber-700 border-amber-200'
+                        }`}>
+                          {reg.status || 'Pendente'}
                         </span>
                       </div>
-
-                      {reg.foto_url && (
-                        <img src={reg.foto_url} alt="Comprovativo" className="w-14 h-14 rounded-xl object-cover shrink-0 border border-slate-200" />
-                      )}
+                      <p className="text-xs text-slate-600 mt-1 line-clamp-1">{reg.descricao}</p>
+                      <span className="text-[10px] text-slate-400 mt-1 block">
+                        {reg.created_at ? new Date(reg.created_at).toLocaleDateString('pt-BR') : ''}
+                      </span>
                     </div>
-                  ))}
-                </div>
-              )}
-            </div>
+
+                    {reg.foto_url && (
+                      <img src={reg.foto_url} alt="Comprovativo" className="w-14 h-14 rounded-xl object-cover shrink-0 border border-slate-200" />
+                    )}
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
         )}
 
-        {/* TELA DE GESTÃO */}
-        {abaAtiva === 'gestao' && (
-          <div className="space-y-3">
-            <button
-              type="button"
-              onClick={() => setAbaAtiva('inicio')}
-              className="text-xs font-bold text-slate-500 hover:text-slate-800 flex items-center gap-1 cursor-pointer"
-            >
-              ← Voltar ao Início
-            </button>
-            <PainelGestor />
-          </div>
-        )}
+        {/* 5. TELA DE GESTÃO */}
+        {abaAtiva === 'gestao' && <PainelGestor />}
       </main>
 
-      {/* Rodapé */}
-      <footer className="text-center py-5 text-xs text-slate-400 border-t border-slate-200 bg-white">
-        <p className="font-bold text-slate-600">Zelador Digital © 2026 — Gestão Comunitária</p>
-        <p className="text-[11px] mt-0.5">
-          Desenvolvido por <strong className="text-slate-600">Dante Dias Monteiro</strong>
-        </p>
-      </footer>
+      {/* BARRA DE NAVEGAÇÃO INFERIOR FIXA (BOTTOM BAR FLUTUANTE) */}
+      <nav className="fixed bottom-0 left-0 right-0 z-40 bg-white/90 backdrop-blur-md border-t border-slate-200 shadow-lg">
+        <div className="max-w-md mx-auto px-6 h-16 flex items-center justify-between">
+          {/* Aba Início */}
+          <button
+            onClick={() => { setAbaAtiva('inicio'); setOcorrenciaSelecionada(null); }}
+            className={`flex flex-col items-center justify-center space-y-1 transition-colors cursor-pointer ${
+              abaAtiva === 'inicio' ? 'text-blue-600' : 'text-slate-400 hover:text-slate-700'
+            }`}
+          >
+            <span className="text-lg">🏠</span>
+            <span className="text-[10px] font-bold">Início</span>
+          </button>
+
+          {/* Aba Mapa */}
+          <button
+            onClick={() => { setAbaAtiva('mapa'); setOcorrenciaSelecionada(null); }}
+            className={`flex flex-col items-center justify-center space-y-1 transition-colors cursor-pointer ${
+              abaAtiva === 'mapa' ? 'text-blue-600' : 'text-slate-400 hover:text-slate-700'
+            }`}
+          >
+            <span className="text-lg">🗺️</span>
+            <span className="text-[10px] font-bold">Mapa</span>
+          </button>
+
+          {/* Botão Central de Destaque: Reportar */}
+          <button
+            onClick={() => { setAbaAtiva('reportar'); setOcorrenciaSelecionada(null); }}
+            className="w-12 h-12 rounded-full bg-blue-600 text-white flex items-center justify-center text-xl shadow-md -mt-5 hover:bg-blue-700 active:scale-95 transition-all cursor-pointer border-4 border-white"
+            title="Criar Ocorrência"
+          >
+            ➕
+          </button>
+
+          {/* Aba Registos */}
+          <button
+            onClick={() => { setAbaAtiva('registos'); setOcorrenciaSelecionada(null); }}
+            className={`flex flex-col items-center justify-center space-y-1 transition-colors cursor-pointer ${
+              abaAtiva === 'registos' ? 'text-blue-600' : 'text-slate-400 hover:text-slate-700'
+            }`}
+          >
+            <span className="text-lg">📋</span>
+            <span className="text-[10px] font-bold">Registos</span>
+          </button>
+
+          {/* Aba Painel Gestor */}
+          <button
+            onClick={() => { setAbaAtiva('gestao'); setOcorrenciaSelecionada(null); }}
+            className={`flex flex-col items-center justify-center space-y-1 transition-colors cursor-pointer ${
+              abaAtiva === 'gestao' ? 'text-blue-600' : 'text-slate-400 hover:text-slate-700'
+            }`}
+          >
+            <span className="text-lg">⚙️</span>
+            <span className="text-[10px] font-bold">Gestão</span>
+          </button>
+        </div>
+      </nav>
     </div>
   )
 }
