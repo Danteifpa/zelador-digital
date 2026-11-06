@@ -10,9 +10,33 @@ const CATEGORIAS = [
   { id: 'esgoto', label: 'Esgoto / Água', icon: '💧', border: 'border-sky-400', activeBg: 'bg-sky-600 text-white', fala: 'Selecionado: Vazamento de Água ou Esgoto' }
 ]
 
+const ETAPAS_ONBOARDING = [
+  {
+    titulo: 'Voz Ativa no Seu Bairro',
+    descricao: 'O Zelador Digital é uma plataforma comunitária independente para identificar, documentar e transformar a zeladoria urbana.',
+    icone: '🏙️',
+    gradiente: 'from-blue-600 to-indigo-600'
+  },
+  {
+    titulo: 'Registo Rápido & Georreferenciado',
+    descricao: 'Tire uma fotografia em campo e deixe que o satélite GPS marque com precisão o ponto exato da ocorrência territorial.',
+    icone: '📸',
+    gradiente: 'from-sky-600 to-blue-600'
+  },
+  {
+    titulo: 'Transparência & Acompanhamento',
+    descricao: 'Consulte os dados no mapa térmico e siga a linha do tempo desde a submissão até à intervenção concluída.',
+    icone: '🗺️',
+    gradiente: 'from-emerald-600 to-teal-600'
+  }
+]
+
 export default function App() {
   const [modo, setModo] = useState('normal') // 'normal' ou 'facil'
   const [abaAtiva, setAbaAtiva] = useState('inicio') // 'inicio', 'reportar', 'mapa', 'registos', 'gestao'
+  const [mostrarOnboarding, setMostrarOnboarding] = useState(false)
+  const [etapaOnboarding, setEtapaOnboarding] = useState(0)
+
   const [categoria, setCategoria] = useState('buraco')
   const [foto, setFoto] = useState(null)
   const [fotoPreview, setFotoPreview] = useState(null)
@@ -22,18 +46,29 @@ export default function App() {
   const [gravandoVoz, setGravandoVoz] = useState(false)
   const [enviando, setEnviando] = useState(false)
 
-  // Ocorrência selecionada para visualização detalhada na Linha do Tempo
   const [ocorrenciaSelecionada, setOcorrenciaSelecionada] = useState(null)
-
   const [registos, setRegistos] = useState([])
   const [carregandoRegistos, setCarregandoRegistos] = useState(false)
 
   useEffect(() => {
+    // 1. Verifica se é o primeiro acesso para exibir o Onboarding
+    const onboardingVisto = localStorage.getItem('zelador_onboarding_concluido')
+    if (!onboardingVisto) {
+      setMostrarOnboarding(true)
+    }
+
+    // 2. Recupera preferência de interface
     const modoSalvo = localStorage.getItem('zelador_modo_interface')
     if (modoSalvo) setModo(modoSalvo)
+
     obterLocalizacaoAtual()
     carregarRegistos()
   }, [])
+
+  const concluirOnboarding = () => {
+    localStorage.setItem('zelador_onboarding_concluido', 'true')
+    setMostrarOnboarding(false)
+  }
 
   const alternarModo = (novoModo) => {
     setModo(novoModo)
@@ -213,13 +248,78 @@ export default function App() {
     }
   }
 
-  // Contadores
   const totalRegistos = registos.length
   const totalResolvidos = registos.filter((r) => r.status === 'resolvido' || r.status === 'concluido').length
   const totalPendentes = registos.filter((r) => r.status !== 'resolvido' && r.status !== 'concluido').length
 
   return (
     <div className={`min-h-screen flex flex-col justify-between font-sans pb-20 ${modo === 'facil' ? 'bg-amber-50/30 text-slate-900' : 'bg-slate-100/70 text-slate-800'}`}>
+      {/* MODAL DE ONBOARDING (BOAS-VINDAS) */}
+      {mostrarOnboarding && (
+        <div className="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-md flex items-center justify-center p-4 animate-in fade-in duration-300">
+          <div className="bg-white w-full max-w-sm rounded-3xl p-6 shadow-2xl flex flex-col justify-between text-center space-y-6 relative border border-slate-100">
+            {/* Botão de Saltar */}
+            <div className="flex justify-end w-full">
+              <button
+                onClick={concluirOnboarding}
+                className="text-xs font-bold text-slate-400 hover:text-slate-600 transition-colors"
+              >
+                Saltar Apresentação ✕
+              </button>
+            </div>
+
+            {/* Conteúdo Dinâmico do Card */}
+            <div className="space-y-4">
+              <div className={`w-20 h-20 mx-auto rounded-3xl bg-gradient-to-tr ${ETAPAS_ONBOARDING[etapaOnboarding].gradiente} flex items-center justify-center text-4xl shadow-md`}>
+                {ETAPAS_ONBOARDING[etapaOnboarding].icone}
+              </div>
+
+              <div>
+                <h3 className="text-lg font-black text-slate-800">
+                  {ETAPAS_ONBOARDING[etapaOnboarding].titulo}
+                </h3>
+                <p className="text-xs text-slate-500 mt-2 leading-relaxed px-2">
+                  {ETAPAS_ONBOARDING[etapaOnboarding].descricao}
+                </p>
+              </div>
+            </div>
+
+            {/* Indicadores de Progresso (Pontos) */}
+            <div className="flex justify-center items-center space-x-2">
+              {ETAPAS_ONBOARDING.map((_, idx) => (
+                <span
+                  key={idx}
+                  className={`h-2 rounded-full transition-all duration-300 ${
+                    etapaOnboarding === idx ? 'w-6 bg-blue-600' : 'w-2 bg-slate-200'
+                  }`}
+                />
+              ))}
+            </div>
+
+            {/* Botões de Ação */}
+            <div className="pt-2">
+              {etapaOnboarding < ETAPAS_ONBOARDING.length - 1 ? (
+                <button
+                  type="button"
+                  onClick={() => setEtapaOnboarding((prev) => prev + 1)}
+                  className="w-full py-3.5 bg-blue-600 hover:bg-blue-700 text-white rounded-2xl font-black text-xs uppercase tracking-wider shadow-md transition-all active:scale-[0.99] cursor-pointer"
+                >
+                  Continuar →
+                </button>
+              ) : (
+                <button
+                  type="button"
+                  onClick={concluirOnboarding}
+                  className="w-full py-3.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-2xl font-black text-xs uppercase tracking-wider shadow-md transition-all active:scale-[0.99] cursor-pointer"
+                >
+                  Começar a Utilizar 🚀
+                </button>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Topo / Navbar */}
       <header className="bg-white/80 backdrop-blur-md border-b border-slate-200 sticky top-0 z-40 shadow-xs">
         <div className="max-w-md mx-auto px-4 h-16 flex items-center justify-between">
@@ -237,6 +337,14 @@ export default function App() {
           </button>
 
           <div className="flex items-center space-x-2">
+            <button
+              onClick={() => { setEtapaOnboarding(0); setMostrarOnboarding(true); }}
+              className="p-2 rounded-xl text-xs font-bold bg-slate-100 text-slate-700 hover:bg-slate-200 border border-slate-200/60"
+              title="Apresentação do Projeto"
+            >
+              💡
+            </button>
+
             <div className="bg-slate-100 p-0.5 rounded-xl flex items-center text-xs font-bold border border-slate-200/60">
               <button
                 type="button"
@@ -272,7 +380,7 @@ export default function App() {
 
       {/* Conteúdo Principal */}
       <main className="max-w-md w-full mx-auto px-4 py-4 flex-1">
-        {/* MODAL / DETALHES DE STATUS TIMELINE (SELECIONADO) */}
+        {/* MODAL / STATUS TIMELINE (SELECIONADO) */}
         {ocorrenciaSelecionada && (
           <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs flex items-end sm:items-center justify-center p-0 sm:p-4 animate-in fade-in duration-200">
             <div className="bg-white w-full max-w-md rounded-t-3xl sm:rounded-3xl p-6 border border-slate-200 shadow-xl max-h-[90vh] overflow-y-auto space-y-5">
@@ -291,7 +399,6 @@ export default function App() {
                 </button>
               </div>
 
-              {/* Fotografia da ocorrência */}
               {ocorrenciaSelecionada.foto_url && (
                 <div className="rounded-2xl overflow-hidden border border-slate-200 bg-slate-100">
                   <img
@@ -302,12 +409,10 @@ export default function App() {
                 </div>
               )}
 
-              {/* Linha do Tempo (Status Tracking) */}
               <div className="bg-slate-50 rounded-2xl p-4 border border-slate-200/80 space-y-3">
                 <h4 className="text-xs font-black text-slate-500 uppercase tracking-wider">Acompanhamento do Chamado</h4>
                 
                 <div className="relative border-l-2 border-slate-200 ml-3 space-y-4 py-1">
-                  {/* Etapa 1: Submetido */}
                   <div className="relative pl-6">
                     <span className="absolute -left-2 top-0.5 w-4 h-4 rounded-full bg-blue-600 border-2 border-white flex items-center justify-center text-[8px] text-white">✓</span>
                     <p className="text-xs font-bold text-slate-800">1. Ocorrência Submetida</p>
@@ -316,7 +421,6 @@ export default function App() {
                     </p>
                   </div>
 
-                  {/* Etapa 2: Em Análise / Vistoria */}
                   <div className="relative pl-6">
                     <span className={`absolute -left-2 top-0.5 w-4 h-4 rounded-full border-2 border-white flex items-center justify-center text-[8px] text-white ${
                       ocorrenciaSelecionada.status === 'em_andamento' || ocorrenciaSelecionada.status === 'resolvido' || ocorrenciaSelecionada.status === 'concluido'
@@ -329,7 +433,6 @@ export default function App() {
                     <p className="text-[10px] text-slate-400">Demandas em triagem pela comunidade</p>
                   </div>
 
-                  {/* Etapa 3: Resolvido */}
                   <div className="relative pl-6">
                     <span className={`absolute -left-2 top-0.5 w-4 h-4 rounded-full border-2 border-white flex items-center justify-center text-[8px] text-white ${
                       ocorrenciaSelecionada.status === 'resolvido' || ocorrenciaSelecionada.status === 'concluido'
@@ -344,7 +447,6 @@ export default function App() {
                 </div>
               </div>
 
-              {/* Descrição e Ponto de Referência */}
               <div>
                 <span className="text-[10px] font-bold uppercase text-slate-400 block mb-0.5">Descrição / Referência</span>
                 <p className="text-xs text-slate-700 bg-slate-50 p-3 rounded-xl border border-slate-200">
@@ -352,7 +454,6 @@ export default function App() {
                 </p>
               </div>
 
-              {/* Botão para ver no Google Maps se houver coordenadas */}
               {ocorrenciaSelecionada.latitude && ocorrenciaSelecionada.longitude && (
                 <a
                   href={`https://www.google.com/maps/search/?api=1&query=${ocorrenciaSelecionada.latitude},${ocorrenciaSelecionada.longitude}`}
@@ -367,10 +468,9 @@ export default function App() {
           </div>
         )}
 
-        {/* 1. TELA INICIAL (ESTILO CITY SERVICES) */}
+        {/* 1. TELA INICIAL */}
         {abaAtiva === 'inicio' && (
           <div className="space-y-4">
-            {/* Card com Gradiente Superior e Métricas */}
             <div className="rounded-3xl bg-gradient-to-br from-blue-600 via-sky-600 to-emerald-500 p-6 text-white shadow-md relative overflow-hidden">
               <div className="flex items-center justify-between mb-5">
                 <div>
@@ -398,11 +498,9 @@ export default function App() {
               </div>
             </div>
 
-            {/* Ações Rápidas */}
             <div className="space-y-3">
               <h2 className="text-xs font-black text-slate-500 uppercase tracking-wider px-1">Ações Rápidas</h2>
 
-              {/* Botão de Destaque */}
               <button
                 onClick={() => setAbaAtiva('reportar')}
                 className="w-full bg-blue-600 hover:bg-blue-700 text-white rounded-3xl p-5 shadow-sm flex items-center justify-between transition-all active:scale-[0.99] cursor-pointer"
@@ -470,7 +568,6 @@ export default function App() {
               </div>
             )}
 
-            {/* Categorias */}
             <div>
               <label className={`block font-black text-slate-600 uppercase tracking-wider mb-2.5 ${modo === 'facil' ? 'text-sm' : 'text-xs'}`}>
                 1. Selecione o Tipo:
@@ -499,7 +596,6 @@ export default function App() {
               </div>
             </div>
 
-            {/* Foto */}
             <div>
               <label className={`block font-black text-slate-600 uppercase tracking-wider mb-2 ${modo === 'facil' ? 'text-sm' : 'text-xs'}`}>
                 2. Fotografia do Local:
@@ -532,7 +628,6 @@ export default function App() {
               )}
             </div>
 
-            {/* GPS */}
             <div className={`rounded-2xl border border-slate-200 bg-slate-50 flex items-center justify-between ${modo === 'facil' ? 'p-4' : 'p-3.5'}`}>
               <div className="flex items-center space-x-2.5">
                 <span className="text-2xl">📍</span>
@@ -558,7 +653,6 @@ export default function App() {
               </button>
             </div>
 
-            {/* Ponto de Referência */}
             <div>
               <div className="flex items-center justify-between mb-2">
                 <label className={`block font-black text-slate-600 uppercase tracking-wider ${modo === 'facil' ? 'text-sm' : 'text-xs'}`}>
@@ -667,10 +761,9 @@ export default function App() {
         {abaAtiva === 'gestao' && <PainelGestor />}
       </main>
 
-      {/* BARRA DE NAVEGAÇÃO INFERIOR FIXA (BOTTOM BAR FLUTUANTE) */}
+      {/* BARRA DE NAVEGAÇÃO INFERIOR FIXA */}
       <nav className="fixed bottom-0 left-0 right-0 z-40 bg-white/90 backdrop-blur-md border-t border-slate-200 shadow-lg">
         <div className="max-w-md mx-auto px-6 h-16 flex items-center justify-between">
-          {/* Aba Início */}
           <button
             onClick={() => { setAbaAtiva('inicio'); setOcorrenciaSelecionada(null); }}
             className={`flex flex-col items-center justify-center space-y-1 transition-colors cursor-pointer ${
@@ -681,7 +774,6 @@ export default function App() {
             <span className="text-[10px] font-bold">Início</span>
           </button>
 
-          {/* Aba Mapa */}
           <button
             onClick={() => { setAbaAtiva('mapa'); setOcorrenciaSelecionada(null); }}
             className={`flex flex-col items-center justify-center space-y-1 transition-colors cursor-pointer ${
@@ -692,7 +784,6 @@ export default function App() {
             <span className="text-[10px] font-bold">Mapa</span>
           </button>
 
-          {/* Botão Central de Destaque: Reportar */}
           <button
             onClick={() => { setAbaAtiva('reportar'); setOcorrenciaSelecionada(null); }}
             className="w-12 h-12 rounded-full bg-blue-600 text-white flex items-center justify-center text-xl shadow-md -mt-5 hover:bg-blue-700 active:scale-95 transition-all cursor-pointer border-4 border-white"
@@ -701,7 +792,6 @@ export default function App() {
             ➕
           </button>
 
-          {/* Aba Registos */}
           <button
             onClick={() => { setAbaAtiva('registos'); setOcorrenciaSelecionada(null); }}
             className={`flex flex-col items-center justify-center space-y-1 transition-colors cursor-pointer ${
@@ -712,7 +802,6 @@ export default function App() {
             <span className="text-[10px] font-bold">Registos</span>
           </button>
 
-          {/* Aba Painel Gestor */}
           <button
             onClick={() => { setAbaAtiva('gestao'); setOcorrenciaSelecionada(null); }}
             className={`flex flex-col items-center justify-center space-y-1 transition-colors cursor-pointer ${
