@@ -58,17 +58,67 @@ const NOTIFICACOES_PADRAO = [
   }
 ]
 
+// Função utilitária de compressão móvel via Canvas
+const comprimirImagem = (arquivo, maxWidth = 1280, maxHeight = 1280, quality = 0.8) => {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader()
+    reader.readAsDataURL(arquivo)
+    reader.onload = (event) => {
+      const img = new Image()
+      img.src = event.target.result
+      img.onload = () => {
+        let width = img.width
+        let height = img.height
+
+        if (width > height) {
+          if (width > maxWidth) {
+            height = Math.round((height * maxWidth) / width)
+            width = maxWidth
+          }
+        } else {
+          if (height > maxHeight) {
+            width = Math.round((width * maxHeight) / height)
+            height = maxHeight
+          }
+        }
+
+        const canvas = document.createElement('canvas')
+        canvas.width = width
+        canvas.height = height
+        const ctx = canvas.getContext('2d')
+        ctx.drawImage(img, 0, 0, width, height)
+
+        canvas.toBlob(
+          (blob) => {
+            if (blob) {
+              const arquivoComprimido = new File([blob], arquivo.name.replace(/\.[^/.]+$/, '.jpg'), {
+                type: 'image/jpeg',
+                lastModified: Date.now()
+              })
+              resolve(arquivoComprimido)
+            } else {
+              resolve(arquivo)
+            }
+          },
+          'image/jpeg',
+          quality
+        )
+      }
+      img.onerror = (error) => reject(error)
+    }
+    reader.onerror = (error) => reject(error)
+  })
+}
+
 export default function App() {
   const [modo, setModo] = useState('normal')
   const [abaAtiva, setAbaAtiva] = useState('inicio')
   const [mostrarOnboarding, setMostrarOnboarding] = useState(false)
   const [etapaOnboarding, setEtapaOnboarding] = useState(0)
 
-  // Central de Notificações
   const [mostrarNotificacoes, setMostrarNotificacoes] = useState(false)
   const [notificacoesLidas, setNotificacoesLidas] = useState([])
 
-  // Estado de conectividade da rede
   const [estaOnline, setEstaOnline] = useState(navigator.onLine)
   const [filaOffline, setFilaOffline] = useState([])
   const [sincronizandoFila, setSincronizandoFila] = useState(false)
@@ -76,6 +126,7 @@ export default function App() {
   const [categoria, setCategoria] = useState('buraco')
   const [foto, setFoto] = useState(null)
   const [fotoPreview, setFotoPreview] = useState(null)
+  const [processandoFoto, setProcessandoFoto] = useState(false)
   const [localizacao, setLocalizacao] = useState(null)
   const [capturandoGps, setCapturandoGps] = useState(false)
   const [pontoReferencia, setPontoReferencia] = useState('')
@@ -93,7 +144,6 @@ export default function App() {
   const [registos, setRegistos] = useState([])
   const [carregandoRegistos, setCarregandoRegistos] = useState(false)
 
-  // Carrega fila offline e notificações lidas
   useEffect(() => {
     const filaSalva = localStorage.getItem('zelador_fila_offline')
     if (filaSalva) {
@@ -114,7 +164,6 @@ export default function App() {
     }
   }, [])
 
-  // Listeners de rede
   useEffect(() => {
     const handleOnline = () => {
       setEstaOnline(true)
@@ -291,12 +340,22 @@ export default function App() {
     return await res.blob()
   }
 
-  const handleFotoChange = (e) => {
+  const handleFotoChange = async (e) => {
     const file = e.target.files[0]
     if (file) {
-      setFoto(file)
-      setFotoPreview(URL.createObjectURL(file))
-      if (modo === 'facil') falarTexto('Fotografia adicionada.')
+      try {
+        setProcessandoFoto(true)
+        const comprimida = await comprimirImagem(file)
+        setFoto(comprimida)
+        setFotoPreview(URL.createObjectURL(comprimida))
+        if (modo === 'facil') falarTexto('Fotografia adicionada e otimizada.')
+      } catch (err) {
+        console.warn('Falha na compressão, usando original:', err)
+        setFoto(file)
+        setFotoPreview(URL.createObjectURL(file))
+      } finally {
+        setProcessandoFoto(false)
+      }
     }
   }
 
@@ -593,7 +652,7 @@ export default function App() {
         </div>
       )}
 
-      {/* MODAL MODERNO DE SUCESSO NO ENVIO */}
+      {/* MODAL DE SUCESSO */}
       {sucessoEnvio && (
         <div className="fixed inset-0 z-50 bg-slate-950/75 backdrop-blur-sm flex items-center justify-center p-4 animate-in fade-in zoom-in-95 duration-200">
           <div className="bg-white w-full max-w-sm rounded-3xl p-6 shadow-2xl text-center space-y-5 border border-slate-100">
@@ -737,7 +796,6 @@ export default function App() {
           </button>
 
           <div className="flex items-center space-x-2">
-            {/* Botão Notificações com Badge */}
             <button
               onClick={() => setMostrarNotificacoes(true)}
               className="p-2 rounded-xl text-xs font-bold bg-slate-100 text-slate-700 hover:bg-slate-200 border border-slate-200/60 relative cursor-pointer"
@@ -1017,7 +1075,11 @@ export default function App() {
                 2. Fotografia do Local:
               </label>
 
-              {fotoPreview ? (
+              {processandoFoto ? (
+                <div className="rounded-2xl border border-slate-200 bg-slate-50 p-8 text-center text-xs text-blue-600 font-bold animate-pulse">
+                  A otimizar e comprimir fotografia... ⚡
+                </div>
+              ) : fotoPreview ? (
                 <div className="relative rounded-2xl overflow-hidden border border-slate-200 bg-slate-100">
                   <img src={fotoPreview} alt="Visualização" className={`w-full object-cover ${modo === 'facil' ? 'h-64' : 'h-48'}`} />
                   <button
@@ -1032,7 +1094,7 @@ export default function App() {
                 <label className={`border-2 border-dashed border-slate-300 hover:border-blue-500 rounded-2xl flex flex-col items-center justify-center cursor-pointer bg-slate-50 transition-all ${modo === 'facil' ? 'p-7' : 'p-5'}`}>
                   <span className={modo === 'facil' ? 'text-3xl mb-1' : 'text-2xl mb-1'}>📸</span>
                   <span className={`font-bold text-slate-700 ${modo === 'facil' ? 'text-sm' : 'text-xs'}`}>Tirar foto ou selecionar</span>
-                  <span className="text-[11px] text-slate-400 mt-0.5">JPG, PNG ou WEBP</span>
+                  <span className="text-[11px] text-slate-400 mt-0.5">Compressão automática para poupança de dados</span>
                   <input
                     type="file"
                     accept="image/*"
@@ -1097,11 +1159,11 @@ export default function App() {
 
             <button
               type="submit"
-              disabled={enviando}
+              disabled={enviando || processandoFoto}
               className={`w-full rounded-2xl font-black uppercase tracking-wider text-white shadow-md transition-all ${
                 modo === 'facil' ? 'py-5 text-base' : 'py-3.5 text-xs'
               } ${
-                enviando ? 'bg-blue-400 cursor-not-allowed' : 'bg-blue-600 hover:bg-blue-700 active:scale-[0.99] cursor-pointer'
+                enviando || processandoFoto ? 'bg-blue-400 cursor-not-allowed' : 'bg-blue-600 hover:bg-blue-700 active:scale-[0.99] cursor-pointer'
               }`}
             >
               {enviando ? 'A processar... 🚀' : estaOnline ? 'Enviar Registo 🚀' : 'Guardar no Telemóvel 💾'}
