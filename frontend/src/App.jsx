@@ -3,7 +3,7 @@ import { supabase } from './lib/supabase'
 import PainelGestor from './components/PainelGestor'
 import MapaOcorrencias from './components/MapaOcorrencias'
 
-// Coordenadas centrais de referência comunitária (Residencial Novo Cristo, Icuí - Ananindeua)
+// Coordenadas centrais comunitárias (Residencial Novo Cristo, Icuí - Ananindeua)
 const CENTRO_COMUNITARIO = {
   latitude: -1.345000,
   longitude: -48.415000,
@@ -66,7 +66,7 @@ const NOTIFICACOES_PADRAO = [
   }
 ]
 
-// Fórmula Haversine para cálculo de distância em km
+// Fórmula Haversine
 function calcularDistanciaKm(lat1, lon1, lat2, lon2) {
   const R = 6371
   const dLat = ((lat2 - lat1) * Math.PI) / 180
@@ -277,6 +277,9 @@ export default function App() {
   const [abaAtiva, setAbaAtiva] = useState('inicio')
   const [mostrarOnboarding, setMostrarOnboarding] = useState(false)
   const [etapaOnboarding, setEtapaOnboarding] = useState(0)
+
+  // Modal QR Code
+  const [mostrarQrCode, setMostrarQrCode] = useState(false)
 
   // PWA
   const [promptInstalacao, setPromptInstalacao] = useState(null)
@@ -539,7 +542,6 @@ export default function App() {
         setCapturandoGps(false)
         feedbackSensorial.gpsSucesso()
 
-        // Validação de cerca territorial (Geofencing)
         const dist = calcularDistanciaKm(
           coords.latitude,
           coords.longitude,
@@ -825,7 +827,6 @@ export default function App() {
     }
   }
 
-  // Distância do ponto atual em relação à comunidade
   const distanciaAtualKm = useMemo(() => {
     if (!localizacao) return null
     return calcularDistanciaKm(
@@ -857,6 +858,9 @@ export default function App() {
   const totalResolvidos = registos.filter((r) => r.status === 'resolvido' || r.status === 'concluido').length
   const totalPendentes = registos.filter((r) => r.status !== 'resolvido' && r.status !== 'concluido').length
   const taxaResolucao = totalRegistos > 0 ? Math.round((totalResolvidos / totalRegistos) * 100) : 0
+
+  const urlApp = typeof window !== 'undefined' ? window.location.origin : 'https://zelador-digital.vercel.app'
+  const qrCodeUrl = `https://api.qrserver.com/v1/create-qr-code/?size=240x240&data=${encodeURIComponent(urlApp)}&bgcolor=ffffff&color=1e293b&qzone=1`
 
   return (
     <div className={`min-h-screen flex flex-col justify-between font-sans pb-20 ${modo === 'facil' ? 'bg-amber-50/30 text-slate-900' : 'bg-slate-100/70 text-slate-800'}`}>
@@ -898,6 +902,59 @@ export default function App() {
             >
               ✕
             </button>
+          </div>
+        </div>
+      )}
+
+      {/* MODAL QR CODE COMUNITÁRIO */}
+      {mostrarQrCode && (
+        <div className="fixed inset-0 z-50 bg-slate-950/75 backdrop-blur-sm flex items-center justify-center p-4 animate-in fade-in zoom-in-95 duration-200">
+          <div className="bg-white w-full max-w-sm rounded-3xl p-6 shadow-2xl text-center space-y-4 border border-slate-100">
+            <div className="flex items-center justify-between border-b border-slate-100 pb-2">
+              <div className="flex items-center space-x-2">
+                <span className="text-xl">📲</span>
+                <h3 className="text-sm font-black text-slate-800">Partilha com Vizinhos</h3>
+              </div>
+              <button
+                onClick={() => {
+                  feedbackSensorial.toqueSuave()
+                  setMostrarQrCode(false)
+                }}
+                className="w-7 h-7 rounded-full bg-slate-100 text-slate-400 hover:text-slate-700 flex items-center justify-center text-xs font-bold cursor-pointer"
+              >
+                ✕
+              </button>
+            </div>
+
+            <p className="text-xs text-slate-500 leading-relaxed">
+              Aponte a câmara do telemóvel para abrir e instalar a aplicação comunitária sem digitar o link.
+            </p>
+
+            <div className="bg-slate-50 p-4 rounded-3xl border border-slate-200/90 inline-block shadow-inner">
+              <img
+                src={qrCodeUrl}
+                alt="QR Code da aplicação"
+                className="w-52 h-52 mx-auto rounded-2xl mix-blend-multiply"
+              />
+            </div>
+
+            <div className="space-y-2 pt-1">
+              <button
+                type="button"
+                onClick={async () => {
+                  feedbackSensorial.toqueSuave()
+                  try {
+                    await navigator.clipboard.writeText(urlApp)
+                    mostrarAlertaToast('Hiperligação copiada para a área de transferência!')
+                  } catch (e) {
+                    mostrarAlertaToast('Erro ao copiar hiperligação.')
+                  }
+                }}
+                className="w-full py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-2xl font-bold text-xs uppercase tracking-wider transition-all shadow-sm cursor-pointer"
+              >
+                Copiar Hiperligação da Aplicação 🔗
+              </button>
+            </div>
           </div>
         </div>
       )}
@@ -1201,7 +1258,7 @@ export default function App() {
 
       {/* Conteúdo Central */}
       <main className="max-w-md w-full mx-auto px-4 py-4 flex-1">
-        {/* MODAL DETALHE / TIMELINE COM PARTILHA */}
+        {/* MODAL DETALHE COM PARTILHA */}
         {ocorrenciaSelecionada && (
           <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs flex items-end sm:items-center justify-center p-0 sm:p-4 animate-in fade-in duration-200">
             <div className="bg-white w-full max-w-md rounded-t-3xl sm:rounded-3xl p-6 border border-slate-200 shadow-xl max-h-[90vh] overflow-y-auto space-y-5">
@@ -1553,9 +1610,8 @@ export default function App() {
                 </button>
               </div>
 
-              {/* Indicador de Raio Territorial */}
               {localizacao && distanciaAtualKm !== null && (
-                <div className={`pt-2 border-t border-slate-200/80 flex items-center justify-between text-[11px]`}>
+                <div className="pt-2 border-t border-slate-200/80 flex items-center justify-between text-[11px]">
                   <div className="flex items-center space-x-1.5">
                     <span className={distanciaAtualKm <= CENTRO_COMUNITARIO.raioMaximoKm ? 'text-emerald-600' : 'text-amber-500'}>
                       {distanciaAtualKm <= CENTRO_COMUNITARIO.raioMaximoKm ? '●' : '▲'}
@@ -1842,7 +1898,25 @@ export default function App() {
             </div>
 
             <div className="space-y-3 pt-1">
-              <h3 className="text-xs font-black text-slate-500 uppercase tracking-wider">Ações e Configurações</h3>
+              <h3 className="text-xs font-black text-slate-500 uppercase tracking-wider">Ações e Partilha</h3>
+
+              {/* Botão de Exibição do QR Code */}
+              <button
+                onClick={() => {
+                  feedbackSensorial.toqueSuave()
+                  setMostrarQrCode(true)
+                }}
+                className="w-full bg-slate-900 hover:bg-slate-800 text-white rounded-2xl p-3.5 flex items-center justify-between text-left transition-all shadow-xs cursor-pointer"
+              >
+                <div className="flex items-center space-x-3">
+                  <span className="text-lg">📲</span>
+                  <div>
+                    <span className="text-xs font-black block">Exibir QR Code para Vizinhos</span>
+                    <span className="text-[10px] text-slate-300">Apontar a câmara para abrir e instalar</span>
+                  </div>
+                </div>
+                <span className="text-xs font-bold text-slate-300">Abrir ↗</span>
+              </button>
 
               {!pwaInstalado && (
                 <button
@@ -1850,7 +1924,7 @@ export default function App() {
                   className="w-full bg-blue-50 hover:bg-blue-100 border border-blue-200 rounded-2xl p-3.5 flex items-center justify-between text-left transition-all cursor-pointer"
                 >
                   <div className="flex items-center space-x-3">
-                    <span className="text-lg">📲</span>
+                    <span className="text-lg">📱</span>
                     <div>
                       <span className="text-xs font-black text-blue-900 block">Instalar no Telemóvel</span>
                       <span className="text-[10px] text-blue-700">Adicionar ícone ao ecrã principal (PWA)</span>
