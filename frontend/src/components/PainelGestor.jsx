@@ -11,9 +11,10 @@ export default function PainelGestor() {
   const [filtroStatus, setFiltroStatus] = useState('todos')
   const [filtroCategoria, setFiltroCategoria] = useState('todas')
   const [termoBusca, setTermoBusca] = useState('')
+  const [dataInicio, setDataInicio] = useState('')
+  const [dataFim, setDataFim] = useState('')
   const [atualizandoId, setAtualizandoId] = useState(null)
 
-  // PIN de acesso local ao painel administrativo
   const PIN_CORRETO = '2026'
 
   useEffect(() => {
@@ -79,10 +80,58 @@ export default function PainelGestor() {
     }
   }
 
-  // Exportação formatada para CSV
+  const limparFiltroDatas = () => {
+    setDataInicio('')
+    setDataFim('')
+  }
+
+  // Filtragem avançada incluindo intervalo temporal
+  const ocorrenciasFiltradas = useMemo(() => {
+    return ocorrencias.filter((item) => {
+      const bateuStatus =
+        filtroStatus === 'todos' ||
+        (filtroStatus === 'resolvido' && (item.status === 'resolvido' || item.status === 'concluido')) ||
+        (filtroStatus === 'pendente' && item.status !== 'resolvido' && item.status !== 'concluido')
+
+      const bateuCategoria = filtroCategoria === 'todas' || item.categoria === filtroCategoria
+
+      const bateuTexto =
+        !termoBusca.trim() ||
+        (item.descricao && item.descricao.toLowerCase().includes(termoBusca.toLowerCase())) ||
+        (item.categoria && item.categoria.toLowerCase().includes(termoBusca.toLowerCase()))
+
+      // Validação de intervalo de data
+      let bateuData = true
+      if (item.created_at) {
+        const dataItem = new Date(item.created_at)
+        if (dataInicio) {
+          const inicio = new Date(`${dataInicio}T00:00:00`)
+          if (dataItem < inicio) bateuData = false
+        }
+        if (dataFim) {
+          const fim = new Date(`${dataFim}T23:59:59`)
+          if (dataItem > fim) bateuData = false
+        }
+      }
+
+      return bateuStatus && bateuCategoria && bateuTexto && bateuData
+    })
+  }, [ocorrencias, filtroStatus, filtroCategoria, termoBusca, dataInicio, dataFim])
+
+  // Contadores dinâmicos baseados nos filtros ativos
+  const contadores = useMemo(() => {
+    const total = ocorrenciasFiltradas.length
+    const lixo = ocorrenciasFiltradas.filter((o) => o.categoria === 'lixo').length
+    const iluminacao = ocorrenciasFiltradas.filter((o) => o.categoria === 'iluminacao').length
+    const buraco = ocorrenciasFiltradas.filter((o) => o.categoria === 'buraco').length
+    const esgoto = ocorrenciasFiltradas.filter((o) => o.categoria === 'esgoto').length
+    return { total, lixo, iluminacao, buraco, esgoto }
+  }, [ocorrenciasFiltradas])
+
+  // Exportação para CSV sanitizado com período
   const exportarCSV = () => {
     if (ocorrenciasFiltradas.length === 0) {
-      alert('Nenhum dado disponível para exportar.')
+      alert('Nenhum dado disponível no período selecionado para exportar.')
       return
     }
 
@@ -98,45 +147,18 @@ export default function PainelGestor() {
       `"${o.foto_url || ''}"`
     ])
 
+    const periodoStr = dataInicio || dataFim ? `_periodo_${dataInicio || 'inicio'}_a_${dataFim || 'hoje'}` : ''
     const conteudoCSV = [colunas.join(','), ...linhas.map((l) => l.join(','))].join('\n')
     const blob = new Blob(['\uFEFF' + conteudoCSV], { type: 'text/csv;charset=utf-8;' })
     const link = document.createElement('a')
     link.href = URL.createObjectURL(blob)
-    link.download = `zelador_digital_relatorio_${new Date().toISOString().slice(0, 10)}.csv`
+    link.download = `zelador_digital_relatorio${periodoStr}_${new Date().toISOString().slice(0, 10)}.csv`
     link.click()
   }
 
   const imprimirRelatorio = () => {
     window.print()
   }
-
-  const ocorrenciasFiltradas = useMemo(() => {
-    return ocorrencias.filter((item) => {
-      const bateuStatus =
-        filtroStatus === 'todos' ||
-        (filtroStatus === 'resolvido' && (item.status === 'resolvido' || item.status === 'concluido')) ||
-        (filtroStatus === 'pendente' && item.status !== 'resolvido' && item.status !== 'concluido')
-
-      const bateuCategoria = filtroCategoria === 'todas' || item.categoria === filtroCategoria
-
-      const bateuTexto =
-        !termoBusca.trim() ||
-        (item.descricao && item.descricao.toLowerCase().includes(termoBusca.toLowerCase())) ||
-        (item.categoria && item.categoria.toLowerCase().includes(termoBusca.toLowerCase()))
-
-      return bateuStatus && bateuCategoria && bateuTexto
-    })
-  }, [ocorrencias, filtroStatus, filtroCategoria, termoBusca])
-
-  // Contadores por categoria
-  const contadores = useMemo(() => {
-    const total = ocorrencias.length
-    const lixo = ocorrencias.filter((o) => o.categoria === 'lixo').length
-    const iluminacao = ocorrencias.filter((o) => o.categoria === 'iluminacao').length
-    const buraco = ocorrencias.filter((o) => o.categoria === 'buraco').length
-    const esgoto = ocorrencias.filter((o) => o.categoria === 'esgoto').length
-    return { total, lixo, iluminacao, buraco, esgoto }
-  }, [ocorrencias])
 
   if (!autenticado) {
     return (
@@ -183,18 +205,18 @@ export default function PainelGestor() {
             <span className="text-lg">⚙️</span>
             <h2 className="text-base font-black text-slate-800">Gestão de Ocorrências</h2>
           </div>
-          <p className="text-[11px] text-slate-400 mt-0.5">Triagem, auditoria e atualização de status</p>
+          <p className="text-[11px] text-slate-400 mt-0.5">Triagem, auditoria territorial e relatórios</p>
         </div>
 
         <button
           onClick={handleLogout}
-          className="text-xs text-slate-500 hover:text-rose-600 font-bold px-2.5 py-1 rounded-lg border border-slate-200 bg-slate-50"
+          className="text-xs text-slate-500 hover:text-rose-600 font-bold px-2.5 py-1 rounded-lg border border-slate-200 bg-slate-50 cursor-pointer"
         >
           Sair
         </button>
       </div>
 
-      {/* Cartões Rápidos de Demanda por Tipologia */}
+      {/* Cartões Rápidos de Demanda */}
       <div className="grid grid-cols-4 gap-2 text-center">
         <div className="bg-amber-50 border border-amber-200 rounded-2xl p-2.5">
           <span className="text-lg block">🗑️</span>
@@ -218,8 +240,8 @@ export default function PainelGestor() {
         </div>
       </div>
 
-      {/* Barra de Filtros e Busca */}
-      <div className="space-y-2">
+      {/* Barra de Filtros e Intervalo Temporal */}
+      <div className="space-y-2.5">
         <input
           type="text"
           placeholder="Pesquisar chamado por descrição..."
@@ -228,12 +250,41 @@ export default function PainelGestor() {
           className="w-full px-3 py-2 rounded-xl border border-slate-200 bg-slate-50 text-xs focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-600"
         />
 
+        {/* Seletores de Período */}
+        <div className="bg-slate-50 p-2.5 rounded-2xl border border-slate-200/80 flex flex-wrap items-center justify-between gap-2">
+          <div className="flex items-center space-x-1.5 text-xs text-slate-600 font-bold">
+            <span>📅 De:</span>
+            <input
+              type="date"
+              value={dataInicio}
+              onChange={(e) => setDataInicio(e.target.value)}
+              className="text-[11px] font-medium bg-white border border-slate-200 rounded-lg px-2 py-1 text-slate-700"
+            />
+            <span>Até:</span>
+            <input
+              type="date"
+              value={dataFim}
+              onChange={(e) => setDataFim(e.target.value)}
+              className="text-[11px] font-medium bg-white border border-slate-200 rounded-lg px-2 py-1 text-slate-700"
+            />
+          </div>
+
+          {(dataInicio || dataFim) && (
+            <button
+              onClick={limparFiltroDatas}
+              className="text-[10px] font-black text-rose-600 hover:underline px-1 cursor-pointer"
+            >
+              ✕ Limpar datas
+            </button>
+          )}
+        </div>
+
         <div className="flex items-center justify-between gap-2 overflow-x-auto pb-1">
           <div className="flex space-x-1.5 shrink-0">
             <select
               value={filtroStatus}
               onChange={(e) => setFiltroStatus(e.target.value)}
-              className="text-[11px] font-bold bg-slate-100 border border-slate-200 rounded-xl px-2.5 py-1.5 text-slate-700"
+              className="text-[11px] font-bold bg-slate-100 border border-slate-200 rounded-xl px-2.5 py-1.5 text-slate-700 cursor-pointer"
             >
               <option value="todos">Status: Todos</option>
               <option value="pendente">Pendentes</option>
@@ -243,7 +294,7 @@ export default function PainelGestor() {
             <select
               value={filtroCategoria}
               onChange={(e) => setFiltroCategoria(e.target.value)}
-              className="text-[11px] font-bold bg-slate-100 border border-slate-200 rounded-xl px-2.5 py-1.5 text-slate-700"
+              className="text-[11px] font-bold bg-slate-100 border border-slate-200 rounded-xl px-2.5 py-1.5 text-slate-700 cursor-pointer"
             >
               <option value="todas">Tipologia: Todas</option>
               <option value="lixo">Lixo</option>
@@ -256,14 +307,14 @@ export default function PainelGestor() {
           <div className="flex space-x-1.5 shrink-0">
             <button
               onClick={exportarCSV}
-              className="text-[11px] font-black bg-emerald-600 hover:bg-emerald-700 text-white px-3 py-1.5 rounded-xl transition-all flex items-center gap-1 shadow-2xs"
+              className="text-[11px] font-black bg-emerald-600 hover:bg-emerald-700 text-white px-3 py-1.5 rounded-xl transition-all flex items-center gap-1 shadow-2xs cursor-pointer"
             >
               <span>📥</span>
               <span>CSV</span>
             </button>
             <button
               onClick={imprimirRelatorio}
-              className="text-[11px] font-bold bg-slate-100 hover:bg-slate-200 text-slate-700 px-3 py-1.5 rounded-xl transition-all border border-slate-200"
+              className="text-[11px] font-bold bg-slate-100 hover:bg-slate-200 text-slate-700 px-3 py-1.5 rounded-xl transition-all border border-slate-200 cursor-pointer"
             >
               🖨️ PDF
             </button>
@@ -271,11 +322,13 @@ export default function PainelGestor() {
         </div>
       </div>
 
-      {/* Lista de Gestão e Atualização de Status */}
+      {/* Lista de Registos com Ações */}
       {carregando ? (
         <div className="py-16 text-center text-xs text-slate-400">A carregar registos...</div>
       ) : ocorrenciasFiltradas.length === 0 ? (
-        <div className="py-12 text-center text-xs text-slate-400 font-bold">Nenhum chamado localizado.</div>
+        <div className="py-12 text-center text-xs text-slate-400 font-bold">
+          Nenhum chamado localizado com os filtros e período selecionados.
+        </div>
       ) : (
         <div className="space-y-3">
           {ocorrenciasFiltradas.map((item) => (
@@ -303,14 +356,13 @@ export default function PainelGestor() {
                 )}
               </div>
 
-              {/* Botões de Ação para o Gestor */}
               <div className="flex items-center justify-between border-t border-slate-200/80 pt-2 text-xs">
                 <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400">Alterar Estado:</span>
                 <div className="flex space-x-1.5">
                   <button
                     disabled={atualizandoId === item.id}
                     onClick={() => atualizarStatus(item.id, 'pendente')}
-                    className={`px-2.5 py-1 rounded-lg text-[10px] font-black transition-all ${
+                    className={`px-2.5 py-1 rounded-lg text-[10px] font-black transition-all cursor-pointer ${
                       item.status !== 'resolvido' && item.status !== 'concluido'
                         ? 'bg-amber-500 text-white shadow-2xs'
                         : 'bg-white border border-slate-200 text-slate-600 hover:bg-slate-100'
@@ -321,7 +373,7 @@ export default function PainelGestor() {
                   <button
                     disabled={atualizandoId === item.id}
                     onClick={() => atualizarStatus(item.id, 'resolvido')}
-                    className={`px-2.5 py-1 rounded-lg text-[10px] font-black transition-all ${
+                    className={`px-2.5 py-1 rounded-lg text-[10px] font-black transition-all cursor-pointer ${
                       item.status === 'resolvido' || item.status === 'concluido'
                         ? 'bg-emerald-600 text-white shadow-2xs'
                         : 'bg-white border border-slate-200 text-slate-600 hover:bg-slate-100'
