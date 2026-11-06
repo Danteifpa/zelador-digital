@@ -1,9 +1,16 @@
 {
-  "short_name": "Zelador Digital",
-  "name": "Zelador Digital - Monitoramento Comunitário",
+  "short_name": "Zelador",
+  "name": "Zelador Digital Comunitário",
+  "description": "Mapeamento urbano e zeladoria comunitária independente para o Residencial Novo Cristo e Icuí.",
   "icons": [
     {
       "src": "/favicon.svg",
+      "type": "image/svg+xml",
+      "sizes": "any",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/icons.svg",
       "type": "image/svg+xml",
       "sizes": "192x192 512x512",
       "purpose": "any maskable"
@@ -13,6 +20,23 @@
   "background_color": "#ffffff",
   "theme_color": "#2563eb",
   "display": "standalone",
-  "orientation": "portrait",
-  "scope": "/"
+  "orientation": "portrait-primary",
+  "scope": "/",
+  "categories": ["utilities", "social", "productivity"],
+  "shortcuts": [
+    {
+      "name": "Registar Ocorrência",
+      "short_name": "Registar",
+      "description": "Abrir ecrã para registar ocorrência comunitária",
+      "url": "/?aba=reportar",
+      "icons": [{ "src": "/favicon.svg", "sizes": "any" }]
+    },
+    {
+      "name": "Ver Mapa",
+      "short_name": "Mapa",
+      "description": "Visualizar mapa térmico e ocorrências",
+      "url": "/?aba=mapa",
+      "icons": [{ "src": "/favicon.svg", "sizes": "any" }]
+    }
+  ]
 }
