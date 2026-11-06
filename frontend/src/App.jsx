@@ -58,7 +58,7 @@ const NOTIFICACOES_PADRAO = [
   }
 ]
 
-// Utilitário de Feedback Háptico e Sons Sintetizados via Web Audio API
+// Feedback Háptico e Sons Sintetizados via Web Audio API
 const feedbackSensorial = {
   vibrar: (padrao = 15) => {
     if (typeof window !== 'undefined' && 'vibrate' in navigator) {
@@ -110,7 +110,7 @@ const feedbackSensorial = {
   }
 }
 
-// Utilitário para extrair coordenadas GPS de metadados EXIF
+// Extração EXIF de coordenadas GPS
 function extrairGpsExif(arquivo) {
   return new Promise((resolve) => {
     const reader = new FileReader()
@@ -118,9 +118,7 @@ function extrairGpsExif(arquivo) {
       const buffer = e.target.result
       const dataView = new DataView(buffer)
 
-      if (dataView.getUint16(0, false) !== 0xffd8) {
-        return resolve(null)
-      }
+      if (dataView.getUint16(0, false) !== 0xffd8) return resolve(null)
 
       let offset = 2
       const length = dataView.byteLength
@@ -184,7 +182,7 @@ function analisarTiffGps(view, tiffOffset) {
       return { latitude: finalLat, longitude: finalLng }
     }
   } catch (err) {
-    console.warn('Metadados EXIF GPS não encontrados ou corrompidos')
+    console.warn('Metadados EXIF GPS não encontrados')
   }
   return null
 }
@@ -199,7 +197,7 @@ function lerRacionaisGps(view, offset, isLittleEndian) {
   return [dNum / (dDen || 1), mNum / (mDen || 1), sNum / (sDen || 1)]
 }
 
-// Compressão móvel via Canvas
+// Compressão de foto
 const comprimirImagem = (arquivo, maxWidth = 1280, maxHeight = 1280, quality = 0.8) => {
   return new Promise((resolve, reject) => {
     const reader = new FileReader()
@@ -257,7 +255,7 @@ export default function App() {
   const [mostrarOnboarding, setMostrarOnboarding] = useState(false)
   const [etapaOnboarding, setEtapaOnboarding] = useState(0)
 
-  // Estados PWA
+  // PWA
   const [promptInstalacao, setPromptInstalacao] = useState(null)
   const [pwaInstalado, setPwaInstalado] = useState(false)
   const [bannerPwaIgnorado, setBannerPwaIgnorado] = useState(false)
@@ -266,7 +264,7 @@ export default function App() {
   const [mostrarNotificacoes, setMostrarNotificacoes] = useState(false)
   const [notificacoesLidas, setNotificacoesLidas] = useState([])
 
-  // Conectividade e fila offline
+  // Conectividade
   const [estaOnline, setEstaOnline] = useState(navigator.onLine)
   const [filaOffline, setFilaOffline] = useState([])
   const [sincronizandoFila, setSincronizandoFila] = useState(false)
@@ -585,6 +583,34 @@ export default function App() {
     if (modo === 'facil') falarTexto(cat.fala)
   }
 
+  // Partilha Social / Comunitária (Web Share API)
+  const partilharOcorrencia = async (item) => {
+    feedbackSensorial.toqueSuave()
+    const categoriaLabel = CATEGORIAS.find((c) => c.id === item.categoria)?.label || item.categoria
+    const textoPartilha = `📢 *Zelador Digital - Ocorrência Comunitária*\n📍 *Tipo:* ${categoriaLabel}\n📝 *Detalhe:* ${item.descricao || 'Sem descrição'}\n📌 *Status:* ${item.status || 'Pendente'}\n🗺️ *Ver no Mapa:* https://www.google.com/maps/search/?api=1&query=${item.latitude},${item.longitude}`
+
+    if (navigator.share) {
+      try {
+        await navigator.share({
+          title: `Ocorrência: ${categoriaLabel}`,
+          text: textoPartilha
+        })
+      } catch (err) {
+        if (err.name !== 'AbortError') {
+          console.warn('Falha na partilha nativa:', err)
+        }
+      }
+    } else {
+      // Fallback: Copiar para área de transferência
+      try {
+        await navigator.clipboard.writeText(textoPartilha)
+        mostrarAlertaToast('Texto da ocorrência copiado para a área de transferência!')
+      } catch (e) {
+        mostrarAlertaToast('Não foi possível copiar o texto.')
+      }
+    }
+  }
+
   const sincronizarFilaOffline = async () => {
     const filaAtual = JSON.parse(localStorage.getItem('zelador_fila_offline') || '[]')
     if (filaAtual.length === 0 || sincronizandoFila) return
@@ -680,7 +706,10 @@ export default function App() {
         setSucessoEnvio({
           categoria,
           foto_url: fotoPreview,
-          descricao: `${pontoReferencia.trim() || 'Ocorrência comunitária'} (Guardado Offline)`
+          descricao: `${pontoReferencia.trim() || 'Ocorrência comunitária'} (Guardado Offline)`,
+          latitude: localizacao.latitude,
+          longitude: localizacao.longitude,
+          status: 'pendente'
         })
 
         setPontoReferencia('')
@@ -727,7 +756,10 @@ export default function App() {
       setSucessoEnvio({
         categoria,
         foto_url: urlFotoPublica,
-        descricao: pontoReferencia.trim() || 'Ocorrência registada pela comunidade'
+        descricao: pontoReferencia.trim() || 'Ocorrência registada pela comunidade',
+        latitude: localizacao.latitude,
+        longitude: localizacao.longitude,
+        status: 'pendente'
       })
 
       setPontoReferencia('')
@@ -767,7 +799,7 @@ export default function App() {
 
   return (
     <div className={`min-h-screen flex flex-col justify-between font-sans pb-20 ${modo === 'facil' ? 'bg-amber-50/30 text-slate-900' : 'bg-slate-100/70 text-slate-800'}`}>
-      {/* AVISO OFFLINE / FILA PENDENTE */}
+      {/* AVISO OFFLINE */}
       {!estaOnline && (
         <div className="bg-amber-500 text-white text-[11px] font-black py-1.5 px-4 text-center tracking-wide sticky top-0 z-50 flex items-center justify-center gap-1.5 shadow-xs">
           <span>⚠️</span>
@@ -788,7 +820,7 @@ export default function App() {
         </div>
       )}
 
-      {/* TOAST FLUTUANTE DE AVISO */}
+      {/* TOAST FLUTUANTE */}
       {mensagemToast && (
         <div className="fixed top-4 left-4 right-4 z-50 max-w-md mx-auto animate-in slide-in-from-top-4 duration-200">
           <div className="bg-slate-900/95 text-white p-3.5 rounded-2xl shadow-xl flex items-center justify-between border border-slate-700/80 backdrop-blur-md">
@@ -809,7 +841,7 @@ export default function App() {
         </div>
       )}
 
-      {/* MODAL CENTRAL DE NOTIFICAÇÕES */}
+      {/* MODAL DE NOTIFICAÇÕES */}
       {mostrarNotificacoes && (
         <div className="fixed inset-0 z-50 bg-slate-950/70 backdrop-blur-xs flex items-end sm:items-center justify-center p-0 sm:p-4 animate-in fade-in duration-200">
           <div className="bg-white w-full max-w-md rounded-t-3xl sm:rounded-3xl p-6 border border-slate-200 shadow-2xl max-h-[85vh] overflow-y-auto space-y-4">
@@ -879,7 +911,7 @@ export default function App() {
         </div>
       )}
 
-      {/* MODAL DE SUCESSO */}
+      {/* MODAL DE SUCESSO COM PARTILHA */}
       {sucessoEnvio && (
         <div className="fixed inset-0 z-50 bg-slate-950/75 backdrop-blur-sm flex items-center justify-center p-4 animate-in fade-in zoom-in-95 duration-200">
           <div className="bg-white w-full max-w-sm rounded-3xl p-6 shadow-2xl text-center space-y-5 border border-slate-100">
@@ -919,6 +951,16 @@ export default function App() {
             </div>
 
             <div className="space-y-2 pt-1">
+              {/* Botão de Partilha Imediata */}
+              <button
+                type="button"
+                onClick={() => partilharOcorrencia(sucessoEnvio)}
+                className="w-full py-3 bg-emerald-50 hover:bg-emerald-100 border border-emerald-200 text-emerald-800 rounded-2xl font-black text-xs uppercase tracking-wider flex items-center justify-center gap-1.5 transition-all cursor-pointer"
+              >
+                <span>📢</span>
+                <span>Partilhar no WhatsApp / Redes</span>
+              </button>
+
               <button
                 type="button"
                 onClick={() => {
@@ -1099,7 +1141,7 @@ export default function App() {
 
       {/* Conteúdo Central */}
       <main className="max-w-md w-full mx-auto px-4 py-4 flex-1">
-        {/* MODAL DETALHE / TIMELINE */}
+        {/* MODAL DETALHE / TIMELINE COM PARTILHA */}
         {ocorrenciaSelecionada && (
           <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs flex items-end sm:items-center justify-center p-0 sm:p-4 animate-in fade-in duration-200">
             <div className="bg-white w-full max-w-md rounded-t-3xl sm:rounded-3xl p-6 border border-slate-200 shadow-xl max-h-[90vh] overflow-y-auto space-y-5">
@@ -1110,15 +1152,25 @@ export default function App() {
                     {ocorrenciaSelecionada.categoria}
                   </h3>
                 </div>
-                <button
-                  onClick={() => {
-                    feedbackSensorial.toqueSuave()
-                    setOcorrenciaSelecionada(null)
-                  }}
-                  className="w-8 h-8 rounded-full bg-slate-100 text-slate-500 flex items-center justify-center font-bold text-sm hover:bg-slate-200 cursor-pointer"
-                >
-                  ✕
-                </button>
+                <div className="flex items-center space-x-1.5">
+                  <button
+                    onClick={() => partilharOcorrencia(ocorrenciaSelecionada)}
+                    className="p-2 rounded-xl bg-blue-50 text-blue-600 hover:bg-blue-100 border border-blue-200 text-xs font-bold flex items-center gap-1 cursor-pointer"
+                    title="Partilhar Ocorrência"
+                  >
+                    <span>📢</span>
+                    <span>Partilhar</span>
+                  </button>
+                  <button
+                    onClick={() => {
+                      feedbackSensorial.toqueSuave()
+                      setOcorrenciaSelecionada(null)
+                    }}
+                    className="w-8 h-8 rounded-full bg-slate-100 text-slate-500 flex items-center justify-center font-bold text-sm hover:bg-slate-200 cursor-pointer"
+                  >
+                    ✕
+                  </button>
+                </div>
               </div>
 
               {ocorrenciaSelecionada.foto_url && (
