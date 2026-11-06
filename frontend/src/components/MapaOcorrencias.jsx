@@ -3,7 +3,7 @@ import { MapContainer, TileLayer, Marker, Popup, Circle, useMap } from 'react-le
 import L from 'leaflet'
 import 'leaflet/dist/leaflet.css'
 
-// Coordenadas centrais comunitárias (Residencial Novo Cristo, Icuí - Ananindeua)
+// Ponto comunitário: Residencial Novo Cristo / Icuí - Ananindeua
 const CENTRO_COMUNITARIO = {
   latitude: -1.345000,
   longitude: -48.415000,
@@ -11,48 +11,48 @@ const CENTRO_COMUNITARIO = {
   nome: 'Residencial Novo Cristo / Icuí'
 }
 
-// Configuração de ícones customizados seguros
-const criarIconeCustomizado = (emoji, bgCor) => {
+// Criação segura de ícones
+const criarIcone = (emoji, bgCor) => {
   return L.divIcon({
     html: `
       <div style="
         background-color: ${bgCor};
-        width: 36px;
-        height: 36px;
-        border-radius: 14px;
+        width: 34px;
+        height: 34px;
+        border-radius: 12px;
         display: flex;
         align-items: center;
         justify-content: center;
-        font-size: 18px;
-        box-shadow: 0 4px 10px rgba(0,0,0,0.25);
+        font-size: 16px;
+        box-shadow: 0 4px 8px rgba(0,0,0,0.25);
         border: 2px solid white;
       ">
         ${emoji}
       </div>
     `,
-    className: 'custom-leaflet-marker',
-    iconSize: [36, 36],
-    iconAnchor: [18, 18],
-    popupAnchor: [0, -20]
+    className: 'custom-pin',
+    iconSize: [34, 34],
+    iconAnchor: [17, 17],
+    popupAnchor: [0, -18]
   })
 }
 
-const ICONES_CATEGORIA = {
-  lixo: criarIconeCustomizado('🗑️', '#f59e0b'),
-  iluminacao: criarIconeCustomizado('💡', '#6366f1'),
-  buraco: criarIconeCustomizado('🕳️', '#ea580c'),
-  esgoto: criarIconeCustomizado('💧', '#0284c7'),
-  default: criarIconeCustomizado('📍', '#2563eb')
+const ICONES = {
+  lixo: criarIcone('🗑️', '#f59e0b'),
+  iluminacao: criarIcone('💡', '#6366f1'),
+  buraco: criarIcone('🕳️', '#ea580c'),
+  esgoto: criarIcone('💧', '#0284c7'),
+  padrao: criarIcone('📍', '#2563eb')
 }
 
-function RecarregarVisaoMapa({ centro, zoom }) {
+function AjustarVisualizacao({ centro, zoom }) {
   const map = useMap()
   useEffect(() => {
     if (map) {
       try {
         map.setView(centro, zoom)
       } catch (e) {
-        console.warn('Erro ao ajustar visão do mapa:', e)
+        console.warn(e)
       }
     }
   }, [centro, zoom, map])
@@ -63,63 +63,58 @@ export default function MapaOcorrencias({ ocorrencias = [], onRecarregar }) {
   const [montado, setMontado] = useState(false)
   const [filtroTipo, setFiltroTipo] = useState('todas')
   const [modoVisualizacao, setModoVisualizacao] = useState('pontos')
-  const [posicaoGpsUsuario, setPosicaoGpsUsuario] = useState(null)
-  const [carregandoGps, setCarregandoGps] = useState(false)
+  const [posicaoGps, setPosicaoGps] = useState(null)
+  const [obtendoGps, setObtendoGps] = useState(false)
 
-  // Evita crash de hidratação ou renderização prematura no telemóvel
   useEffect(() => {
     setMontado(true)
-    rastrearLocalizacaoAtual()
+    obterGpsUsuario()
   }, [])
 
-  const rastrearLocalizacaoAtual = () => {
+  const obterGpsUsuario = () => {
     if (typeof window === 'undefined' || !navigator.geolocation) return
-    setCarregandoGps(true)
+    setObtendoGps(true)
     navigator.geolocation.getCurrentPosition(
       (pos) => {
-        setPosicaoGpsUsuario([pos.coords.latitude, pos.coords.longitude])
-        setCarregandoGps(false)
+        setPosicaoGps([pos.coords.latitude, pos.coords.longitude])
+        setObtendoGps(false)
       },
-      (err) => {
-        console.warn('Erro GPS no mapa:', err.message)
-        setCarregandoGps(false)
-      },
-      { enableHighAccuracy: true, timeout: 10000 }
+      () => setObtendoGps(false),
+      { enableHighAccuracy: true, timeout: 8000 }
     )
   }
 
-  const dadosGeorreferenciados = useMemo(() => {
+  const pontosValidos = useMemo(() => {
     if (!Array.isArray(ocorrencias)) return []
     return ocorrencias.filter((item) => {
-      const temLat = typeof item?.latitude === 'number' || (!isNaN(parseFloat(item?.latitude)) && isFinite(item?.latitude))
-      const temLng = typeof item?.longitude === 'number' || (!isNaN(parseFloat(item?.longitude)) && isFinite(item?.longitude))
-      const bateuTipo = filtroTipo === 'todas' || item?.categoria === filtroTipo
-      return temLat && temLng && bateuTipo
+      const lat = parseFloat(item?.latitude)
+      const lng = parseFloat(item?.longitude)
+      const valido = !isNaN(lat) && isFinite(lat) && !isNaN(lng) && isFinite(lng)
+      const tipo = filtroTipo === 'todas' || item?.categoria === filtroTipo
+      return valido && tipo
     })
   }, [ocorrencias, filtroTipo])
 
-  const centroMapa = [CENTRO_COMUNITARIO.latitude, CENTRO_COMUNITARIO.longitude]
+  const centro = [CENTRO_COMUNITARIO.latitude, CENTRO_COMUNITARIO.longitude]
 
   if (!montado) {
     return (
-      <div className="h-[420px] rounded-3xl bg-slate-50 border border-slate-200 flex items-center justify-center text-xs text-slate-400 font-bold animate-pulse">
-        A inicializar mapa comunitário... 🗺️
+      <div className="h-[400px] rounded-3xl bg-slate-100 flex items-center justify-center text-xs text-slate-400 font-bold">
+        A carregar mapa... 🗺️
       </div>
     )
   }
 
   return (
     <div className="space-y-3">
-      {/* Barra de Controles */}
-      <div className="flex items-center justify-between gap-2 overflow-x-auto pb-1">
-        <div className="bg-slate-100 p-1 rounded-2xl flex items-center shrink-0 border border-slate-200">
+      {/* Botões de Ação */}
+      <div className="flex items-center justify-between gap-2">
+        <div className="bg-slate-100 p-1 rounded-2xl flex items-center border border-slate-200">
           <button
             type="button"
             onClick={() => setModoVisualizacao('pontos')}
             className={`px-3 py-1.5 rounded-xl text-xs font-black transition-all cursor-pointer ${
-              modoVisualizacao === 'pontos'
-                ? 'bg-blue-600 text-white shadow-xs'
-                : 'text-slate-600 hover:text-slate-900'
+              modoVisualizacao === 'pontos' ? 'bg-blue-600 text-white shadow-xs' : 'text-slate-600'
             }`}
           >
             📍 Pontos
@@ -128,32 +123,30 @@ export default function MapaOcorrencias({ ocorrencias = [], onRecarregar }) {
             type="button"
             onClick={() => setModoVisualizacao('calor')}
             className={`px-3 py-1.5 rounded-xl text-xs font-black transition-all cursor-pointer ${
-              modoVisualizacao === 'calor'
-                ? 'bg-amber-500 text-white shadow-xs'
-                : 'text-slate-600 hover:text-slate-900'
+              modoVisualizacao === 'calor' ? 'bg-amber-500 text-white shadow-xs' : 'text-slate-600'
             }`}
           >
             🔥 Calor
           </button>
         </div>
 
-        <div className="flex items-center space-x-1.5 shrink-0">
+        <div className="flex items-center space-x-1.5">
           <button
             type="button"
-            onClick={rastrearLocalizacaoAtual}
-            disabled={carregandoGps}
-            className="w-9 h-9 rounded-2xl bg-slate-100 border border-slate-200 text-slate-700 hover:bg-slate-200 flex items-center justify-center text-sm font-bold shadow-2xs transition-colors cursor-pointer"
-            title="A minha localização"
+            onClick={obterGpsUsuario}
+            disabled={obtendoGps}
+            className="w-9 h-9 rounded-2xl bg-slate-100 border border-slate-200 text-slate-700 flex items-center justify-center text-sm font-bold shadow-2xs cursor-pointer"
+            title="Minha posição"
           >
-            {carregandoGps ? '⏳' : '🎯'}
+            {obtendoGps ? '⏳' : '🎯'}
           </button>
 
           {onRecarregar && (
             <button
               type="button"
               onClick={onRecarregar}
-              className="w-9 h-9 rounded-2xl bg-slate-100 border border-slate-200 text-slate-700 hover:bg-slate-200 flex items-center justify-center text-sm font-bold shadow-2xs transition-colors cursor-pointer"
-              title="Recarregar dados"
+              className="w-9 h-9 rounded-2xl bg-slate-100 border border-slate-200 text-slate-700 flex items-center justify-center text-sm font-bold shadow-2xs cursor-pointer"
+              title="Atualizar"
             >
               🔄
             </button>
@@ -161,15 +154,13 @@ export default function MapaOcorrencias({ ocorrencias = [], onRecarregar }) {
         </div>
       </div>
 
-      {/* Seletor de Categorias */}
+      {/* Filtros Rápidos */}
       <div className="flex space-x-1.5 overflow-x-auto pb-1 text-xs">
         <button
           type="button"
           onClick={() => setFiltroTipo('todas')}
           className={`px-3 py-1 rounded-xl text-[11px] font-bold transition-all shrink-0 cursor-pointer ${
-            filtroTipo === 'todas'
-              ? 'bg-slate-900 text-white shadow-2xs'
-              : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+            filtroTipo === 'todas' ? 'bg-slate-900 text-white' : 'bg-slate-100 text-slate-600'
           }`}
         >
           Todas ({ocorrencias.length})
@@ -177,10 +168,8 @@ export default function MapaOcorrencias({ ocorrencias = [], onRecarregar }) {
         <button
           type="button"
           onClick={() => setFiltroTipo('lixo')}
-          className={`px-2.5 py-1 rounded-xl text-[11px] font-bold transition-all shrink-0 cursor-pointer ${
-            filtroTipo === 'lixo'
-              ? 'bg-amber-500 text-white shadow-2xs'
-              : 'bg-amber-50 text-amber-700 border border-amber-200 hover:bg-amber-100'
+          className={`px-2.5 py-1 rounded-xl text-[11px] font-bold shrink-0 cursor-pointer ${
+            filtroTipo === 'lixo' ? 'bg-amber-500 text-white' : 'bg-slate-100 text-slate-600'
           }`}
         >
           🗑️ Lixo
@@ -188,10 +177,8 @@ export default function MapaOcorrencias({ ocorrencias = [], onRecarregar }) {
         <button
           type="button"
           onClick={() => setFiltroTipo('iluminacao')}
-          className={`px-2.5 py-1 rounded-xl text-[11px] font-bold transition-all shrink-0 cursor-pointer ${
-            filtroTipo === 'iluminacao'
-              ? 'bg-indigo-600 text-white shadow-2xs'
-              : 'bg-indigo-50 text-indigo-700 border border-indigo-200 hover:bg-indigo-100'
+          className={`px-2.5 py-1 rounded-xl text-[11px] font-bold shrink-0 cursor-pointer ${
+            filtroTipo === 'iluminacao' ? 'bg-indigo-600 text-white' : 'bg-slate-100 text-slate-600'
           }`}
         >
           💡 Postes
@@ -199,10 +186,8 @@ export default function MapaOcorrencias({ ocorrencias = [], onRecarregar }) {
         <button
           type="button"
           onClick={() => setFiltroTipo('buraco')}
-          className={`px-2.5 py-1 rounded-xl text-[11px] font-bold transition-all shrink-0 cursor-pointer ${
-            filtroTipo === 'buraco'
-              ? 'bg-orange-600 text-white shadow-2xs'
-              : 'bg-orange-50 text-orange-700 border border-orange-200 hover:bg-orange-100'
+          className={`px-2.5 py-1 rounded-xl text-[11px] font-bold shrink-0 cursor-pointer ${
+            filtroTipo === 'buraco' ? 'bg-orange-600 text-white' : 'bg-slate-100 text-slate-600'
           }`}
         >
           🕳️ Buracos
@@ -210,10 +195,8 @@ export default function MapaOcorrencias({ ocorrencias = [], onRecarregar }) {
         <button
           type="button"
           onClick={() => setFiltroTipo('esgoto')}
-          className={`px-2.5 py-1 rounded-xl text-[11px] font-bold transition-all shrink-0 cursor-pointer ${
-            filtroTipo === 'esgoto'
-              ? 'bg-sky-600 text-white shadow-2xs'
-              : 'bg-sky-50 text-sky-700 border border-sky-200 hover:bg-sky-100'
+          className={`px-2.5 py-1 rounded-xl text-[11px] font-bold shrink-0 cursor-pointer ${
+            filtroTipo === 'esgoto' ? 'bg-sky-600 text-white' : 'bg-slate-100 text-slate-600'
           }`}
         >
           💧 Esgoto
@@ -221,14 +204,14 @@ export default function MapaOcorrencias({ ocorrencias = [], onRecarregar }) {
       </div>
 
       {/* Caixa do Mapa Leaflet */}
-      <div className="relative rounded-3xl overflow-hidden border border-slate-200 shadow-sm h-[420px] bg-slate-100">
+      <div className="relative rounded-3xl overflow-hidden border border-slate-200 shadow-sm h-[400px] bg-slate-100">
         <MapContainer
-          center={centroMapa}
+          center={centro}
           zoom={14}
           scrollWheelZoom={true}
           style={{ width: '100%', height: '100%' }}
         >
-          <RecarregarVisaoMapa centro={centroMapa} zoom={14} />
+          <AjustarVisualizacao centro={centro} zoom={14} />
 
           <TileLayer
             attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
@@ -236,9 +219,9 @@ export default function MapaOcorrencias({ ocorrencias = [], onRecarregar }) {
             maxZoom={19}
           />
 
-          {/* Círculo do raio territorial de 3.5 km */}
+          {/* Círculo Territorial Comunitário (3,5 km) */}
           <Circle
-            center={centroMapa}
+            center={centro}
             radius={CENTRO_COMUNITARIO.raioMetros}
             pathOptions={{
               color: '#0284c7',
@@ -249,50 +232,38 @@ export default function MapaOcorrencias({ ocorrencias = [], onRecarregar }) {
             }}
           />
 
-          {posicaoGpsUsuario && (
-            <Marker
-              position={posicaoGpsUsuario}
-              icon={criarIconeCustomizado('📍', '#10b981')}
-            >
+          {posicaoGps && (
+            <Marker position={posicaoGps} icon={criarIcone('📍', '#10b981')}>
               <Popup>
-                <div className="text-center font-sans p-1">
-                  <span className="text-xs font-black text-emerald-800 block">Localização Atual</span>
+                <div className="text-center font-sans p-1 text-xs font-bold text-emerald-800">
+                  Localização Atual
                 </div>
               </Popup>
             </Marker>
           )}
 
           {modoVisualizacao === 'pontos' &&
-            dadosGeorreferenciados.map((item) => {
+            pontosValidos.map((item) => {
               const lat = parseFloat(item.latitude)
               const lng = parseFloat(item.longitude)
-              const icone = ICONES_CATEGORIA[item.categoria] || ICONES_CATEGORIA.default
+              const icone = ICONES[item.categoria] || ICONES.padrao
 
               return (
                 <Marker key={item.id} position={[lat, lng]} icon={icone}>
                   <Popup>
-                    <div className="p-1 space-y-2 font-sans max-w-[200px]">
+                    <div className="p-1 space-y-2 font-sans max-w-[190px]">
                       {item.foto_url && (
                         <img
                           src={item.foto_url}
-                          alt="Foto"
-                          className="w-full h-24 object-cover rounded-xl border border-slate-200"
+                          alt="Registo"
+                          className="w-full h-20 object-cover rounded-xl border border-slate-200"
                         />
                       )}
                       <div>
-                        <div className="flex items-center space-x-1.5">
-                          <span className="text-xs font-black capitalize text-slate-800">
-                            {item.categoria}
-                          </span>
-                          <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded-full ${
-                            item.status === 'resolvido' || item.status === 'concluido'
-                              ? 'bg-emerald-100 text-emerald-800'
-                              : 'bg-amber-100 text-amber-800'
-                          }`}>
-                            {item.status || 'Pendente'}
-                          </span>
-                        </div>
-                        <p className="text-[11px] text-slate-600 mt-1 leading-snug">
+                        <span className="text-xs font-black capitalize text-slate-800 block">
+                          {item.categoria}
+                        </span>
+                        <p className="text-[11px] text-slate-600 mt-0.5 leading-tight">
                           {item.descricao || 'Sem descrição.'}
                         </p>
                       </div>
@@ -303,12 +274,12 @@ export default function MapaOcorrencias({ ocorrencias = [], onRecarregar }) {
             })}
 
           {modoVisualizacao === 'calor' &&
-            dadosGeorreferenciados.map((item) => {
+            pontosValidos.map((item) => {
               const lat = parseFloat(item.latitude)
               const lng = parseFloat(item.longitude)
               return (
                 <Circle
-                  key={`heat-${item.id}`}
+                  key={`calor-${item.id}`}
                   center={[lat, lng]}
                   radius={120}
                   pathOptions={{
@@ -322,15 +293,19 @@ export default function MapaOcorrencias({ ocorrencias = [], onRecarregar }) {
             })}
         </MapContainer>
 
-        <div className="absolute bottom-3 left-3 right-3 z-[1000] bg-white/95 backdrop-blur-md px-3 py-2 rounded-2xl border border-slate-200/90 shadow-md flex items-center justify-between text-[11px]">
+        {/* Legenda com z-index inline seguro */}
+        <div
+          style={{ zIndex: 1000 }}
+          className="absolute bottom-3 left-3 right-3 bg-white/95 backdrop-blur-md px-3 py-2 rounded-2xl border border-slate-200 shadow-md flex items-center justify-between text-[11px]"
+        >
           <div className="flex items-center space-x-2">
             <span className="w-2.5 h-2.5 rounded-full bg-sky-500 animate-pulse"></span>
             <span className="font-bold text-slate-700 truncate">
-              {CENTRO_COMUNITARIO.nome} (3,5 km)
+              {CENTRO_COMUNITARIO.nome}
             </span>
           </div>
           <span className="font-black text-blue-600 shrink-0">
-            {dadosGeorreferenciados.length} pontos
+            {pontosValidos.length} pontos
           </span>
         </div>
       </div>
