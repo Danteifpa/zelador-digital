@@ -33,9 +33,14 @@ const ETAPAS_ONBOARDING = [
 
 export default function App() {
   const [modo, setModo] = useState('normal')
-  const [abaAtiva, setAbaAtiva] = useState('inicio') // 'inicio', 'reportar', 'mapa', 'registos', 'perfil', 'gestao'
+  const [abaAtiva, setAbaAtiva] = useState('inicio')
   const [mostrarOnboarding, setMostrarOnboarding] = useState(false)
   const [etapaOnboarding, setEtapaOnboarding] = useState(0)
+
+  // Estado de conectividade da rede
+  const [estaOnline, setEstaOnline] = useState(navigator.onLine)
+  const [filaOffline, setFilaOffline] = useState([])
+  const [sincronizandoFila, setSincronizandoFila] = useState(false)
 
   const [categoria, setCategoria] = useState('buraco')
   const [foto, setFoto] = useState(null)
@@ -46,11 +51,9 @@ export default function App() {
   const [gravandoVoz, setGravandoVoz] = useState(false)
   const [enviando, setEnviando] = useState(false)
 
-  // Estados de feedback visual (sem alerts nativos)
   const [sucessoEnvio, setSucessoEnvio] = useState(null)
   const [mensagemToast, setMensagemToast] = useState(null)
 
-  // Filtros
   const [filtroCategoria, setFiltroCategoria] = useState('todas')
   const [filtroStatus, setFiltroStatus] = useState('todos')
   const [buscaTexto, setBuscaTexto] = useState('')
@@ -58,6 +61,39 @@ export default function App() {
   const [ocorrenciaSelecionada, setOcorrenciaSelecionada] = useState(null)
   const [registos, setRegistos] = useState([])
   const [carregandoRegistos, setCarregandoRegistos] = useState(false)
+
+  // Carrega fila offline guardada no armazenamento local
+  useEffect(() => {
+    const filaSalva = localStorage.getItem('zelador_fila_offline')
+    if (filaSalva) {
+      try {
+        setFilaOffline(JSON.parse(filaSalva))
+      } catch (e) {
+        console.warn('Erro ao carregar fila offline:', e)
+      }
+    }
+  }, [])
+
+  // Listeners de conectividade (Online / Offline)
+  useEffect(() => {
+    const handleOnline = () => {
+      setEstaOnline(true)
+      mostrarAlertaToast('Ligação restabelecida! A sincronizar dados...')
+      sincronizarFilaOffline()
+    }
+    const handleOffline = () => {
+      setEstaOnline(false)
+      mostrarAlertaToast('Sem ligação à Internet. Os novos registos serão guardados no telemóvel.')
+    }
+
+    window.addEventListener('online', handleOnline)
+    window.addEventListener('offline', handleOffline)
+
+    return () => {
+      window.removeEventListener('online', handleOnline)
+      window.removeEventListener('offline', handleOffline)
+    }
+  }, [filaOffline])
 
   useEffect(() => {
     const onboardingVisto = localStorage.getItem('zelador_onboarding_concluido')
@@ -76,7 +112,7 @@ export default function App() {
     setMensagemToast(texto)
     setTimeout(() => {
       setMensagemToast(null)
-    }, 4000)
+    }, 4500)
   }
 
   const concluirOnboarding = () => {
@@ -185,6 +221,21 @@ export default function App() {
     )
   }
 
+  // Converte arquivo para base64 para retenção offline no localStorage
+  const arquivoParaBase64 = (file) => {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader()
+      reader.readAsDataURL(file)
+      reader.onload = () => resolve(reader.result)
+      reader.onerror = (error) => reject(error)
+    })
+  }
+
+  const base64ParaBlob = async (base64) => {
+    const res = await fetch(base64)
+    return await res.blob()
+  }
+
   const handleFotoChange = (e) => {
     const file = e.target.files[0]
     if (file) {
@@ -204,6 +255,60 @@ export default function App() {
     if (modo === 'facil') falarTexto(cat.fala)
   }
 
+  // Sincronização da fila offline ao reconectar
+  const sincronizarFilaOffline = async () => {
+    const filaAtual = JSON.parse(localStorage.getItem('zelador_fila_offline') || '[]')
+    if (filaAtual.length === 0 || sincronizandoFila) return
+
+    setSincronizandoFila(true)
+    const pendentes = [...filaAtual]
+    const filaRestante = []
+
+    for (const item of pendentes) {
+      try {
+        let urlFotoPublica = null
+
+        if (item.fotoBase64) {
+          const blob = await base64ParaBlob(item.fotoBase64)
+          const fileName = `${Date.now()}_offline_${Math.random().toString(36).substring(2, 7)}.jpg`
+          const filePath = `ocorrencias/${fileName}`
+
+          const uploadResult = await supabase.storage.from('ocorrencias').upload(filePath, blob, {
+            contentType: 'image/jpeg'
+          })
+
+          if (!uploadResult.error) {
+            const { data: publicData } = supabase.storage.from('ocorrencias').getPublicUrl(filePath)
+            urlFotoPublica = publicData?.publicUrl || null
+          }
+        }
+
+        const pontoWKT = `POINT(${item.longitude} ${item.latitude})`
+        await supabase.from('ocorrencias').insert([
+          {
+            categoria: item.categoria,
+            descricao: item.descricao,
+            foto_url: urlFotoPublica,
+            localizacao: pontoWKT,
+            status: 'pendente'
+          }
+        ])
+      } catch (e) {
+        console.error('Falha ao sincronizar item offline:', e)
+        filaRestante.push(item)
+      }
+    }
+
+    localStorage.setItem('zelador_fila_offline', JSON.stringify(filaRestante))
+    setFilaOffline(filaRestante)
+    setSincronizandoFila(false)
+    carregarRegistos()
+
+    if (filaRestante.length === 0) {
+      mostrarAlertaToast('Todos os registos offline foram sincronizados com sucesso!')
+    }
+  }
+
   const handleSubmit = async (e) => {
     e.preventDefault()
 
@@ -215,6 +320,45 @@ export default function App() {
 
     try {
       setEnviando(true)
+
+      // CENÁRIO OFFLINE: Se o utilizador estiver sem rede na rua
+      if (!navigator.onLine) {
+        let base64Foto = null
+        if (foto) {
+          base64Foto = await arquivoParaBase64(foto)
+        }
+
+        const itemOffline = {
+          id: Date.now(),
+          categoria,
+          descricao: pontoReferencia.trim() || 'Ocorrência registada offline',
+          latitude: localizacao.latitude,
+          longitude: localizacao.longitude,
+          fotoBase64: base64Foto,
+          criadoEm: new Date().toISOString()
+        }
+
+        const novaFila = [...filaOffline, itemOffline]
+        localStorage.setItem('zelador_fila_offline', JSON.stringify(novaFila))
+        setFilaOffline(novaFila)
+
+        if (modo === 'facil') {
+          falarTexto('Registo guardado no telemóvel. Será enviado logo que tiver ligação à Internet.')
+        }
+
+        setSucessoEnvio({
+          categoria,
+          foto_url: fotoPreview,
+          descricao: `${pontoReferencia.trim() || 'Ocorrência comunitária'} (Guardado Offline)`
+        })
+
+        setPontoReferencia('')
+        setFoto(null)
+        setFotoPreview(null)
+        return
+      }
+
+      // CENÁRIO ONLINE: Envio normal para Supabase PostGIS + Storage
       let urlFotoPublica = null
 
       if (foto) {
@@ -233,19 +377,15 @@ export default function App() {
 
       const pontoWKT = `POINT(${localizacao.longitude} ${localizacao.latitude})`
 
-      const { data: novoRegisto, error: insertError } = await supabase
-        .from('ocorrencias')
-        .insert([
-          {
-            categoria: categoria,
-            descricao: pontoReferencia.trim() || 'Ocorrência registada pela comunidade',
-            foto_url: urlFotoPublica,
-            localizacao: pontoWKT,
-            status: 'pendente'
-          }
-        ])
-        .select()
-        .single()
+      const { error: insertError } = await supabase.from('ocorrencias').insert([
+        {
+          categoria: categoria,
+          descricao: pontoReferencia.trim() || 'Ocorrência registada pela comunidade',
+          foto_url: urlFotoPublica,
+          localizacao: pontoWKT,
+          status: 'pendente'
+        }
+      ])
 
       if (insertError) throw new Error(insertError.message)
 
@@ -253,7 +393,6 @@ export default function App() {
         falarTexto('Registo territorial enviado com sucesso! Muito obrigado.')
       }
 
-      // Ativa modal moderno de sucesso com os dados cadastrados
       setSucessoEnvio({
         categoria,
         foto_url: urlFotoPublica,
@@ -296,17 +435,38 @@ export default function App() {
 
   return (
     <div className={`min-h-screen flex flex-col justify-between font-sans pb-20 ${modo === 'facil' ? 'bg-amber-50/30 text-slate-900' : 'bg-slate-100/70 text-slate-800'}`}>
-      {/* TOAST FLUTUANTE DE ALERTA */}
+      {/* AVISO OFFLINE / FILA PENDENTE */}
+      {!estaOnline && (
+        <div className="bg-amber-500 text-white text-[11px] font-black py-1.5 px-4 text-center tracking-wide sticky top-0 z-50 flex items-center justify-center gap-1.5 shadow-xs">
+          <span>⚠️</span>
+          <span>Modo Offline Ativo: Registos serão sincronizados quando recuperar rede</span>
+        </div>
+      )}
+
+      {filaOffline.length > 0 && estaOnline && (
+        <div className="bg-blue-600 text-white text-[11px] font-bold py-1.5 px-4 text-center sticky top-0 z-50 flex items-center justify-between">
+          <span>{filaOffline.length} registo(s) pendente(s) para sincronização</span>
+          <button
+            onClick={sincronizarFilaOffline}
+            disabled={sincronizandoFila}
+            className="bg-white text-blue-700 px-2 py-0.5 rounded-lg text-[10px] font-black uppercase cursor-pointer"
+          >
+            {sincronizandoFila ? 'A sincronizar...' : 'Sincronizar Agora 🔄'}
+          </button>
+        </div>
+      )}
+
+      {/* TOAST FLUTUANTE DE AVISO */}
       {mensagemToast && (
         <div className="fixed top-4 left-4 right-4 z-50 max-w-md mx-auto animate-in slide-in-from-top-4 duration-200">
           <div className="bg-slate-900/95 text-white p-3.5 rounded-2xl shadow-xl flex items-center justify-between border border-slate-700/80 backdrop-blur-md">
             <div className="flex items-center space-x-2.5">
-              <span className="text-amber-400 text-lg">⚠️</span>
+              <span className="text-amber-400 text-lg">ℹ️</span>
               <p className="text-xs font-semibold leading-snug">{mensagemToast}</p>
             </div>
             <button
               onClick={() => setMensagemToast(null)}
-              className="text-slate-400 hover:text-white text-xs font-bold px-2 py-1"
+              className="text-slate-400 hover:text-white text-xs font-bold px-2 py-1 cursor-pointer"
             >
               ✕
             </button>
@@ -318,19 +478,19 @@ export default function App() {
       {sucessoEnvio && (
         <div className="fixed inset-0 z-50 bg-slate-950/75 backdrop-blur-sm flex items-center justify-center p-4 animate-in fade-in zoom-in-95 duration-200">
           <div className="bg-white w-full max-w-sm rounded-3xl p-6 shadow-2xl text-center space-y-5 border border-slate-100">
-            {/* Ícone de Sucesso */}
             <div className="w-16 h-16 mx-auto rounded-3xl bg-emerald-100 text-emerald-600 flex items-center justify-center text-3xl shadow-inner animate-bounce">
               ✓
             </div>
 
             <div>
-              <h3 className="text-lg font-black text-slate-900">Registo Enviado!</h3>
+              <h3 className="text-lg font-black text-slate-900">Registo Confirmado!</h3>
               <p className="text-xs text-slate-500 mt-1 leading-relaxed">
-                A sua ocorrência foi georreferenciada e adicionada à base territorial comunitária.
+                {estaOnline
+                  ? 'A sua ocorrência foi georreferenciada e guardada no banco comunitário.'
+                  : 'Registo salvo no telemóvel! Será enviado para a rede assim que restabelecer o sinal.'}
               </p>
             </div>
 
-            {/* Mini Cartão Resumo */}
             <div className="bg-slate-50 rounded-2xl p-3 border border-slate-200 flex items-center space-x-3 text-left">
               {sucessoEnvio.foto_url ? (
                 <img
@@ -353,7 +513,6 @@ export default function App() {
               </div>
             </div>
 
-            {/* Ações */}
             <div className="space-y-2 pt-1">
               <button
                 type="button"
@@ -387,7 +546,7 @@ export default function App() {
             <div className="flex justify-end w-full">
               <button
                 onClick={concluirOnboarding}
-                className="text-xs font-bold text-slate-400 hover:text-slate-600 transition-colors"
+                className="text-xs font-bold text-slate-400 hover:text-slate-600 transition-colors cursor-pointer"
               >
                 Saltar Apresentação ✕
               </button>
@@ -461,7 +620,7 @@ export default function App() {
           <div className="flex items-center space-x-2">
             <button
               onClick={() => { setEtapaOnboarding(0); setMostrarOnboarding(true); }}
-              className="p-2 rounded-xl text-xs font-bold bg-slate-100 text-slate-700 hover:bg-slate-200 border border-slate-200/60"
+              className="p-2 rounded-xl text-xs font-bold bg-slate-100 text-slate-700 hover:bg-slate-200 border border-slate-200/60 cursor-pointer"
               title="Apresentação do Projeto"
             >
               💡
@@ -487,7 +646,7 @@ export default function App() {
 
             <button
               onClick={() => { setAbaAtiva('gestao'); setOcorrenciaSelecionada(null); }}
-              className={`p-2 rounded-xl text-xs font-bold transition-all ${
+              className={`p-2 rounded-xl text-xs font-bold transition-all cursor-pointer ${
                 abaAtiva === 'gestao'
                   ? 'bg-slate-900 text-white shadow-xs'
                   : 'bg-slate-100 text-slate-700 hover:bg-slate-200 border border-slate-200/60'
@@ -515,7 +674,7 @@ export default function App() {
                 </div>
                 <button
                   onClick={() => setOcorrenciaSelecionada(null)}
-                  className="w-8 h-8 rounded-full bg-slate-100 text-slate-500 flex items-center justify-center font-bold text-sm hover:bg-slate-200"
+                  className="w-8 h-8 rounded-full bg-slate-100 text-slate-500 flex items-center justify-center font-bold text-sm hover:bg-slate-200 cursor-pointer"
                 >
                   ✕
                 </button>
@@ -671,7 +830,9 @@ export default function App() {
           <form onSubmit={handleSubmit} className="bg-white rounded-3xl p-5 border border-slate-200 shadow-xs space-y-5">
             <div className="flex items-center justify-between border-b border-slate-100 pb-3">
               <h2 className="text-base font-black text-slate-800">Novo Registo Territorial</h2>
-              <span className="text-[11px] text-slate-400">Etapa Única</span>
+              <span className={`text-[11px] font-bold px-2 py-0.5 rounded-full ${estaOnline ? 'bg-emerald-50 text-emerald-700' : 'bg-amber-50 text-amber-700'}`}>
+                {estaOnline ? 'Online' : 'Armazenamento Local'}
+              </span>
             </div>
 
             {modo === 'facil' && (
@@ -683,7 +844,7 @@ export default function App() {
                 <button
                   type="button"
                   onClick={() => falarTexto('Escolha o problema, tire a foto e clique no botão enviar.')}
-                  className="text-xs bg-amber-500 text-white font-bold px-2.5 py-1 rounded-xl shadow-2xs"
+                  className="text-xs bg-amber-500 text-white font-bold px-2.5 py-1 rounded-xl shadow-2xs cursor-pointer"
                 >
                   Ouvir Ajuda
                 </button>
@@ -810,7 +971,7 @@ export default function App() {
                 enviando ? 'bg-blue-400 cursor-not-allowed' : 'bg-blue-600 hover:bg-blue-700 active:scale-[0.99] cursor-pointer'
               }`}
             >
-              {enviando ? 'A enviar registo... 🚀' : 'Enviar Registo 🚀'}
+              {enviando ? 'A processar... 🚀' : estaOnline ? 'Enviar Registo 🚀' : 'Guardar no Telemóvel 💾'}
             </button>
           </form>
         )}
@@ -852,7 +1013,7 @@ export default function App() {
               {buscaTexto && (
                 <button
                   onClick={() => setBuscaTexto('')}
-                  className="absolute right-3 top-2.5 text-slate-400 hover:text-slate-600 text-xs font-bold"
+                  className="absolute right-3 top-2.5 text-slate-400 hover:text-slate-600 text-xs font-bold cursor-pointer"
                 >
                   ✕
                 </button>
@@ -862,7 +1023,7 @@ export default function App() {
             <div className="flex space-x-1.5 overflow-x-auto pb-1 text-xs">
               <button
                 onClick={() => setFiltroStatus('todos')}
-                className={`px-3 py-1.5 rounded-xl font-bold transition-all shrink-0 ${
+                className={`px-3 py-1.5 rounded-xl font-bold transition-all shrink-0 cursor-pointer ${
                   filtroStatus === 'todos'
                     ? 'bg-slate-900 text-white'
                     : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
@@ -872,7 +1033,7 @@ export default function App() {
               </button>
               <button
                 onClick={() => setFiltroStatus('pendente')}
-                className={`px-3 py-1.5 rounded-xl font-bold transition-all shrink-0 ${
+                className={`px-3 py-1.5 rounded-xl font-bold transition-all shrink-0 cursor-pointer ${
                   filtroStatus === 'pendente'
                     ? 'bg-amber-500 text-white'
                     : 'bg-amber-50 text-amber-700 border border-amber-200 hover:bg-amber-100'
@@ -882,7 +1043,7 @@ export default function App() {
               </button>
               <button
                 onClick={() => setFiltroStatus('resolvido')}
-                className={`px-3 py-1.5 rounded-xl font-bold transition-all shrink-0 ${
+                className={`px-3 py-1.5 rounded-xl font-bold transition-all shrink-0 cursor-pointer ${
                   filtroStatus === 'resolvido'
                     ? 'bg-emerald-600 text-white'
                     : 'bg-emerald-50 text-emerald-700 border border-emerald-200 hover:bg-emerald-100'
@@ -895,7 +1056,7 @@ export default function App() {
             <div className="flex space-x-1.5 overflow-x-auto pb-1 text-xs">
               <button
                 onClick={() => setFiltroCategoria('todas')}
-                className={`px-2.5 py-1 rounded-lg text-[11px] font-semibold transition-all shrink-0 ${
+                className={`px-2.5 py-1 rounded-lg text-[11px] font-semibold transition-all shrink-0 cursor-pointer ${
                   filtroCategoria === 'todas'
                     ? 'bg-blue-600 text-white'
                     : 'bg-slate-100 text-slate-500 hover:bg-slate-200'
@@ -907,7 +1068,7 @@ export default function App() {
                 <button
                   key={cat.id}
                   onClick={() => setFiltroCategoria(cat.id)}
-                  className={`px-2.5 py-1 rounded-lg text-[11px] font-semibold flex items-center gap-1 transition-all shrink-0 ${
+                  className={`px-2.5 py-1 rounded-lg text-[11px] font-semibold flex items-center gap-1 transition-all shrink-0 cursor-pointer ${
                     filtroCategoria === cat.id
                       ? 'bg-blue-600 text-white'
                       : 'bg-slate-100 text-slate-500 hover:bg-slate-200'
