@@ -33,7 +33,7 @@ const ETAPAS_ONBOARDING = [
 
 export default function App() {
   const [modo, setModo] = useState('normal')
-  const [abaAtiva, setAbaAtiva] = useState('inicio')
+  const [abaAtiva, setAbaAtiva] = useState('inicio') // 'inicio', 'reportar', 'mapa', 'registos', 'perfil', 'gestao'
   const [mostrarOnboarding, setMostrarOnboarding] = useState(false)
   const [etapaOnboarding, setEtapaOnboarding] = useState(0)
 
@@ -46,7 +46,7 @@ export default function App() {
   const [gravandoVoz, setGravandoVoz] = useState(false)
   const [enviando, setEnviando] = useState(false)
 
-  // Filtros da aba de registos
+  // Filtros
   const [filtroCategoria, setFiltroCategoria] = useState('todas')
   const [filtroStatus, setFiltroStatus] = useState('todos')
   const [buscaTexto, setBuscaTexto] = useState('')
@@ -251,7 +251,6 @@ export default function App() {
     }
   }
 
-  // Filtragem dinâmica de registos
   const registosFiltrados = useMemo(() => {
     return registos.filter((item) => {
       const bateuCategoria = filtroCategoria === 'todas' || item.categoria === filtroCategoria
@@ -272,10 +271,11 @@ export default function App() {
   const totalRegistos = registos.length
   const totalResolvidos = registos.filter((r) => r.status === 'resolvido' || r.status === 'concluido').length
   const totalPendentes = registos.filter((r) => r.status !== 'resolvido' && r.status !== 'concluido').length
+  const taxaResolucao = totalRegistos > 0 ? Math.round((totalResolvidos / totalRegistos) * 100) : 0
 
   return (
     <div className={`min-h-screen flex flex-col justify-between font-sans pb-20 ${modo === 'facil' ? 'bg-amber-50/30 text-slate-900' : 'bg-slate-100/70 text-slate-800'}`}>
-      {/* ONBOARDING */}
+      {/* MODAL DE ONBOARDING */}
       {mostrarOnboarding && (
         <div className="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-md flex items-center justify-center p-4 animate-in fade-in duration-300">
           <div className="bg-white w-full max-w-sm rounded-3xl p-6 shadow-2xl flex flex-col justify-between text-center space-y-6 relative border border-slate-100">
@@ -337,7 +337,7 @@ export default function App() {
         </div>
       )}
 
-      {/* Header */}
+      {/* Topo / Navbar */}
       <header className="bg-white/80 backdrop-blur-md border-b border-slate-200 sticky top-0 z-40 shadow-xs">
         <div className="max-w-md mx-auto px-4 h-16 flex items-center justify-between">
           <button
@@ -395,9 +395,9 @@ export default function App() {
         </div>
       </header>
 
-      {/* Main Container */}
+      {/* Conteúdo Central */}
       <main className="max-w-md w-full mx-auto px-4 py-4 flex-1">
-        {/* DETALHE MODAL */}
+        {/* MODAL DETALHE / TIMELINE */}
         {ocorrenciaSelecionada && (
           <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs flex items-end sm:items-center justify-center p-0 sm:p-4 animate-in fade-in duration-200">
             <div className="bg-white w-full max-w-md rounded-t-3xl sm:rounded-3xl p-6 border border-slate-200 shadow-xl max-h-[90vh] overflow-y-auto space-y-5">
@@ -717,7 +717,7 @@ export default function App() {
           </div>
         )}
 
-        {/* 4. REGISTOS COM FILTROS E BUSCA */}
+        {/* 4. REGISTOS */}
         {abaAtiva === 'registos' && (
           <div className="bg-white rounded-3xl p-5 border border-slate-200 shadow-xs space-y-4">
             <div className="flex items-center justify-between">
@@ -755,7 +755,7 @@ export default function App() {
               )}
             </div>
 
-            {/* Filtros em Chips: Status */}
+            {/* Filtros: Status */}
             <div className="flex space-x-1.5 overflow-x-auto pb-1 text-xs">
               <button
                 onClick={() => setFiltroStatus('todos')}
@@ -789,7 +789,7 @@ export default function App() {
               </button>
             </div>
 
-            {/* Filtros em Chips: Categoria */}
+            {/* Filtros: Categoria */}
             <div className="flex space-x-1.5 overflow-x-auto pb-1 text-xs">
               <button
                 onClick={() => setFiltroCategoria('todas')}
@@ -817,7 +817,7 @@ export default function App() {
               ))}
             </div>
 
-            {/* Listagem com os resultados filtrados */}
+            {/* Lista filtrada */}
             {carregandoRegistos ? (
               <div className="py-16 text-center text-xs text-slate-400">A carregar ocorrências...</div>
             ) : registosFiltrados.length === 0 ? (
@@ -862,13 +862,98 @@ export default function App() {
           </div>
         )}
 
-        {/* 5. GESTÃO */}
+        {/* 5. TELA DE PERFIL / IMPACTO CÍVICO */}
+        {abaAtiva === 'perfil' && (
+          <div className="bg-white rounded-3xl p-6 border border-slate-200 shadow-xs space-y-6">
+            {/* Cabeçalho do Perfil */}
+            <div className="flex items-center space-x-4 border-b border-slate-100 pb-5">
+              <div className="w-16 h-16 rounded-3xl bg-gradient-to-tr from-blue-600 to-emerald-500 flex items-center justify-center text-white text-2xl font-black shadow-md">
+                👤
+              </div>
+              <div>
+                <h2 className="text-base font-black text-slate-800">Morador Colaborador</h2>
+                <p className="text-xs text-slate-500 mt-0.5">Zeladoria & Monitoramento Urbano</p>
+                <span className="inline-block mt-1 text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200">
+                  Cidadão Ativo
+                </span>
+              </div>
+            </div>
+
+            {/* Estatísticas de Impacto Comunitário */}
+            <div>
+              <h3 className="text-xs font-black text-slate-500 uppercase tracking-wider mb-3">Impacto no Território</h3>
+              <div className="grid grid-cols-2 gap-3">
+                <div className="bg-slate-50 rounded-2xl p-4 border border-slate-200">
+                  <span className="text-2xl font-black text-blue-600 block">{totalRegistos}</span>
+                  <span className="text-[11px] font-semibold text-slate-600 mt-1 block">Total Mapeado</span>
+                  <span className="text-[10px] text-slate-400">Pontos identificados</span>
+                </div>
+
+                <div className="bg-slate-50 rounded-2xl p-4 border border-slate-200">
+                  <span className="text-2xl font-black text-emerald-600 block">{taxaResolucao}%</span>
+                  <span className="text-[11px] font-semibold text-slate-600 mt-1 block">Taxa de Conclusão</span>
+                  <span className="text-[10px] text-slate-400">Demandas atendidas</span>
+                </div>
+              </div>
+            </div>
+
+            {/* Preferências e Apresentação */}
+            <div className="space-y-3 pt-1">
+              <h3 className="text-xs font-black text-slate-500 uppercase tracking-wider">Ações e Configurações</h3>
+
+              <button
+                onClick={() => { setEtapaOnboarding(0); setMostrarOnboarding(true); }}
+                className="w-full bg-slate-50 hover:bg-slate-100 border border-slate-200/90 rounded-2xl p-3.5 flex items-center justify-between text-left transition-all cursor-pointer"
+              >
+                <div className="flex items-center space-x-3">
+                  <span className="text-lg">💡</span>
+                  <div>
+                    <span className="text-xs font-bold text-slate-800 block">Rever Apresentação</span>
+                    <span className="text-[10px] text-slate-400">Guia de introdução do Zelador</span>
+                  </div>
+                </div>
+                <span className="text-slate-400 text-xs font-bold">Ver →</span>
+              </button>
+
+              <button
+                onClick={() => alternarModo(modo === 'normal' ? 'facil' : 'normal')}
+                className="w-full bg-slate-50 hover:bg-slate-100 border border-slate-200/90 rounded-2xl p-3.5 flex items-center justify-between text-left transition-all cursor-pointer"
+              >
+                <div className="flex items-center space-x-3">
+                  <span className="text-lg">{modo === 'facil' ? '🔊' : '📱'}</span>
+                  <div>
+                    <span className="text-xs font-bold text-slate-800 block">
+                      {modo === 'facil' ? 'Desativar Modo Fácil' : 'Ativar Modo Fácil'}
+                    </span>
+                    <span className="text-[10px] text-slate-400">Acessibilidade, voz e botões ampliados</span>
+                  </div>
+                </div>
+                <span className="text-xs font-bold px-2 py-1 rounded-lg bg-white border border-slate-200 text-slate-700">
+                  {modo === 'facil' ? 'Ligado' : 'Desligado'}
+                </span>
+              </button>
+            </div>
+
+            {/* Rodapé Informativo da Aplicação */}
+            <div className="pt-3 border-t border-slate-100 text-center">
+              <p className="text-[11px] font-bold text-slate-700">Zelador Digital © 2026</p>
+              <p className="text-[10px] text-slate-400 mt-0.5">
+                Idealizado, projetado e desenvolvido por <strong className="text-slate-600">Dante Dias Monteiro</strong>
+              </p>
+              <p className="text-[9px] text-slate-400 mt-0.5">
+                Iniciativa civil independente para mapeamento urbano e zeladoria comunitária.
+              </p>
+            </div>
+          </div>
+        )}
+
+        {/* 6. GESTÃO */}
         {abaAtiva === 'gestao' && <PainelGestor />}
       </main>
 
-      {/* BOTTOM NAVIGATION BAR */}
+      {/* BARRA DE NAVEGAÇÃO INFERIOR COM 5 ABAS */}
       <nav className="fixed bottom-0 left-0 right-0 z-40 bg-white/90 backdrop-blur-md border-t border-slate-200 shadow-lg">
-        <div className="max-w-md mx-auto px-6 h-16 flex items-center justify-between">
+        <div className="max-w-md mx-auto px-4 h-16 flex items-center justify-between">
           <button
             onClick={() => { setAbaAtiva('inicio'); setOcorrenciaSelecionada(null); }}
             className={`flex flex-col items-center justify-center space-y-1 transition-colors cursor-pointer ${
@@ -876,7 +961,7 @@ export default function App() {
             }`}
           >
             <span className="text-lg">🏠</span>
-            <span className="text-[10px] font-bold">Início</span>
+            <span className="text-[9px] font-bold">Início</span>
           </button>
 
           <button
@@ -886,9 +971,10 @@ export default function App() {
             }`}
           >
             <span className="text-lg">🗺️</span>
-            <span className="text-[10px] font-bold">Mapa</span>
+            <span className="text-[9px] font-bold">Mapa</span>
           </button>
 
+          {/* Botão Central de Destaque: Reportar */}
           <button
             onClick={() => { setAbaAtiva('reportar'); setOcorrenciaSelecionada(null); }}
             className="w-12 h-12 rounded-full bg-blue-600 text-white flex items-center justify-center text-xl shadow-md -mt-5 hover:bg-blue-700 active:scale-95 transition-all cursor-pointer border-4 border-white"
@@ -904,17 +990,17 @@ export default function App() {
             }`}
           >
             <span className="text-lg">📋</span>
-            <span className="text-[10px] font-bold">Registos</span>
+            <span className="text-[9px] font-bold">Registos</span>
           </button>
 
           <button
-            onClick={() => { setAbaAtiva('gestao'); setOcorrenciaSelecionada(null); }}
+            onClick={() => { setAbaAtiva('perfil'); setOcorrenciaSelecionada(null); }}
             className={`flex flex-col items-center justify-center space-y-1 transition-colors cursor-pointer ${
-              abaAtiva === 'gestao' ? 'text-blue-600' : 'text-slate-400 hover:text-slate-700'
+              abaAtiva === 'perfil' ? 'text-blue-600' : 'text-slate-400 hover:text-slate-700'
             }`}
           >
-            <span className="text-lg">⚙️</span>
-            <span className="text-[10px] font-bold">Gestão</span>
+            <span className="text-lg">👤</span>
+            <span className="text-[9px] font-bold">Perfil</span>
           </button>
         </div>
       </nav>
