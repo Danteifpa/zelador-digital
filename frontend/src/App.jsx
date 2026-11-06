@@ -3,6 +3,14 @@ import { supabase } from './lib/supabase'
 import PainelGestor from './components/PainelGestor'
 import MapaOcorrencias from './components/MapaOcorrencias'
 
+// Coordenadas centrais de referência comunitária (Residencial Novo Cristo, Icuí - Ananindeua)
+const CENTRO_COMUNITARIO = {
+  latitude: -1.345000,
+  longitude: -48.415000,
+  raioMaximoKm: 3.5,
+  nome: 'Residencial Novo Cristo / Icuí'
+}
+
 const CATEGORIAS = [
   { id: 'lixo', label: 'Lixo / Entulho', icon: '🗑️', border: 'border-amber-400', activeBg: 'bg-amber-500 text-white', fala: 'Selecionado: Lixo e Entulho' },
   { id: 'iluminacao', label: 'Poste Apagado', icon: '💡', border: 'border-indigo-400', activeBg: 'bg-indigo-600 text-white', fala: 'Selecionado: Iluminação ou Poste Apagado' },
@@ -58,7 +66,22 @@ const NOTIFICACOES_PADRAO = [
   }
 ]
 
-// Feedback Háptico e Sons Sintetizados via Web Audio API
+// Fórmula Haversine para cálculo de distância em km
+function calcularDistanciaKm(lat1, lon1, lat2, lon2) {
+  const R = 6371
+  const dLat = ((lat2 - lat1) * Math.PI) / 180
+  const dLon = ((lon2 - lon1) * Math.PI) / 180
+  const a =
+    Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+    Math.cos((lat1 * Math.PI) / 180) *
+      Math.cos((lat2 * Math.PI) / 180) *
+      Math.sin(dLon / 2) *
+      Math.sin(dLon / 2)
+  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a))
+  return R * c
+}
+
+// Feedback Háptico e Sons
 const feedbackSensorial = {
   vibrar: (padrao = 15) => {
     if (typeof window !== 'undefined' && 'vibrate' in navigator) {
@@ -507,13 +530,28 @@ export default function App() {
     setCapturandoGps(true)
     navigator.geolocation.getCurrentPosition(
       (pos) => {
-        setLocalizacao({
+        const coords = {
           latitude: pos.coords.latitude,
           longitude: pos.coords.longitude
-        })
+        }
+        setLocalizacao(coords)
         setOrigemLocalizacao('gps')
         setCapturandoGps(false)
         feedbackSensorial.gpsSucesso()
+
+        // Validação de cerca territorial (Geofencing)
+        const dist = calcularDistanciaKm(
+          coords.latitude,
+          coords.longitude,
+          CENTRO_COMUNITARIO.latitude,
+          CENTRO_COMUNITARIO.longitude
+        )
+        if (dist > CENTRO_COMUNITARIO.raioMaximoKm) {
+          mostrarAlertaToast(
+            `Aviso: Coordenadas a ${dist.toFixed(1)} km do Residencial Novo Cristo.`
+          )
+        }
+
         if (modo === 'facil') {
           falarTexto('Coordenadas capturadas com sucesso.')
         }
@@ -552,7 +590,21 @@ export default function App() {
           setLocalizacao(gpsExif)
           setOrigemLocalizacao('exif')
           feedbackSensorial.gpsSucesso()
-          mostrarAlertaToast('📍 Localização extraída diretamente da fotografia!')
+
+          const dist = calcularDistanciaKm(
+            gpsExif.latitude,
+            gpsExif.longitude,
+            CENTRO_COMUNITARIO.latitude,
+            CENTRO_COMUNITARIO.longitude
+          )
+          if (dist > CENTRO_COMUNITARIO.raioMaximoKm) {
+            mostrarAlertaToast(
+              `📍 Foto tirada a ${dist.toFixed(1)} km do setor comunitário.`
+            )
+          } else {
+            mostrarAlertaToast('📍 Localização extraída da fotografia!')
+          }
+
           if (modo === 'facil') falarTexto('Localização da foto identificada.')
         }
 
@@ -583,7 +635,6 @@ export default function App() {
     if (modo === 'facil') falarTexto(cat.fala)
   }
 
-  // Partilha Social / Comunitária (Web Share API)
   const partilharOcorrencia = async (item) => {
     feedbackSensorial.toqueSuave()
     const categoriaLabel = CATEGORIAS.find((c) => c.id === item.categoria)?.label || item.categoria
@@ -601,7 +652,6 @@ export default function App() {
         }
       }
     } else {
-      // Fallback: Copiar para área de transferência
       try {
         await navigator.clipboard.writeText(textoPartilha)
         mostrarAlertaToast('Texto da ocorrência copiado para a área de transferência!')
@@ -775,6 +825,17 @@ export default function App() {
     }
   }
 
+  // Distância do ponto atual em relação à comunidade
+  const distanciaAtualKm = useMemo(() => {
+    if (!localizacao) return null
+    return calcularDistanciaKm(
+      localizacao.latitude,
+      localizacao.longitude,
+      CENTRO_COMUNITARIO.latitude,
+      CENTRO_COMUNITARIO.longitude
+    )
+  }, [localizacao])
+
   const registosFiltrados = useMemo(() => {
     return registos.filter((item) => {
       const bateuCategoria = filtroCategoria === 'todas' || item.categoria === filtroCategoria
@@ -911,7 +972,7 @@ export default function App() {
         </div>
       )}
 
-      {/* MODAL DE SUCESSO COM PARTILHA */}
+      {/* MODAL DE SUCESSO */}
       {sucessoEnvio && (
         <div className="fixed inset-0 z-50 bg-slate-950/75 backdrop-blur-sm flex items-center justify-center p-4 animate-in fade-in zoom-in-95 duration-200">
           <div className="bg-white w-full max-w-sm rounded-3xl p-6 shadow-2xl text-center space-y-5 border border-slate-100">
@@ -951,7 +1012,6 @@ export default function App() {
             </div>
 
             <div className="space-y-2 pt-1">
-              {/* Botão de Partilha Imediata */}
               <button
                 type="button"
                 onClick={() => partilharOcorrencia(sucessoEnvio)}
@@ -1452,43 +1512,69 @@ export default function App() {
               )}
             </div>
 
-            <div className={`rounded-2xl border border-slate-200 bg-slate-50 flex items-center justify-between ${modo === 'facil' ? 'p-4' : 'p-3.5'}`}>
-              <div className="flex items-center space-x-2.5">
-                <span className="text-2xl">{origemLocalizacao === 'exif' ? '📷' : '📍'}</span>
-                <div>
-                  <div className="flex items-center space-x-2">
-                    <p className={`font-bold text-slate-800 ${modo === 'facil' ? 'text-sm' : 'text-xs'}`}>
+            {/* Localização e Validação Territorial (Geofencing) */}
+            <div className={`rounded-2xl border border-slate-200 bg-slate-50 space-y-2 ${modo === 'facil' ? 'p-4' : 'p-3.5'}`}>
+              <div className="flex items-center justify-between">
+                <div className="flex items-center space-x-2.5">
+                  <span className="text-2xl">{origemLocalizacao === 'exif' ? '📷' : '📍'}</span>
+                  <div>
+                    <div className="flex items-center space-x-2">
+                      <p className={`font-bold text-slate-800 ${modo === 'facil' ? 'text-sm' : 'text-xs'}`}>
+                        {localizacao
+                          ? origemLocalizacao === 'exif'
+                            ? 'GPS extraído da fotografia!'
+                            : 'Localização GPS capturada!'
+                          : capturandoGps
+                          ? 'A obter GPS...'
+                          : 'GPS pendente'}
+                      </p>
+                      {origemLocalizacao === 'exif' && (
+                        <span className="text-[9px] font-black bg-blue-100 text-blue-700 px-1.5 py-0.5 rounded-md">
+                          EXIF
+                        </span>
+                      )}
+                    </div>
+                    <p className="text-[11px] font-mono text-slate-500 mt-0.5">
                       {localizacao
-                        ? origemLocalizacao === 'exif'
-                          ? 'GPS extraído da fotografia!'
-                          : 'Localização GPS capturada!'
-                        : capturandoGps
-                        ? 'A obter GPS...'
-                        : 'GPS pendente'}
+                        ? `Lat: ${localizacao.latitude.toFixed(5)}, Long: ${localizacao.longitude.toFixed(5)}`
+                        : 'Clique para atualizar'}
                     </p>
-                    {origemLocalizacao === 'exif' && (
-                      <span className="text-[9px] font-black bg-blue-100 text-blue-700 px-1.5 py-0.5 rounded-md">
-                        EXIF
-                      </span>
-                    )}
                   </div>
-                  <p className="text-[11px] font-mono text-slate-500 mt-0.5">
-                    {localizacao
-                      ? `Lat: ${localizacao.latitude.toFixed(5)}, Long: ${localizacao.longitude.toFixed(5)}`
-                      : 'Clique para atualizar'}
-                  </p>
                 </div>
+
+                <button
+                  type="button"
+                  onClick={obterLocalizacaoAtual}
+                  disabled={capturandoGps}
+                  className="px-3 py-2 text-xs font-bold bg-white border border-slate-200 text-slate-700 hover:bg-slate-100 rounded-xl transition-all shadow-2xs cursor-pointer"
+                  title="Recapturar GPS atual"
+                >
+                  {capturandoGps ? 'A obter...' : '🔄'}
+                </button>
               </div>
 
-              <button
-                type="button"
-                onClick={obterLocalizacaoAtual}
-                disabled={capturandoGps}
-                className="px-3 py-2 text-xs font-bold bg-white border border-slate-200 text-slate-700 hover:bg-slate-100 rounded-xl transition-all shadow-2xs cursor-pointer"
-                title="Recapturar GPS atual"
-              >
-                {capturandoGps ? 'A obter...' : '🔄'}
-              </button>
+              {/* Indicador de Raio Territorial */}
+              {localizacao && distanciaAtualKm !== null && (
+                <div className={`pt-2 border-t border-slate-200/80 flex items-center justify-between text-[11px]`}>
+                  <div className="flex items-center space-x-1.5">
+                    <span className={distanciaAtualKm <= CENTRO_COMUNITARIO.raioMaximoKm ? 'text-emerald-600' : 'text-amber-500'}>
+                      {distanciaAtualKm <= CENTRO_COMUNITARIO.raioMaximoKm ? '●' : '▲'}
+                    </span>
+                    <span className="text-slate-600 font-medium">
+                      {distanciaAtualKm <= CENTRO_COMUNITARIO.raioMaximoKm
+                        ? `Área Comunitária (${distanciaAtualKm.toFixed(1)} km do centro)`
+                        : `Ponto Externo (${distanciaAtualKm.toFixed(1)} km do bairro)`}
+                    </span>
+                  </div>
+                  <span className={`font-black text-[10px] px-2 py-0.5 rounded-md ${
+                    distanciaAtualKm <= CENTRO_COMUNITARIO.raioMaximoKm
+                      ? 'bg-emerald-50 text-emerald-700 border border-emerald-200'
+                      : 'bg-amber-50 text-amber-700 border border-amber-200'
+                  }`}>
+                    {distanciaAtualKm <= CENTRO_COMUNITARIO.raioMaximoKm ? 'Dentro do Limite' : 'Fora do Raio'}
+                  </span>
+                </div>
+              )}
             </div>
 
             <div>
@@ -1665,39 +1751,58 @@ export default function App() {
               </div>
             ) : (
               <div className="space-y-3">
-                {registosFiltrados.map((reg) => (
-                  <div
-                    key={reg.id}
-                    onClick={() => {
-                      feedbackSensorial.toqueSuave()
-                      setOcorrenciaSelecionada(reg)
-                    }}
-                    className="p-3.5 rounded-2xl border border-slate-200 bg-white shadow-2xs flex justify-between items-start gap-3 hover:border-blue-400 transition-colors cursor-pointer group"
-                  >
-                    <div>
-                      <div className="flex items-center space-x-2">
-                        <span className="font-bold text-xs capitalize text-slate-800 group-hover:text-blue-600 transition-colors">
-                          {reg.categoria}
-                        </span>
-                        <span className={`text-[10px] px-2 py-0.5 rounded-full font-semibold border ${
-                          reg.status === 'resolvido' || reg.status === 'concluido'
-                            ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
-                            : 'bg-amber-50 text-amber-700 border-amber-200'
-                        }`}>
-                          {reg.status || 'Pendente'}
-                        </span>
-                      </div>
-                      <p className="text-xs text-slate-600 mt-1 line-clamp-1">{reg.descricao}</p>
-                      <span className="text-[10px] text-slate-400 mt-1 block">
-                        {reg.created_at ? new Date(reg.created_at).toLocaleDateString('pt-BR') : ''}
-                      </span>
-                    </div>
+                {registosFiltrados.map((reg) => {
+                  const distPonto =
+                    reg.latitude && reg.longitude
+                      ? calcularDistanciaKm(
+                          reg.latitude,
+                          reg.longitude,
+                          CENTRO_COMUNITARIO.latitude,
+                          CENTRO_COMUNITARIO.longitude
+                        )
+                      : null
 
-                    {reg.foto_url && (
-                      <img src={reg.foto_url} alt="Comprovativo" className="w-14 h-14 rounded-xl object-cover shrink-0 border border-slate-200" />
-                    )}
-                  </div>
-                ))}
+                  return (
+                    <div
+                      key={reg.id}
+                      onClick={() => {
+                        feedbackSensorial.toqueSuave()
+                        setOcorrenciaSelecionada(reg)
+                      }}
+                      className="p-3.5 rounded-2xl border border-slate-200 bg-white shadow-2xs flex justify-between items-start gap-3 hover:border-blue-400 transition-colors cursor-pointer group"
+                    >
+                      <div>
+                        <div className="flex items-center space-x-2">
+                          <span className="font-bold text-xs capitalize text-slate-800 group-hover:text-blue-600 transition-colors">
+                            {reg.categoria}
+                          </span>
+                          <span className={`text-[10px] px-2 py-0.5 rounded-full font-semibold border ${
+                            reg.status === 'resolvido' || reg.status === 'concluido'
+                              ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
+                              : 'bg-amber-50 text-amber-700 border-amber-200'
+                          }`}>
+                            {reg.status || 'Pendente'}
+                          </span>
+                        </div>
+                        <p className="text-xs text-slate-600 mt-1 line-clamp-1">{reg.descricao}</p>
+                        <div className="flex items-center space-x-2 mt-1">
+                          <span className="text-[10px] text-slate-400">
+                            {reg.created_at ? new Date(reg.created_at).toLocaleDateString('pt-BR') : ''}
+                          </span>
+                          {distPonto !== null && (
+                            <span className="text-[10px] text-slate-500 font-mono">
+                              • {distPonto.toFixed(1)} km do centro
+                            </span>
+                          )}
+                        </div>
+                      </div>
+
+                      {reg.foto_url && (
+                        <img src={reg.foto_url} alt="Comprovativo" className="w-14 h-14 rounded-xl object-cover shrink-0 border border-slate-200" />
+                      )}
+                    </div>
+                  )
+                })}
               </div>
             )}
           </div>
