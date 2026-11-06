@@ -116,6 +116,11 @@ export default function App() {
   const [mostrarOnboarding, setMostrarOnboarding] = useState(false)
   const [etapaOnboarding, setEtapaOnboarding] = useState(0)
 
+  // Estados de Instalação PWA
+  const [promptInstalacao, setPromptInstalacao] = useState(null)
+  const [pwaInstalado, setPwaInstalado] = useState(false)
+  const [bannerPwaIgnorado, setBannerPwaIgnorado] = useState(false)
+
   const [mostrarNotificacoes, setMostrarNotificacoes] = useState(false)
   const [notificacoesLidas, setNotificacoesLidas] = useState([])
 
@@ -143,6 +148,49 @@ export default function App() {
   const [ocorrenciaSelecionada, setOcorrenciaSelecionada] = useState(null)
   const [registos, setRegistos] = useState([])
   const [carregandoRegistos, setCarregandoRegistos] = useState(false)
+
+  // Deteção do evento beforeinstallprompt do PWA
+  useEffect(() => {
+    // Verifica se já roda em modo independente (standalone)
+    const isStandalone = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone
+    if (isStandalone) {
+      setPwaInstalado(true)
+    }
+
+    const capturarPrompt = (e) => {
+      e.preventDefault()
+      setPromptInstalacao(e)
+    }
+
+    const appInstalada = () => {
+      setPwaInstalado(true)
+      setPromptInstalacao(null)
+      mostrarAlertaToast('Aplicação instalada com sucesso no telemóvel!')
+    }
+
+    window.addEventListener('beforeinstallprompt', capturarPrompt)
+    window.addEventListener('appinstalled', appInstalada)
+
+    return () => {
+      window.removeEventListener('beforeinstallprompt', capturarPrompt)
+      window.removeEventListener('appinstalled', appInstalada)
+    }
+  }, [])
+
+  const instalarAplicacaoPWA = async () => {
+    if (!promptInstalacao) {
+      mostrarAlertaToast('Para instalar, use a opção "Adicionar ao ecrã principal" no menu do navegador.')
+      return
+    }
+
+    promptInstalacao.prompt()
+    const { outcome } = await promptInstalacao.userChoice
+
+    if (outcome === 'accepted') {
+      setPwaInstalado(true)
+      setPromptInstalacao(null)
+    }
+  }
 
   useEffect(() => {
     const filaSalva = localStorage.getItem('zelador_fila_offline')
@@ -943,6 +991,38 @@ export default function App() {
         {/* 1. INÍCIO */}
         {abaAtiva === 'inicio' && (
           <div className="space-y-4">
+            {/* Banner Moderno de Instalação do PWA */}
+            {!pwaInstalado && !bannerPwaIgnorado && (
+              <div className="bg-gradient-to-r from-slate-900 to-blue-950 text-white rounded-3xl p-4 shadow-sm border border-slate-800 relative overflow-hidden">
+                <button
+                  onClick={() => setBannerPwaIgnorado(true)}
+                  className="absolute top-3 right-3 text-slate-400 hover:text-white text-xs font-bold w-6 h-6 flex items-center justify-center rounded-full bg-white/10"
+                >
+                  ✕
+                </button>
+                <div className="flex items-center space-x-3.5 pr-6">
+                  <div className="w-11 h-11 rounded-2xl bg-blue-600 flex items-center justify-center text-xl shrink-0 shadow-md">
+                    📲
+                  </div>
+                  <div>
+                    <h3 className="text-xs font-black uppercase tracking-wider text-blue-300">Instalar Aplicação</h3>
+                    <p className="text-[11px] text-slate-300 mt-0.5 leading-snug">
+                      Aceda ao Zelador Digital diretamente no ecrã do seu telemóvel sem gastar memória.
+                    </p>
+                  </div>
+                </div>
+
+                <div className="mt-3 pt-3 border-t border-white/10 flex items-center justify-end space-x-2">
+                  <button
+                    onClick={instalarAplicacaoPWA}
+                    className="px-4 py-2 bg-blue-600 hover:bg-blue-500 text-white text-xs font-black uppercase rounded-xl transition-all shadow-2xs cursor-pointer"
+                  >
+                    Instalar Agora 📲
+                  </button>
+                </div>
+              </div>
+            )}
+
             <div className="rounded-3xl bg-gradient-to-br from-blue-600 via-sky-600 to-emerald-500 p-6 text-white shadow-md relative overflow-hidden">
               <div className="flex items-center justify-between mb-5">
                 <div>
@@ -1354,6 +1434,23 @@ export default function App() {
 
             <div className="space-y-3 pt-1">
               <h3 className="text-xs font-black text-slate-500 uppercase tracking-wider">Ações e Configurações</h3>
+
+              {/* Botão de Instalar no Perfil se não estiver instalado */}
+              {!pwaInstalado && (
+                <button
+                  onClick={instalarAplicacaoPWA}
+                  className="w-full bg-blue-50 hover:bg-blue-100 border border-blue-200 rounded-2xl p-3.5 flex items-center justify-between text-left transition-all cursor-pointer"
+                >
+                  <div className="flex items-center space-x-3">
+                    <span className="text-lg">📲</span>
+                    <div>
+                      <span className="text-xs font-black text-blue-900 block">Instalar no Telemóvel</span>
+                      <span className="text-[10px] text-blue-700">Adicionar ícone ao ecrã inicial (PWA)</span>
+                    </div>
+                  </div>
+                  <span className="text-blue-600 text-xs font-bold">Instalar →</span>
+                </button>
+              )}
 
               <button
                 onClick={() => { setEtapaOnboarding(0); setMostrarOnboarding(true); }}
