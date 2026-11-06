@@ -1,355 +1,339 @@
-import React, { useState, useEffect, useRef } from 'react'
+import React, { useState, useEffect, useMemo } from 'react'
+import { MapContainer, TileLayer, Marker, Popup, Circle, useMap } from 'react-leaflet'
 import L from 'leaflet'
 import 'leaflet/dist/leaflet.css'
-import 'leaflet.heat'
 
-// Cores e ícones padronizados por categoria
-const CORES_CATEGORIAS = {
-  lixo: { bg: '#f59e0b', text: '#fff', label: 'Lixo / Entulho', icon: '🗑️' },
-  iluminacao: { bg: '#6366f1', text: '#fff', label: 'Poste Apagado', icon: '💡' },
-  buraco: { bg: '#ea580c', text: '#fff', label: 'Buraco na Rua', icon: '🕳️' },
-  esgoto: { bg: '#0284c7', text: '#fff', label: 'Esgoto / Água', icon: '💧' }
+// Coordenadas centrais comunitárias (Residencial Novo Cristo, Icuí - Ananindeua)
+const CENTRO_COMUNITARIO = {
+  latitude: -1.345000,
+  longitude: -48.415000,
+  raioMetros: 3500,
+  nome: 'Residencial Novo Cristo / Icuí'
+}
+
+// Configuração de ícones customizados seguros
+const criarIconeCustomizado = (emoji, bgCor) => {
+  return L.divIcon({
+    html: `
+      <div style="
+        background-color: ${bgCor};
+        width: 36px;
+        height: 36px;
+        border-radius: 14px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 18px;
+        box-shadow: 0 4px 10px rgba(0,0,0,0.25);
+        border: 2px solid white;
+      ">
+        ${emoji}
+      </div>
+    `,
+    className: 'custom-leaflet-marker',
+    iconSize: [36, 36],
+    iconAnchor: [18, 18],
+    popupAnchor: [0, -20]
+  })
+}
+
+const ICONES_CATEGORIA = {
+  lixo: criarIconeCustomizado('🗑️', '#f59e0b'),
+  iluminacao: criarIconeCustomizado('💡', '#6366f1'),
+  buraco: criarIconeCustomizado('🕳️', '#ea580c'),
+  esgoto: criarIconeCustomizado('💧', '#0284c7'),
+  default: criarIconeCustomizado('📍', '#2563eb')
+}
+
+function RecarregarVisaoMapa({ centro, zoom }) {
+  const map = useMap()
+  useEffect(() => {
+    if (map) {
+      try {
+        map.setView(centro, zoom)
+      } catch (e) {
+        console.warn('Erro ao ajustar visão do mapa:', e)
+      }
+    }
+  }, [centro, zoom, map])
+  return null
 }
 
 export default function MapaOcorrencias({ ocorrencias = [], onRecarregar }) {
-  const mapRef = useRef(null)
-  const mapInstanceRef = useRef(null)
-  const markersLayerRef = useRef(null)
-  const heatLayerRef = useRef(null)
-  const userLocationLayerRef = useRef(null)
+  const [montado, setMontado] = useState(false)
+  const [filtroTipo, setFiltroTipo] = useState('todas')
+  const [modoVisualizacao, setModoVisualizacao] = useState('pontos')
+  const [posicaoGpsUsuario, setPosicaoGpsUsuario] = useState(null)
+  const [carregandoGps, setCarregandoGps] = useState(false)
 
-  const [modoVisualizacao, setModoVisualizacao] = useState('pontos') // 'pontos' ou 'calor'
-  const [categoriaFiltro, setCategoriaFiltro] = useState('todas')
-  const [pontoSelecionado, setPontoSelecionado] = useState(null)
-  const [posicaoUsuario, setPosicaoUsuario] = useState(null)
-
-  // Inicialização do Mapa Leaflet
+  // Evita crash de hidratação ou renderização prematura no telemóvel
   useEffect(() => {
-    if (!mapRef.current) return
-
-    // Coordenadas base comunitária
-    const mapa = L.map(mapRef.current, {
-      zoomControl: false
-    }).setView([-1.345, -48.415], 14)
-
-    L.control.zoom({ position: 'topright' }).addTo(mapa)
-
-    // Camada CartoDB Voyager limpa e leve
-    L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', {
-      maxZoom: 19,
-      attribution: '© OpenStreetMap © CARTO'
-    }).addTo(mapa)
-
-    markersLayerRef.current = L.layerGroup().addTo(mapa)
-    userLocationLayerRef.current = L.layerGroup().addTo(mapa)
-    mapInstanceRef.current = mapa
-
-    // Geolocalização contínua do morador no mapa
-    let watchId = null
-    if (navigator.geolocation) {
-      watchId = navigator.geolocation.watchPosition(
-        (pos) => {
-          const lat = pos.coords.latitude
-          const lng = pos.coords.longitude
-          const acuracia = pos.coords.accuracy
-
-          setPosicaoUsuario({ lat, lng, acuracia })
-
-          if (userLocationLayerRef.current) {
-            userLocationLayerRef.current.clearLayers()
-
-            // Círculo de precisão do GPS
-            const accuracyCircle = L.circle([lat, lng], {
-              radius: acuracia,
-              color: '#3b82f6',
-              fillColor: '#3b82f6',
-              fillOpacity: 0.15,
-              weight: 1
-            })
-
-            // Ponto pulsante "Você está aqui"
-            const userIcon = L.divIcon({
-              className: 'custom-user-marker',
-              html: `
-                <div style="position: relative; width: 20px; height: 20px;">
-                  <div style="
-                    position: absolute;
-                    width: 20px;
-                    height: 20px;
-                    border-radius: 50%;
-                    background: rgba(59, 130, 246, 0.4);
-                    animation: ping 1.5s cubic-bezier(0, 0, 0.2, 1) infinite;
-                  "></div>
-                  <div style="
-                    position: absolute;
-                    top: 3px;
-                    left: 3px;
-                    width: 14px;
-                    height: 14px;
-                    border-radius: 50%;
-                    background: #2563eb;
-                    border: 2.5px solid #ffffff;
-                    box-shadow: 0 2px 6px rgba(0,0,0,0.3);
-                  "></div>
-                </div>
-              `,
-              iconSize: [20, 20],
-              iconAnchor: [10, 10]
-            })
-
-            const userMarker = L.marker([lat, lng], { icon: userIcon })
-            userMarker.bindTooltip('Você está aqui', { permanent: false, direction: 'top' })
-
-            userLocationLayerRef.current.addLayer(accuracyCircle)
-            userLocationLayerRef.current.addLayer(userMarker)
-          }
-        },
-        (err) => console.warn('Acompanhamento GPS indisponível:', err.message),
-        { enableHighAccuracy: true, timeout: 15000, maximumAge: 5000 }
-      )
-    }
-
-    return () => {
-      if (watchId) navigator.geolocation.clearWatch(watchId)
-      mapa.remove()
-    }
+    setMontado(true)
+    rastrearLocalizacaoAtual()
   }, [])
 
-  // Centralizar o mapa na localização do munícipe
-  const centralizarNaMinhaPosicao = () => {
-    if (!posicaoUsuario || !mapInstanceRef.current) {
-      alert('Aguardando captura da sua localização GPS...')
-      return
-    }
-    mapInstanceRef.current.setView([posicaoUsuario.lat, posicaoUsuario.lng], 16, {
-      animate: true
-    })
+  const rastrearLocalizacaoAtual = () => {
+    if (typeof window === 'undefined' || !navigator.geolocation) return
+    setCarregandoGps(true)
+    navigator.geolocation.getCurrentPosition(
+      (pos) => {
+        setPosicaoGpsUsuario([pos.coords.latitude, pos.coords.longitude])
+        setCarregandoGps(false)
+      },
+      (err) => {
+        console.warn('Erro GPS no mapa:', err.message)
+        setCarregandoGps(false)
+      },
+      { enableHighAccuracy: true, timeout: 10000 }
+    )
   }
 
-  // Atualização dos Marcadores e da Camada Térmica (Heatmap)
-  useEffect(() => {
-    const mapa = mapInstanceRef.current
-    if (!mapa || !markersLayerRef.current) return
+  const dadosGeorreferenciados = useMemo(() => {
+    if (!Array.isArray(ocorrencias)) return []
+    return ocorrencias.filter((item) => {
+      const temLat = typeof item?.latitude === 'number' || (!isNaN(parseFloat(item?.latitude)) && isFinite(item?.latitude))
+      const temLng = typeof item?.longitude === 'number' || (!isNaN(parseFloat(item?.longitude)) && isFinite(item?.longitude))
+      const bateuTipo = filtroTipo === 'todas' || item?.categoria === filtroTipo
+      return temLat && temLng && bateuTipo
+    })
+  }, [ocorrencias, filtroTipo])
 
-    markersLayerRef.current.clearLayers()
-    if (heatLayerRef.current) {
-      mapa.removeLayer(heatLayerRef.current)
-      heatLayerRef.current = null
-    }
+  const centroMapa = [CENTRO_COMUNITARIO.latitude, CENTRO_COMUNITARIO.longitude]
 
-    const ocorrenciasValidas = ocorrencias.filter(
-      (o) =>
-        o.latitude &&
-        o.longitude &&
-        (categoriaFiltro === 'todas' || o.categoria === categoriaFiltro)
+  if (!montado) {
+    return (
+      <div className="h-[420px] rounded-3xl bg-slate-50 border border-slate-200 flex items-center justify-center text-xs text-slate-400 font-bold animate-pulse">
+        A inicializar mapa comunitário... 🗺️
+      </div>
     )
-
-    if (modoVisualizacao === 'pontos') {
-      ocorrenciasValidas.forEach((item) => {
-        const config = CORES_CATEGORIAS[item.categoria] || {
-          bg: '#475569',
-          text: '#fff',
-          icon: '📍'
-        }
-
-        const customIcon = L.divIcon({
-          className: 'custom-leaflet-marker',
-          html: `
-            <div style="
-              background-color: ${config.bg};
-              width: 34px;
-              height: 34px;
-              border-radius: 12px;
-              border: 2.5px solid #ffffff;
-              box-shadow: 0 4px 10px rgba(0,0,0,0.25);
-              display: flex;
-              align-items: center;
-              justify-content: center;
-              font-size: 15px;
-              cursor: pointer;
-              transition: transform 0.15s ease;
-            ">
-              ${config.icon}
-            </div>
-          `,
-          iconSize: [34, 34],
-          iconAnchor: [17, 17]
-        })
-
-        const marker = L.marker([item.latitude, item.longitude], { icon: customIcon })
-
-        marker.on('click', () => {
-          setPontoSelecionado(item)
-          mapa.panTo([item.latitude, item.longitude])
-        })
-
-        markersLayerRef.current.addLayer(marker)
-      })
-    } else if (modoVisualizacao === 'calor') {
-      const pontosCalor = ocorrenciasValidas.map((item) => [
-        item.latitude,
-        item.longitude,
-        0.8
-      ])
-
-      if (L.heatLayer && pontosCalor.length > 0) {
-        heatLayerRef.current = L.heatLayer(pontosCalor, {
-          radius: 25,
-          blur: 15,
-          maxZoom: 17,
-          gradient: { 0.4: '#38bdf8', 0.65: '#facc15', 1.0: '#ef4444' }
-        }).addTo(mapa)
-      }
-    }
-  }, [ocorrencias, modoVisualizacao, categoriaFiltro])
+  }
 
   return (
-    <div className="relative w-full h-[520px] rounded-3xl overflow-hidden border border-slate-200 shadow-xs">
-      {/* Container do Mapa Leaflet */}
-      <div ref={mapRef} className="w-full h-full z-0" />
-
-      {/* Camada Flutuante Superior: Alternador de Visualização e Filtros */}
-      <div className="absolute top-3 left-3 right-3 z-10 flex flex-col space-y-2 pointer-events-none">
-        <div className="flex items-center justify-between gap-2 pointer-events-auto">
-          {/* Alternador Pontos / Calor */}
-          <div className="bg-white/90 backdrop-blur-md p-1 rounded-2xl shadow-md border border-slate-200 flex text-xs font-bold">
-            <button
-              onClick={() => setModoVisualizacao('pontos')}
-              className={`px-3 py-1.5 rounded-xl transition-all cursor-pointer ${
-                modoVisualizacao === 'pontos'
-                  ? 'bg-blue-600 text-white shadow-2xs'
-                  : 'text-slate-600 hover:text-slate-900'
-              }`}
-            >
-              📍 Pontos
-            </button>
-            <button
-              onClick={() => setModoVisualizacao('calor')}
-              className={`px-3 py-1.5 rounded-xl transition-all cursor-pointer ${
-                modoVisualizacao === 'calor'
-                  ? 'bg-rose-600 text-white shadow-2xs font-black'
-                  : 'text-slate-600 hover:text-slate-900'
-              }`}
-            >
-              🔥 Calor
-            </button>
-          </div>
-
-          <div className="flex items-center space-x-1.5">
-            {/* Botão Centralizar em Mim */}
-            <button
-              onClick={centralizarNaMinhaPosicao}
-              className={`bg-white/90 backdrop-blur-md p-2 rounded-xl border border-slate-200 shadow-md text-xs font-bold cursor-pointer transition-all ${
-                posicaoUsuario ? 'text-blue-600 hover:bg-blue-50' : 'text-slate-400'
-              }`}
-              title="Centralizar na minha localização"
-            >
-              🎯
-            </button>
-
-            {/* Botão Recarregar */}
-            {onRecarregar && (
-              <button
-                onClick={onRecarregar}
-                className="bg-white/90 backdrop-blur-md p-2 rounded-xl border border-slate-200 shadow-md text-xs font-bold text-slate-700 hover:bg-white cursor-pointer"
-                title="Recarregar pontos"
-              >
-                🔄
-              </button>
-            )}
-          </div>
-        </div>
-
-        {/* Chips de Tipologia */}
-        <div className="flex space-x-1 overflow-x-auto pb-1 pointer-events-auto">
+    <div className="space-y-3">
+      {/* Barra de Controles */}
+      <div className="flex items-center justify-between gap-2 overflow-x-auto pb-1">
+        <div className="bg-slate-100 p-1 rounded-2xl flex items-center shrink-0 border border-slate-200">
           <button
-            onClick={() => setCategoriaFiltro('todas')}
-            className={`px-2.5 py-1 rounded-xl text-[10px] font-black shrink-0 transition-all shadow-2xs cursor-pointer ${
-              categoriaFiltro === 'todas'
-                ? 'bg-slate-900 text-white'
-                : 'bg-white/90 backdrop-blur-md text-slate-600 border border-slate-200'
+            type="button"
+            onClick={() => setModoVisualizacao('pontos')}
+            className={`px-3 py-1.5 rounded-xl text-xs font-black transition-all cursor-pointer ${
+              modoVisualizacao === 'pontos'
+                ? 'bg-blue-600 text-white shadow-xs'
+                : 'text-slate-600 hover:text-slate-900'
             }`}
           >
-            Todas
+            📍 Pontos
           </button>
-          {Object.entries(CORES_CATEGORIAS).map(([catId, item]) => (
+          <button
+            type="button"
+            onClick={() => setModoVisualizacao('calor')}
+            className={`px-3 py-1.5 rounded-xl text-xs font-black transition-all cursor-pointer ${
+              modoVisualizacao === 'calor'
+                ? 'bg-amber-500 text-white shadow-xs'
+                : 'text-slate-600 hover:text-slate-900'
+            }`}
+          >
+            🔥 Calor
+          </button>
+        </div>
+
+        <div className="flex items-center space-x-1.5 shrink-0">
+          <button
+            type="button"
+            onClick={rastrearLocalizacaoAtual}
+            disabled={carregandoGps}
+            className="w-9 h-9 rounded-2xl bg-slate-100 border border-slate-200 text-slate-700 hover:bg-slate-200 flex items-center justify-center text-sm font-bold shadow-2xs transition-colors cursor-pointer"
+            title="A minha localização"
+          >
+            {carregandoGps ? '⏳' : '🎯'}
+          </button>
+
+          {onRecarregar && (
             <button
-              key={catId}
-              onClick={() => setCategoriaFiltro(catId)}
-              className={`px-2 py-1 rounded-xl text-[10px] font-bold shrink-0 transition-all shadow-2xs flex items-center gap-1 cursor-pointer ${
-                categoriaFiltro === catId
-                  ? 'bg-blue-600 text-white'
-                  : 'bg-white/90 backdrop-blur-md text-slate-700 border border-slate-200'
-              }`}
+              type="button"
+              onClick={onRecarregar}
+              className="w-9 h-9 rounded-2xl bg-slate-100 border border-slate-200 text-slate-700 hover:bg-slate-200 flex items-center justify-center text-sm font-bold shadow-2xs transition-colors cursor-pointer"
+              title="Recarregar dados"
             >
-              <span>{item.icon}</span>
-              <span>{item.label}</span>
+              🔄
             </button>
-          ))}
+          )}
         </div>
       </div>
 
-      {/* Cartão Flutuante Inferior (Bottom Sheet Card) */}
-      {pontoSelecionado && (
-        <div className="absolute bottom-3 left-3 right-3 z-10 animate-in slide-in-from-bottom-4 duration-200">
-          <div className="bg-white/95 backdrop-blur-md p-4 rounded-3xl border border-slate-200 shadow-xl space-y-3">
-            <div className="flex items-start justify-between gap-3">
-              <div className="flex items-center space-x-2.5">
-                <div
-                  className="w-10 h-10 rounded-2xl flex items-center justify-center text-lg text-white font-black shadow-xs shrink-0"
-                  style={{
-                    backgroundColor:
-                      CORES_CATEGORIAS[pontoSelecionado.categoria]?.bg || '#475569'
-                  }}
-                >
-                  {CORES_CATEGORIAS[pontoSelecionado.categoria]?.icon || '📍'}
-                </div>
-                <div>
-                  <h4 className="font-black text-xs capitalize text-slate-800 leading-tight">
-                    {CORES_CATEGORIAS[pontoSelecionado.categoria]?.label ||
-                      pontoSelecionado.categoria}
-                  </h4>
-                  <span className="text-[10px] text-slate-400 block mt-0.5">
-                    {pontoSelecionado.created_at
-                      ? new Date(pontoSelecionado.created_at).toLocaleDateString('pt-BR')
-                      : 'Data registada'}
-                  </span>
-                </div>
-              </div>
+      {/* Seletor de Categorias */}
+      <div className="flex space-x-1.5 overflow-x-auto pb-1 text-xs">
+        <button
+          type="button"
+          onClick={() => setFiltroTipo('todas')}
+          className={`px-3 py-1 rounded-xl text-[11px] font-bold transition-all shrink-0 cursor-pointer ${
+            filtroTipo === 'todas'
+              ? 'bg-slate-900 text-white shadow-2xs'
+              : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+          }`}
+        >
+          Todas ({ocorrencias.length})
+        </button>
+        <button
+          type="button"
+          onClick={() => setFiltroTipo('lixo')}
+          className={`px-2.5 py-1 rounded-xl text-[11px] font-bold transition-all shrink-0 cursor-pointer ${
+            filtroTipo === 'lixo'
+              ? 'bg-amber-500 text-white shadow-2xs'
+              : 'bg-amber-50 text-amber-700 border border-amber-200 hover:bg-amber-100'
+          }`}
+        >
+          🗑️ Lixo
+        </button>
+        <button
+          type="button"
+          onClick={() => setFiltroTipo('iluminacao')}
+          className={`px-2.5 py-1 rounded-xl text-[11px] font-bold transition-all shrink-0 cursor-pointer ${
+            filtroTipo === 'iluminacao'
+              ? 'bg-indigo-600 text-white shadow-2xs'
+              : 'bg-indigo-50 text-indigo-700 border border-indigo-200 hover:bg-indigo-100'
+          }`}
+        >
+          💡 Postes
+        </button>
+        <button
+          type="button"
+          onClick={() => setFiltroTipo('buraco')}
+          className={`px-2.5 py-1 rounded-xl text-[11px] font-bold transition-all shrink-0 cursor-pointer ${
+            filtroTipo === 'buraco'
+              ? 'bg-orange-600 text-white shadow-2xs'
+              : 'bg-orange-50 text-orange-700 border border-orange-200 hover:bg-orange-100'
+          }`}
+        >
+          🕳️ Buracos
+        </button>
+        <button
+          type="button"
+          onClick={() => setFiltroTipo('esgoto')}
+          className={`px-2.5 py-1 rounded-xl text-[11px] font-bold transition-all shrink-0 cursor-pointer ${
+            filtroTipo === 'esgoto'
+              ? 'bg-sky-600 text-white shadow-2xs'
+              : 'bg-sky-50 text-sky-700 border border-sky-200 hover:bg-sky-100'
+          }`}
+        >
+          💧 Esgoto
+        </button>
+      </div>
 
-              <button
-                onClick={() => setPontoSelecionado(null)}
-                className="w-7 h-7 rounded-full bg-slate-100 text-slate-400 hover:text-slate-700 flex items-center justify-center text-xs font-bold cursor-pointer"
-              >
-                ✕
-              </button>
-            </div>
+      {/* Caixa do Mapa Leaflet */}
+      <div className="relative rounded-3xl overflow-hidden border border-slate-200 shadow-sm h-[420px] bg-slate-100">
+        <MapContainer
+          center={centroMapa}
+          zoom={14}
+          scrollWheelZoom={true}
+          style={{ width: '100%', height: '100%' }}
+        >
+          <RecarregarVisaoMapa centro={centroMapa} zoom={14} />
 
-            <p className="text-xs text-slate-600 line-clamp-2 leading-relaxed">
-              {pontoSelecionado.descricao || 'Sem descrição registada.'}
-            </p>
+          <TileLayer
+            attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
+            url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+            maxZoom={19}
+          />
 
-            {pontoSelecionado.foto_url && (
-              <div className="rounded-2xl overflow-hidden border border-slate-200 h-28 w-full bg-slate-100">
-                <img
-                  src={pontoSelecionado.foto_url}
-                  alt="Registo no mapa"
-                  className="w-full h-full object-cover"
-                />
-              </div>
-            )}
+          {/* Círculo do raio territorial de 3.5 km */}
+          <Circle
+            center={centroMapa}
+            radius={CENTRO_COMUNITARIO.raioMetros}
+            pathOptions={{
+              color: '#0284c7',
+              fillColor: '#38bdf8',
+              fillOpacity: 0.08,
+              weight: 2,
+              dashArray: '6, 6'
+            }}
+          />
 
-            <a
-              href={`https://www.google.com/maps/search/?api=1&query=${pontoSelecionado.latitude},${pontoSelecionado.longitude}`}
-              target="_blank"
-              rel="noreferrer"
-              className="w-full py-2.5 bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs rounded-2xl text-center block shadow-2xs transition-all"
+          {posicaoGpsUsuario && (
+            <Marker
+              position={posicaoGpsUsuario}
+              icon={criarIconeCustomizado('📍', '#10b981')}
             >
-              Abrir Rota no Google Maps ↗
-            </a>
+              <Popup>
+                <div className="text-center font-sans p-1">
+                  <span className="text-xs font-black text-emerald-800 block">Localização Atual</span>
+                </div>
+              </Popup>
+            </Marker>
+          )}
+
+          {modoVisualizacao === 'pontos' &&
+            dadosGeorreferenciados.map((item) => {
+              const lat = parseFloat(item.latitude)
+              const lng = parseFloat(item.longitude)
+              const icone = ICONES_CATEGORIA[item.categoria] || ICONES_CATEGORIA.default
+
+              return (
+                <Marker key={item.id} position={[lat, lng]} icon={icone}>
+                  <Popup>
+                    <div className="p-1 space-y-2 font-sans max-w-[200px]">
+                      {item.foto_url && (
+                        <img
+                          src={item.foto_url}
+                          alt="Foto"
+                          className="w-full h-24 object-cover rounded-xl border border-slate-200"
+                        />
+                      )}
+                      <div>
+                        <div className="flex items-center space-x-1.5">
+                          <span className="text-xs font-black capitalize text-slate-800">
+                            {item.categoria}
+                          </span>
+                          <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded-full ${
+                            item.status === 'resolvido' || item.status === 'concluido'
+                              ? 'bg-emerald-100 text-emerald-800'
+                              : 'bg-amber-100 text-amber-800'
+                          }`}>
+                            {item.status || 'Pendente'}
+                          </span>
+                        </div>
+                        <p className="text-[11px] text-slate-600 mt-1 leading-snug">
+                          {item.descricao || 'Sem descrição.'}
+                        </p>
+                      </div>
+                    </div>
+                  </Popup>
+                </Marker>
+              )
+            })}
+
+          {modoVisualizacao === 'calor' &&
+            dadosGeorreferenciados.map((item) => {
+              const lat = parseFloat(item.latitude)
+              const lng = parseFloat(item.longitude)
+              return (
+                <Circle
+                  key={`heat-${item.id}`}
+                  center={[lat, lng]}
+                  radius={120}
+                  pathOptions={{
+                    color: '#ef4444',
+                    fillColor: '#f97316',
+                    fillOpacity: 0.45,
+                    weight: 0
+                  }}
+                />
+              )
+            })}
+        </MapContainer>
+
+        <div className="absolute bottom-3 left-3 right-3 z-[1000] bg-white/95 backdrop-blur-md px-3 py-2 rounded-2xl border border-slate-200/90 shadow-md flex items-center justify-between text-[11px]">
+          <div className="flex items-center space-x-2">
+            <span className="w-2.5 h-2.5 rounded-full bg-sky-500 animate-pulse"></span>
+            <span className="font-bold text-slate-700 truncate">
+              {CENTRO_COMUNITARIO.nome} (3,5 km)
+            </span>
           </div>
+          <span className="font-black text-blue-600 shrink-0">
+            {dadosGeorreferenciados.length} pontos
+          </span>
         </div>
-      )}
+      </div>
     </div>
   )
 }
