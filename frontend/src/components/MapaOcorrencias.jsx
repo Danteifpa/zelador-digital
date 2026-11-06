@@ -16,42 +16,121 @@ export default function MapaOcorrencias({ ocorrencias = [], onRecarregar }) {
   const mapInstanceRef = useRef(null)
   const markersLayerRef = useRef(null)
   const heatLayerRef = useRef(null)
+  const userLocationLayerRef = useRef(null)
 
   const [modoVisualizacao, setModoVisualizacao] = useState('pontos') // 'pontos' ou 'calor'
   const [categoriaFiltro, setCategoriaFiltro] = useState('todas')
   const [pontoSelecionado, setPontoSelecionado] = useState(null)
+  const [posicaoUsuario, setPosicaoUsuario] = useState(null)
 
   // Inicialização do Mapa Leaflet
   useEffect(() => {
     if (!mapRef.current) return
 
-    // Centro inicial: Novo Cristo / Icuí, Ananindeua
+    // Coordenadas base comunitária
     const mapa = L.map(mapRef.current, {
       zoomControl: false
     }).setView([-1.345, -48.415], 14)
 
     L.control.zoom({ position: 'topright' }).addTo(mapa)
 
-    // Camada CartoDB Positron (estilo limpo e moderno)
+    // Camada CartoDB Voyager limpa e leve
     L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', {
       maxZoom: 19,
       attribution: '© OpenStreetMap © CARTO'
     }).addTo(mapa)
 
     markersLayerRef.current = L.layerGroup().addTo(mapa)
+    userLocationLayerRef.current = L.layerGroup().addTo(mapa)
     mapInstanceRef.current = mapa
 
+    // Geolocalização contínua do morador no mapa
+    let watchId = null
+    if (navigator.geolocation) {
+      watchId = navigator.geolocation.watchPosition(
+        (pos) => {
+          const lat = pos.coords.latitude
+          const lng = pos.coords.longitude
+          const acuracia = pos.coords.accuracy
+
+          setPosicaoUsuario({ lat, lng, acuracia })
+
+          if (userLocationLayerRef.current) {
+            userLocationLayerRef.current.clearLayers()
+
+            // Círculo de precisão do GPS
+            const accuracyCircle = L.circle([lat, lng], {
+              radius: acuracia,
+              color: '#3b82f6',
+              fillColor: '#3b82f6',
+              fillOpacity: 0.15,
+              weight: 1
+            })
+
+            // Ponto pulsante "Você está aqui"
+            const userIcon = L.divIcon({
+              className: 'custom-user-marker',
+              html: `
+                <div style="position: relative; width: 20px; height: 20px;">
+                  <div style="
+                    position: absolute;
+                    width: 20px;
+                    height: 20px;
+                    border-radius: 50%;
+                    background: rgba(59, 130, 246, 0.4);
+                    animation: ping 1.5s cubic-bezier(0, 0, 0.2, 1) infinite;
+                  "></div>
+                  <div style="
+                    position: absolute;
+                    top: 3px;
+                    left: 3px;
+                    width: 14px;
+                    height: 14px;
+                    border-radius: 50%;
+                    background: #2563eb;
+                    border: 2.5px solid #ffffff;
+                    box-shadow: 0 2px 6px rgba(0,0,0,0.3);
+                  "></div>
+                </div>
+              `,
+              iconSize: [20, 20],
+              iconAnchor: [10, 10]
+            })
+
+            const userMarker = L.marker([lat, lng], { icon: userIcon })
+            userMarker.bindTooltip('Você está aqui', { permanent: false, direction: 'top' })
+
+            userLocationLayerRef.current.addLayer(accuracyCircle)
+            userLocationLayerRef.current.addLayer(userMarker)
+          }
+        },
+        (err) => console.warn('Acompanhamento GPS indisponível:', err.message),
+        { enableHighAccuracy: true, timeout: 15000, maximumAge: 5000 }
+      )
+    }
+
     return () => {
+      if (watchId) navigator.geolocation.clearWatch(watchId)
       mapa.remove()
     }
   }, [])
+
+  // Centralizar o mapa na localização do munícipe
+  const centralizarNaMinhaPosicao = () => {
+    if (!posicaoUsuario || !mapInstanceRef.current) {
+      alert('Aguardando captura da sua localização GPS...')
+      return
+    }
+    mapInstanceRef.current.setView([posicaoUsuario.lat, posicaoUsuario.lng], 16, {
+      animate: true
+    })
+  }
 
   // Atualização dos Marcadores e da Camada Térmica (Heatmap)
   useEffect(() => {
     const mapa = mapInstanceRef.current
     if (!mapa || !markersLayerRef.current) return
 
-    // Limpa camadas existentes
     markersLayerRef.current.clearLayers()
     if (heatLayerRef.current) {
       mapa.removeLayer(heatLayerRef.current)
@@ -73,7 +152,6 @@ export default function MapaOcorrencias({ ocorrencias = [], onRecarregar }) {
           icon: '📍'
         }
 
-        // Marcador HTML moderno personalizado
         const customIcon = L.divIcon({
           className: 'custom-leaflet-marker',
           html: `
@@ -111,7 +189,7 @@ export default function MapaOcorrencias({ ocorrencias = [], onRecarregar }) {
       const pontosCalor = ocorrenciasValidas.map((item) => [
         item.latitude,
         item.longitude,
-        0.8 // intensidade térmica
+        0.8
       ])
 
       if (L.heatLayer && pontosCalor.length > 0) {
@@ -122,14 +200,6 @@ export default function MapaOcorrencias({ ocorrencias = [], onRecarregar }) {
           gradient: { 0.4: '#38bdf8', 0.65: '#facc15', 1.0: '#ef4444' }
         }).addTo(mapa)
       }
-    }
-
-    // Ajusta o foco do mapa para os pontos registados
-    if (ocorrenciasValidas.length > 0) {
-      const grupo = L.featureGroup(
-        ocorrenciasValidas.map((o) => L.marker([o.latitude, o.longitude]))
-      )
-      mapa.fitBounds(grupo.getBounds().pad(0.15), { maxZoom: 16 })
     }
   }, [ocorrencias, modoVisualizacao, categoriaFiltro])
 
@@ -165,16 +235,29 @@ export default function MapaOcorrencias({ ocorrencias = [], onRecarregar }) {
             </button>
           </div>
 
-          {/* Botão de Atualização Manual */}
-          {onRecarregar && (
+          <div className="flex items-center space-x-1.5">
+            {/* Botão Centralizar em Mim */}
             <button
-              onClick={onRecarregar}
-              className="bg-white/90 backdrop-blur-md p-2 rounded-xl border border-slate-200 shadow-md text-xs font-bold text-slate-700 hover:bg-white cursor-pointer"
-              title="Recarregar pontos"
+              onClick={centralizarNaMinhaPosicao}
+              className={`bg-white/90 backdrop-blur-md p-2 rounded-xl border border-slate-200 shadow-md text-xs font-bold cursor-pointer transition-all ${
+                posicaoUsuario ? 'text-blue-600 hover:bg-blue-50' : 'text-slate-400'
+              }`}
+              title="Centralizar na minha localização"
             >
-              🔄
+              🎯
             </button>
-          )}
+
+            {/* Botão Recarregar */}
+            {onRecarregar && (
+              <button
+                onClick={onRecarregar}
+                className="bg-white/90 backdrop-blur-md p-2 rounded-xl border border-slate-200 shadow-md text-xs font-bold text-slate-700 hover:bg-white cursor-pointer"
+                title="Recarregar pontos"
+              >
+                🔄
+              </button>
+            )}
+          </div>
         </div>
 
         {/* Chips de Tipologia */}
@@ -206,7 +289,7 @@ export default function MapaOcorrencias({ ocorrencias = [], onRecarregar }) {
         </div>
       </div>
 
-      {/* Cartão Flutuante Inferior (Bottom Sheet Card) ao Selecionar um Marcador */}
+      {/* Cartão Flutuante Inferior (Bottom Sheet Card) */}
       {pontoSelecionado && (
         <div className="absolute bottom-3 left-3 right-3 z-10 animate-in slide-in-from-bottom-4 duration-200">
           <div className="bg-white/95 backdrop-blur-md p-4 rounded-3xl border border-slate-200 shadow-xl space-y-3">
