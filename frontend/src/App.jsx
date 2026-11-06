@@ -66,7 +66,7 @@ const NOTIFICACOES_PADRAO = [
   }
 ]
 
-// Fórmula Haversine
+// Fórmula Haversine para cálculo de distância em km
 function calcularDistanciaKm(lat1, lon1, lat2, lon2) {
   const R = 6371
   const dLat = ((lat2 - lat1) * Math.PI) / 180
@@ -81,7 +81,7 @@ function calcularDistanciaKm(lat1, lon1, lat2, lon2) {
   return R * c
 }
 
-// Feedback Háptico e Sons
+// Feedback Háptico e Sons Sintetizados via Web Audio API
 const feedbackSensorial = {
   vibrar: (padrao = 15) => {
     if (typeof window !== 'undefined' && 'vibrate' in navigator) {
@@ -220,7 +220,7 @@ function lerRacionaisGps(view, offset, isLittleEndian) {
   return [dNum / (dDen || 1), mNum / (mDen || 1), sNum / (sDen || 1)]
 }
 
-// Compressão de foto
+// Compressão móvel via Canvas
 const comprimirImagem = (arquivo, maxWidth = 1280, maxHeight = 1280, quality = 0.8) => {
   return new Promise((resolve, reject) => {
     const reader = new FileReader()
@@ -1170,8 +1170,8 @@ export default function App() {
         </div>
       )}
 
-      {/* Topo / Navbar */}
-      <header className="bg-white/80 backdrop-blur-md border-b border-slate-200 sticky top-0 z-40 shadow-xs">
+      {/* TOPO / NAVBAR MINIMALISTA */}
+      <header className="bg-white/90 backdrop-blur-md border-b border-slate-200 sticky top-0 z-40 shadow-xs">
         <div className="max-w-md mx-auto px-4 h-16 flex items-center justify-between">
           <button
             onClick={() => {
@@ -1179,80 +1179,32 @@ export default function App() {
               setAbaAtiva('inicio')
               setOcorrenciaSelecionada(null)
             }}
-            className="flex items-center space-x-2 text-left focus:outline-none cursor-pointer"
+            className="flex items-center space-x-2.5 text-left focus:outline-none cursor-pointer"
           >
-            <div className="w-8 h-8 rounded-xl bg-gradient-to-tr from-blue-600 to-emerald-500 flex items-center justify-center text-white text-base shadow-2xs">
+            <div className="w-9 h-9 rounded-2xl bg-gradient-to-tr from-blue-600 to-emerald-500 flex items-center justify-center text-white text-base shadow-sm">
               🏙️
             </div>
             <div>
-              <span className={`font-black text-blue-600 tracking-tight leading-none ${modo === 'facil' ? 'text-2xl' : 'text-xl'}`}>Zelador</span>
-              <span className={`font-light text-slate-600 tracking-tight leading-none ${modo === 'facil' ? 'text-2xl' : 'text-xl'}`}>Digital</span>
+              <span className="text-xl font-black text-blue-600 tracking-tight leading-none">Zelador</span>
+              <span className="text-xl font-light text-slate-700 tracking-tight leading-none">Digital</span>
             </div>
           </button>
 
-          <div className="flex items-center space-x-2">
-            <button
-              onClick={() => {
-                feedbackSensorial.toqueSuave()
-                setMostrarNotificacoes(true)
-              }}
-              className="p-2 rounded-xl text-xs font-bold bg-slate-100 text-slate-700 hover:bg-slate-200 border border-slate-200/60 relative cursor-pointer"
-              title="Avisos e Notificações"
-            >
-              <span>🔔</span>
-              {notificacoesNaoLidas > 0 && (
-                <span className="absolute -top-1 -right-1 w-4 h-4 bg-rose-600 text-white text-[9px] font-black rounded-full flex items-center justify-center border-2 border-white shadow-2xs">
-                  {notificacoesNaoLidas}
-                </span>
-              )}
-            </button>
-
-            <button
-              onClick={() => {
-                feedbackSensorial.toqueSuave()
-                setEtapaOnboarding(0)
-                setMostrarOnboarding(true)
-              }}
-              className="p-2 rounded-xl text-xs font-bold bg-slate-100 text-slate-700 hover:bg-slate-200 border border-slate-200/60 cursor-pointer"
-              title="Apresentação do Projeto"
-            >
-              💡
-            </button>
-
-            <div className="bg-slate-100 p-0.5 rounded-xl flex items-center text-xs font-bold border border-slate-200/60">
-              <button
-                type="button"
-                onClick={() => alternarModo('normal')}
-                className={`px-2 py-1 rounded-lg transition-all ${modo === 'normal' ? 'bg-white text-blue-600 shadow-2xs font-extrabold' : 'text-slate-600'}`}
-              >
-                Normal
-              </button>
-              <button
-                type="button"
-                onClick={() => alternarModo('facil')}
-                className={`px-2 py-1 rounded-lg flex items-center gap-1 transition-all ${modo === 'facil' ? 'bg-amber-500 text-white shadow-2xs font-black' : 'text-slate-600'}`}
-              >
-                <span>🔊</span>
-                <span>Fácil</span>
-              </button>
-            </div>
-
-            <button
-              onClick={() => {
-                feedbackSensorial.toqueSuave()
-                setAbaAtiva('gestao')
-                setOcorrenciaSelecionada(null)
-              }}
-              className={`p-2 rounded-xl text-xs font-bold transition-all cursor-pointer ${
-                abaAtiva === 'gestao'
-                  ? 'bg-slate-900 text-white shadow-xs'
-                  : 'bg-slate-100 text-slate-700 hover:bg-slate-200 border border-slate-200/60'
-              }`}
-              title="Painel Gestor"
-            >
-              ⚙️
-            </button>
-          </div>
+          <button
+            onClick={() => {
+              feedbackSensorial.toqueSuave()
+              setMostrarNotificacoes(true)
+            }}
+            className="w-10 h-10 rounded-2xl text-base bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-200 flex items-center justify-center relative transition-colors cursor-pointer"
+            title="Avisos e Notificações"
+          >
+            <span>🔔</span>
+            {notificacoesNaoLidas > 0 && (
+              <span className="absolute -top-1 -right-1 w-4 h-4 bg-rose-600 text-white text-[9px] font-black rounded-full flex items-center justify-center border-2 border-white shadow-2xs">
+                {notificacoesNaoLidas}
+              </span>
+            )}
+          </button>
         </div>
       </header>
 
@@ -1916,6 +1868,25 @@ export default function App() {
                   </div>
                 </div>
                 <span className="text-xs font-bold text-slate-300">Abrir ↗</span>
+              </button>
+
+              {/* Atalho de Gestão do Painel */}
+              <button
+                onClick={() => {
+                  feedbackSensorial.toqueSuave()
+                  setAbaAtiva('gestao')
+                  setOcorrenciaSelecionada(null)
+                }}
+                className="w-full bg-slate-100 hover:bg-slate-200 border border-slate-200 rounded-2xl p-3.5 flex items-center justify-between text-left transition-all cursor-pointer"
+              >
+                <div className="flex items-center space-x-3">
+                  <span className="text-lg">⚙️</span>
+                  <div>
+                    <span className="text-xs font-bold text-slate-800 block">Painel de Gestor</span>
+                    <span className="text-[10px] text-slate-500">Auditoria, relatórios CSV/PDF e triagem</span>
+                  </div>
+                </div>
+                <span className="text-slate-600 text-xs font-bold">Aceder →</span>
               </button>
 
               {!pwaInstalado && (
