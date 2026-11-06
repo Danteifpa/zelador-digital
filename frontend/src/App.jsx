@@ -58,7 +58,98 @@ const NOTIFICACOES_PADRAO = [
   }
 ]
 
-// Função utilitária de compressão móvel via Canvas
+// Utilitário para extrair coordenadas GPS de metadados EXIF
+function extrairGpsExif(arquivo) {
+  return new Promise((resolve) => {
+    const reader = new FileReader()
+    reader.onload = function (e) {
+      const buffer = e.target.result
+      const dataView = new DataView(buffer)
+
+      if (dataView.getUint16(0, false) !== 0xffd8) {
+        return resolve(null) // Não é JPEG
+      }
+
+      let offset = 2
+      const length = dataView.byteLength
+
+      while (offset < length) {
+        if (dataView.getUint8(offset) !== 0xff) return resolve(null)
+        const marker = dataView.getUint8(offset + 1)
+
+        if (marker === 0xe1) {
+          // APP1 Marker (EXIF)
+          const exifOffset = offset + 4
+          if (dataView.getUint32(exifOffset, false) === 0x45786966) {
+            return resolve(analisarTiffGps(dataView, exifOffset + 6))
+          }
+        }
+        offset += 2 + dataView.getUint16(offset + 2, false)
+      }
+      resolve(null)
+    }
+    reader.onerror = () => resolve(null)
+    reader.readAsArrayBuffer(arquivo.slice(0, 131072)) // Lê os primeiros 128 KB
+  })
+}
+
+function analisarTiffGps(view, tiffOffset) {
+  try {
+    const isLittleEndian = view.getUint16(tiffOffset, false) === 0x4949
+    const firstIFDOffset = view.getUint32(tiffOffset + 4, isLittleEndian)
+    const numEntries = view.getUint16(tiffOffset + firstIFDOffset, isLittleEndian)
+
+    let gpsInfoOffset = null
+
+    for (let i = 0; i < numEntries; i++) {
+      const entryOffset = tiffOffset + firstIFDOffset + 2 + i * 12
+      const tag = view.getUint16(entryOffset, isLittleEndian)
+      if (tag === 0x8825) {
+        // Tag GPS Info
+        gpsInfoOffset = view.getUint32(entryOffset + 8, isLittleEndian)
+        break
+      }
+    }
+
+    if (!gpsInfoOffset) return null
+
+    const gpsEntries = view.getUint16(tiffOffset + gpsInfoOffset, isLittleEndian)
+    let lat = null, latRef = 'N', lng = null, lngRef = 'W'
+
+    for (let i = 0; i < gpsEntries; i++) {
+      const entryOffset = tiffOffset + gpsInfoOffset + 2 + i * 12
+      const tag = view.getUint16(entryOffset, isLittleEndian)
+
+      if (tag === 1) latRef = String.fromCharCode(view.getUint8(entryOffset + 8))
+      if (tag === 2) lat = lerRacionaisGps(view, tiffOffset + view.getUint32(entryOffset + 8, isLittleEndian), isLittleEndian)
+      if (tag === 3) lngRef = String.fromCharCode(view.getUint8(entryOffset + 8))
+      if (tag === 4) lng = lerRacionaisGps(view, tiffOffset + view.getUint32(entryOffset + 8, isLittleEndian), isLittleEndian)
+    }
+
+    if (lat !== null && lng !== null) {
+      let finalLat = lat[0] + lat[1] / 60 + lat[2] / 3600
+      let finalLng = lng[0] + lng[1] / 60 + lng[2] / 3600
+      if (latRef === 'S') finalLat = -finalLat
+      if (lngRef === 'W') finalLng = -finalLng
+      return { latitude: finalLat, longitude: finalLng }
+    }
+  } catch (err) {
+    console.warn('Metadados EXIF GPS não encontrados ou corrompidos')
+  }
+  return null
+}
+
+function lerRacionaisGps(view, offset, isLittleEndian) {
+  const dNum = view.getUint32(offset, isLittleEndian)
+  const dDen = view.getUint32(offset + 4, isLittleEndian)
+  const mNum = view.getUint32(offset + 8, isLittleEndian)
+  const mDen = view.getUint32(offset + 12, isLittleEndian)
+  const sNum = view.getUint32(offset + 16, isLittleEndian)
+  const sDen = view.getUint32(offset + 20, isLittleEndian)
+  return [dNum / (dDen || 1), mNum / (mDen || 1), sNum / (sDen || 1)]
+}
+
+// Compressão móvel via Canvas
 const comprimirImagem = (arquivo, maxWidth = 1280, maxHeight = 1280, quality = 0.8) => {
   return new Promise((resolve, reject) => {
     const reader = new FileReader()
@@ -116,23 +207,27 @@ export default function App() {
   const [mostrarOnboarding, setMostrarOnboarding] = useState(false)
   const [etapaOnboarding, setEtapaOnboarding] = useState(0)
 
-  // Estados de Instalação PWA
+  // Estados PWA
   const [promptInstalacao, setPromptInstalacao] = useState(null)
   const [pwaInstalado, setPwaInstalado] = useState(false)
   const [bannerPwaIgnorado, setBannerPwaIgnorado] = useState(false)
 
+  // Notificações
   const [mostrarNotificacoes, setMostrarNotificacoes] = useState(false)
   const [notificacoesLidas, setNotificacoesLidas] = useState([])
 
+  // Conectividade e fila offline
   const [estaOnline, setEstaOnline] = useState(navigator.onLine)
   const [filaOffline, setFilaOffline] = useState([])
   const [sincronizandoFila, setSincronizandoFila] = useState(false)
 
+  // Formulário
   const [categoria, setCategoria] = useState('buraco')
   const [foto, setFoto] = useState(null)
   const [fotoPreview, setFotoPreview] = useState(null)
   const [processandoFoto, setProcessandoFoto] = useState(false)
   const [localizacao, setLocalizacao] = useState(null)
+  const [origemLocalizacao, setOrigemLocalizacao] = useState('gps') // 'gps' ou 'exif'
   const [capturandoGps, setCapturandoGps] = useState(false)
   const [pontoReferencia, setPontoReferencia] = useState('')
   const [gravandoVoz, setGravandoVoz] = useState(false)
@@ -141,6 +236,7 @@ export default function App() {
   const [sucessoEnvio, setSucessoEnvio] = useState(null)
   const [mensagemToast, setMensagemToast] = useState(null)
 
+  // Filtros
   const [filtroCategoria, setFiltroCategoria] = useState('todas')
   const [filtroStatus, setFiltroStatus] = useState('todos')
   const [buscaTexto, setBuscaTexto] = useState('')
@@ -149,13 +245,9 @@ export default function App() {
   const [registos, setRegistos] = useState([])
   const [carregandoRegistos, setCarregandoRegistos] = useState(false)
 
-  // Deteção do evento beforeinstallprompt do PWA
   useEffect(() => {
-    // Verifica se já roda em modo independente (standalone)
     const isStandalone = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone
-    if (isStandalone) {
-      setPwaInstalado(true)
-    }
+    if (isStandalone) setPwaInstalado(true)
 
     const capturarPrompt = (e) => {
       e.preventDefault()
@@ -179,7 +271,7 @@ export default function App() {
 
   const instalarAplicacaoPWA = async () => {
     if (!promptInstalacao) {
-      mostrarAlertaToast('Para instalar, use a opção "Adicionar ao ecrã principal" no menu do navegador.')
+      mostrarAlertaToast('Use a opção "Adicionar ao ecrã principal" no menu do navegador.')
       return
     }
 
@@ -361,6 +453,7 @@ export default function App() {
           latitude: pos.coords.latitude,
           longitude: pos.coords.longitude
         })
+        setOrigemLocalizacao('gps')
         setCapturandoGps(false)
         if (modo === 'facil') {
           falarTexto('Coordenadas capturadas com sucesso.')
@@ -388,17 +481,30 @@ export default function App() {
     return await res.blob()
   }
 
+  // Carregamento de foto com extração de metadados EXIF
   const handleFotoChange = async (e) => {
     const file = e.target.files[0]
     if (file) {
       try {
         setProcessandoFoto(true)
+
+        // 1. Tenta extrair coordenadas EXIF da foto
+        const gpsExif = await extrairGpsExif(file)
+        if (gpsExif) {
+          setLocalizacao(gpsExif)
+          setOrigemLocalizacao('exif')
+          mostrarAlertaToast('📍 Localização extraída diretamente da fotografia!')
+          if (modo === 'facil') falarTexto('Localização da foto identificada.')
+        }
+
+        // 2. Comprime a imagem para upload rápido
         const comprimida = await comprimirImagem(file)
         setFoto(comprimida)
         setFotoPreview(URL.createObjectURL(comprimida))
-        if (modo === 'facil') falarTexto('Fotografia adicionada e otimizada.')
+
+        if (modo === 'facil' && !gpsExif) falarTexto('Fotografia adicionada e otimizada.')
       } catch (err) {
-        console.warn('Falha na compressão, usando original:', err)
+        console.warn('Falha no processamento da imagem:', err)
         setFoto(file)
         setFotoPreview(URL.createObjectURL(file))
       } finally {
@@ -991,7 +1097,6 @@ export default function App() {
         {/* 1. INÍCIO */}
         {abaAtiva === 'inicio' && (
           <div className="space-y-4">
-            {/* Banner Moderno de Instalação do PWA */}
             {!pwaInstalado && !bannerPwaIgnorado && (
               <div className="bg-gradient-to-r from-slate-900 to-blue-950 text-white rounded-3xl p-4 shadow-sm border border-slate-800 relative overflow-hidden">
                 <button
@@ -1157,7 +1262,7 @@ export default function App() {
 
               {processandoFoto ? (
                 <div className="rounded-2xl border border-slate-200 bg-slate-50 p-8 text-center text-xs text-blue-600 font-bold animate-pulse">
-                  A otimizar e comprimir fotografia... ⚡
+                  A otimizar e extrair metadados da fotografia... ⚡
                 </div>
               ) : fotoPreview ? (
                 <div className="relative rounded-2xl overflow-hidden border border-slate-200 bg-slate-100">
@@ -1174,7 +1279,7 @@ export default function App() {
                 <label className={`border-2 border-dashed border-slate-300 hover:border-blue-500 rounded-2xl flex flex-col items-center justify-center cursor-pointer bg-slate-50 transition-all ${modo === 'facil' ? 'p-7' : 'p-5'}`}>
                   <span className={modo === 'facil' ? 'text-3xl mb-1' : 'text-2xl mb-1'}>📸</span>
                   <span className={`font-bold text-slate-700 ${modo === 'facil' ? 'text-sm' : 'text-xs'}`}>Tirar foto ou selecionar</span>
-                  <span className="text-[11px] text-slate-400 mt-0.5">Compressão automática para poupança de dados</span>
+                  <span className="text-[11px] text-slate-400 mt-0.5">Leitura de GPS EXIF e compressão automática</span>
                   <input
                     type="file"
                     accept="image/*"
@@ -1188,11 +1293,24 @@ export default function App() {
 
             <div className={`rounded-2xl border border-slate-200 bg-slate-50 flex items-center justify-between ${modo === 'facil' ? 'p-4' : 'p-3.5'}`}>
               <div className="flex items-center space-x-2.5">
-                <span className="text-2xl">📍</span>
+                <span className="text-2xl">{origemLocalizacao === 'exif' ? '📷' : '📍'}</span>
                 <div>
-                  <p className={`font-bold text-slate-800 ${modo === 'facil' ? 'text-sm' : 'text-xs'}`}>
-                    {localizacao ? 'Localização capturada!' : capturandoGps ? 'A obter GPS...' : 'GPS pendente'}
-                  </p>
+                  <div className="flex items-center space-x-2">
+                    <p className={`font-bold text-slate-800 ${modo === 'facil' ? 'text-sm' : 'text-xs'}`}>
+                      {localizacao
+                        ? origemLocalizacao === 'exif'
+                          ? 'GPS extraído da fotografia!'
+                          : 'Localização GPS capturada!'
+                        : capturandoGps
+                        ? 'A obter GPS...'
+                        : 'GPS pendente'}
+                    </p>
+                    {origemLocalizacao === 'exif' && (
+                      <span className="text-[9px] font-black bg-blue-100 text-blue-700 px-1.5 py-0.5 rounded-md">
+                        EXIF
+                      </span>
+                    )}
+                  </div>
                   <p className="text-[11px] font-mono text-slate-500 mt-0.5">
                     {localizacao
                       ? `Lat: ${localizacao.latitude.toFixed(5)}, Long: ${localizacao.longitude.toFixed(5)}`
@@ -1206,6 +1324,7 @@ export default function App() {
                 onClick={obterLocalizacaoAtual}
                 disabled={capturandoGps}
                 className="px-3 py-2 text-xs font-bold bg-white border border-slate-200 text-slate-700 hover:bg-slate-100 rounded-xl transition-all shadow-2xs cursor-pointer"
+                title="Recapturar GPS atual"
               >
                 {capturandoGps ? 'A obter...' : '🔄'}
               </button>
@@ -1435,7 +1554,6 @@ export default function App() {
             <div className="space-y-3 pt-1">
               <h3 className="text-xs font-black text-slate-500 uppercase tracking-wider">Ações e Configurações</h3>
 
-              {/* Botão de Instalar no Perfil se não estiver instalado */}
               {!pwaInstalado && (
                 <button
                   onClick={instalarAplicacaoPWA}
@@ -1445,7 +1563,7 @@ export default function App() {
                     <span className="text-lg">📲</span>
                     <div>
                       <span className="text-xs font-black text-blue-900 block">Instalar no Telemóvel</span>
-                      <span className="text-[10px] text-blue-700">Adicionar ícone ao ecrã inicial (PWA)</span>
+                      <span className="text-[10px] text-blue-700">Adicionar ícone ao ecrã principal (PWA)</span>
                     </div>
                   </div>
                   <span className="text-blue-600 text-xs font-bold">Instalar →</span>
