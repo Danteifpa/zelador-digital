@@ -59,7 +59,7 @@ function AjustarVisualizacao({ centro, zoom }) {
   return null
 }
 
-export default function MapaOcorrencias({ ocorrencias = [], onRecarregar }) {
+export default function MapaOcorrencias({ ocorrencias = [] }) {
   const [montado, setMontado] = useState(false)
   const [filtroTipo, setFiltroTipo] = useState('todas')
   const [modoVisualizacao, setModoVisualizacao] = useState('pontos')
@@ -108,92 +108,81 @@ export default function MapaOcorrencias({ ocorrencias = [], onRecarregar }) {
   return (
     <div className="space-y-3">
       {/* Barra de ferramentas do mapa */}
-      <div className="bg-white border border-slate-200 rounded-2xl p-2.5 shadow-2xs space-y-2.5">
-        <div className="flex flex-wrap items-center justify-between gap-2">
-          <div className="bg-slate-100 p-1 rounded-2xl flex items-center gap-1 border border-slate-200">
-          <button
-            type="button"
-            onClick={() => setModoVisualizacao('pontos')}
-            className={`min-h-10 px-3 rounded-xl text-xs font-black transition-all cursor-pointer ${
-              modoVisualizacao === 'pontos' ? 'bg-blue-600 text-white shadow-xs' : 'text-slate-600'
-            }`}
-          >
-            📍 Pontos
-          </button>
-          <button
-            type="button"
-            onClick={() => setModoVisualizacao('calor')}
-            className={`min-h-10 px-3 rounded-xl text-xs font-black transition-all cursor-pointer ${
-              modoVisualizacao === 'calor' ? 'bg-amber-500 text-white shadow-xs' : 'text-slate-600'
-            }`}
-          >
-            🔥 Calor
-          </button>
-          </div>
-
-          {onRecarregar && (
+      <div className="space-y-2.5">
+        <div className="flex items-center">
+          <div className="bg-slate-100 p-1 rounded-full flex items-center gap-1 border border-slate-200">
             <button
               type="button"
-              onClick={onRecarregar}
-              className="min-h-10 min-w-10 px-3 rounded-xl bg-slate-100 border border-slate-200 text-slate-700 flex items-center justify-center text-sm font-bold shadow-2xs cursor-pointer"
-              title="Atualizar"
+              onClick={() => setModoVisualizacao('pontos')}
+              className={`min-h-10 px-4 rounded-full text-xs font-black transition-all cursor-pointer ${
+                modoVisualizacao === 'pontos' ? 'bg-white text-blue-700 shadow-sm' : 'text-slate-600'
+              }`}
             >
-              🔄 <span className="ml-1.5 text-[11px]">Atualizar</span>
+              📍 Pontos
             </button>
-          )}
+            <button
+              type="button"
+              onClick={() => setModoVisualizacao('calor')}
+              className={`min-h-10 px-4 rounded-full text-xs font-black transition-all cursor-pointer ${
+                modoVisualizacao === 'calor' ? 'bg-white text-amber-700 shadow-sm' : 'text-slate-600'
+              }`}
+            >
+              🔥 Calor
+            </button>
+          </div>
         </div>
 
-        <div className="flex flex-wrap items-center gap-1.5 text-xs">
-        <button
-          type="button"
-          onClick={() => setFiltroTipo('todas')}
-          className={`min-h-10 px-3 rounded-xl text-[11px] font-bold transition-all shrink-0 cursor-pointer ${
-            filtroTipo === 'todas' ? 'bg-slate-900 text-white' : 'bg-slate-100 text-slate-600'
-          }`}
-        >
-          Todas ({ocorrencias.length})
-        </button>
-        <button
-          type="button"
-          onClick={() => setFiltroTipo('lixo')}
-          className={`min-h-10 px-3 rounded-xl text-[11px] font-bold shrink-0 cursor-pointer ${
-            filtroTipo === 'lixo' ? 'bg-amber-500 text-white' : 'bg-slate-100 text-slate-600'
-          }`}
-        >
-          🗑️ Lixo
-        </button>
-        <button
-          type="button"
-          onClick={() => setFiltroTipo('iluminacao')}
-          className={`min-h-10 px-3 rounded-xl text-[11px] font-bold shrink-0 cursor-pointer ${
-            filtroTipo === 'iluminacao' ? 'bg-indigo-600 text-white' : 'bg-slate-100 text-slate-600'
-          }`}
-        >
-          💡 Postes
-        </button>
-        <button
-          type="button"
-          onClick={() => setFiltroTipo('buraco')}
-          className={`min-h-10 px-3 rounded-xl text-[11px] font-bold shrink-0 cursor-pointer ${
-            filtroTipo === 'buraco' ? 'bg-orange-600 text-white' : 'bg-slate-100 text-slate-600'
-          }`}
-        >
-          🕳️ Buracos
-        </button>
-        <button
-          type="button"
-          onClick={() => setFiltroTipo('esgoto')}
-          className={`min-h-10 px-3 rounded-xl text-[11px] font-bold shrink-0 cursor-pointer ${
-            filtroTipo === 'esgoto' ? 'bg-sky-600 text-white' : 'bg-slate-100 text-slate-600'
-          }`}
-        >
-          💧 Esgoto
-        </button>
+        <div className="flex items-center gap-2 overflow-x-auto pb-1 text-xs">
+          <button
+            type="button"
+            onClick={() => setFiltroTipo('todas')}
+            className={`min-h-10 px-3 rounded-xl text-[11px] font-bold transition-all shrink-0 cursor-pointer ${
+              filtroTipo === 'todas' ? 'bg-slate-900 text-white' : 'bg-slate-100 text-slate-600'
+            }`}
+          >
+            Todos ({ocorrencias.length})
+          </button>
+          <button
+            type="button"
+            onClick={() => setFiltroTipo('lixo')}
+            className={`min-h-10 px-3 rounded-xl text-[11px] font-bold shrink-0 cursor-pointer ${
+              filtroTipo === 'lixo' ? 'bg-amber-500 text-white' : 'bg-slate-100 text-slate-600'
+            }`}
+          >
+            🗑️ Lixo
+          </button>
+          <button
+            type="button"
+            onClick={() => setFiltroTipo('iluminacao')}
+            className={`min-h-10 px-3 rounded-xl text-[11px] font-bold shrink-0 cursor-pointer ${
+              filtroTipo === 'iluminacao' ? 'bg-indigo-600 text-white' : 'bg-slate-100 text-slate-600'
+            }`}
+          >
+            💡 Postes
+          </button>
+          <button
+            type="button"
+            onClick={() => setFiltroTipo('buraco')}
+            className={`min-h-10 px-3 rounded-xl text-[11px] font-bold shrink-0 cursor-pointer ${
+              filtroTipo === 'buraco' ? 'bg-orange-600 text-white' : 'bg-slate-100 text-slate-600'
+            }`}
+          >
+            🕳️ Buracos
+          </button>
+          <button
+            type="button"
+            onClick={() => setFiltroTipo('esgoto')}
+            className={`min-h-10 px-3 rounded-xl text-[11px] font-bold shrink-0 cursor-pointer ${
+              filtroTipo === 'esgoto' ? 'bg-sky-600 text-white' : 'bg-slate-100 text-slate-600'
+            }`}
+          >
+            💧 Esgoto
+          </button>
         </div>
       </div>
 
       {/* Caixa do Mapa Leaflet */}
-      <div className="relative rounded-3xl overflow-hidden border border-slate-200 shadow-sm h-[400px] bg-slate-100">
+      <div className="mapa-ocorrencias relative rounded-3xl overflow-hidden border border-slate-200 shadow-sm h-[65vh] min-h-[420px] max-h-[600px] bg-slate-100">
         <MapContainer
           center={centro}
           zoom={11}
@@ -293,21 +282,6 @@ export default function MapaOcorrencias({ ocorrencias = [], onRecarregar }) {
           {obtendoGps ? '⏳' : '🎯'}
         </button>
 
-        {/* Legenda com z-index inline seguro */}
-        <div
-          style={{ zIndex: 1000 }}
-          className="absolute bottom-3 left-3 right-3 bg-white/95 backdrop-blur-md px-3 py-2 rounded-2xl border border-slate-200 shadow-md flex items-center justify-between text-[11px]"
-        >
-          <div className="flex items-center space-x-2">
-            <span className="w-2.5 h-2.5 rounded-full bg-sky-500 animate-pulse"></span>
-            <span className="font-bold text-slate-700 truncate">
-              {CENTRO_COMUNITARIO.nome}
-            </span>
-          </div>
-          <span className="font-black text-blue-600 shrink-0">
-            {pontosValidos.length} pontos
-          </span>
-        </div>
       </div>
     </div>
   )

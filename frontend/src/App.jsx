@@ -1624,7 +1624,7 @@ export default function App() {
         {/* 3. MAPA */}
         {abaAtiva === 'mapa' && (
           <div className="bg-white rounded-3xl p-4 border border-slate-200 shadow-xs">
-            <MapaOcorrencias ocorrencias={registos} onRecarregar={carregarRegistos} />
+            <MapaOcorrencias ocorrencias={registos} />
           </div>
         )}
 
