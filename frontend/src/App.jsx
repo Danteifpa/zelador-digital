@@ -1894,8 +1894,8 @@ export default function App() {
               abaAtiva === 'perfil' ? 'text-blue-600' : 'text-slate-400 hover:text-slate-700'
             }`}
           >
-            <span className="text-lg">👤</span>
-            <span className="text-[9px] font-bold">Perfil</span>
+            <span className="text-lg">⚙️</span>
+            <span className="text-[9px] font-bold">Gestão</span>
           </button>
         </div>
       </nav>

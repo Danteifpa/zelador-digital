@@ -289,51 +289,46 @@ export default function PainelGestor({ ocorrencias = [], onAtualizarDados }) {
               </p>
 
               {/* Botões de Ação */}
-              <div className="pt-2 border-t border-slate-100 flex items-center justify-between gap-1 flex-wrap">
-                <div className="flex items-center space-x-1">
-                  <button
-                    type="button"
-                    disabled={carregandoAcao}
-                    onClick={() => alterarStatusOcorrencia(item.id, 'pendente')}
-                    className="text-[10px] font-bold px-2 py-1 rounded-lg bg-amber-50 text-amber-700 hover:bg-amber-100 border border-amber-200 transition-colors cursor-pointer"
-                  >
-                    Pendente
-                  </button>
-                  <button
-                    type="button"
-                    disabled={carregandoAcao}
-                    onClick={() => alterarStatusOcorrencia(item.id, 'em analise')}
-                    className="text-[10px] font-bold px-2 py-1 rounded-lg bg-sky-50 text-sky-700 hover:bg-sky-100 border border-sky-200 transition-colors cursor-pointer"
-                  >
-                    Em Análise
-                  </button>
-                  <button
-                    type="button"
-                    disabled={carregandoAcao}
-                    onClick={() => alterarStatusOcorrencia(item.id, 'resolvido')}
-                    className="text-[10px] font-bold px-2 py-1 rounded-lg bg-emerald-50 text-emerald-700 hover:bg-emerald-100 border border-emerald-200 transition-colors cursor-pointer"
-                  >
-                    ✓ Resolvido
-                  </button>
-                </div>
-
-                <div className="flex items-center space-x-1.5 ml-auto">
-                  <button
-                    type="button"
-                    onClick={() => setItemEdicao({ ...item, status: item.status || 'pendente' })}
-                    className="text-[11px] font-bold text-blue-600 hover:text-blue-800 px-2 py-1 rounded-lg bg-blue-50 border border-blue-200 transition-colors cursor-pointer"
-                  >
-                    ✏️ Editar
-                  </button>
-                  <button
-                    type="button"
-                    disabled={carregandoAcao}
-                    onClick={() => eliminarOcorrencia(item.id)}
-                    className="text-[11px] font-bold text-rose-600 hover:text-rose-800 px-2 py-1 rounded-lg bg-rose-50 border border-rose-200 transition-colors cursor-pointer"
-                  >
-                    🗑️ Excluir
-                  </button>
-                </div>
+              <div className="pt-2 border-t border-slate-100 flex flex-wrap items-center justify-center gap-2">
+                <button
+                  type="button"
+                  disabled={carregandoAcao}
+                  onClick={() => alterarStatusOcorrencia(item.id, 'pendente')}
+                  className="text-[10px] font-bold px-2 py-1 rounded-lg bg-amber-50 text-amber-700 hover:bg-amber-100 border border-amber-200 transition-colors cursor-pointer"
+                >
+                  Pendente
+                </button>
+                <button
+                  type="button"
+                  disabled={carregandoAcao}
+                  onClick={() => alterarStatusOcorrencia(item.id, 'em analise')}
+                  className="text-[10px] font-bold px-2 py-1 rounded-lg bg-sky-50 text-sky-700 hover:bg-sky-100 border border-sky-200 transition-colors cursor-pointer"
+                >
+                  Em Análise
+                </button>
+                <button
+                  type="button"
+                  disabled={carregandoAcao}
+                  onClick={() => alterarStatusOcorrencia(item.id, 'resolvido')}
+                  className="text-[10px] font-bold px-2 py-1 rounded-lg bg-emerald-50 text-emerald-700 hover:bg-emerald-100 border border-emerald-200 transition-colors cursor-pointer"
+                >
+                  ✓ Resolvido
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setItemEdicao({ ...item, status: item.status || 'pendente' })}
+                  className="text-[11px] font-bold text-blue-600 hover:text-blue-800 px-2 py-1 rounded-lg bg-blue-50 border border-blue-200 transition-colors cursor-pointer"
+                >
+                  ✏️ Editar
+                </button>
+                <button
+                  type="button"
+                  disabled={carregandoAcao}
+                  onClick={() => eliminarOcorrencia(item.id)}
+                  className="text-[11px] font-bold text-rose-600 hover:text-rose-800 px-2 py-1 rounded-lg bg-rose-50 border border-rose-200 transition-colors cursor-pointer"
+                >
+                  🗑️ Excluir
+                </button>
               </div>
             </div>
           ))
