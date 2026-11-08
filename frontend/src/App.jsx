@@ -857,7 +857,6 @@ export default function App() {
   const totalRegistos = registos.length
   const totalResolvidos = registos.filter((r) => r.status === 'resolvido' || r.status === 'concluido').length
   const totalPendentes = registos.filter((r) => r.status !== 'resolvido' && r.status !== 'concluido').length
-  const totalEmAnalise = registos.filter((r) => r.status === 'em analise').length
   const taxaResolucao = totalRegistos > 0 ? Math.round((totalResolvidos / totalRegistos) * 100) : 0
 
   const urlApp = typeof window !== 'undefined' ? window.location.origin : 'https://zelador-digital.vercel.app'
@@ -1426,62 +1425,6 @@ export default function App() {
               </div>
             </div>
 
-            <section className="bg-white rounded-3xl p-5 border border-slate-200 shadow-2xs">
-              <div className="flex items-center justify-between mb-4">
-                <div>
-                  <span className="text-[10px] font-black uppercase tracking-wider text-slate-400">Impacto comunitário</span>
-                  <h2 className="text-base font-black text-slate-800 mt-0.5">Resumo das demandas</h2>
-                </div>
-                <span className="text-xl">📊</span>
-              </div>
-
-              <div className="grid grid-cols-3 gap-2 text-center">
-                <div className="bg-blue-50 rounded-2xl p-3 border border-blue-100">
-                  <span className="text-xl font-black text-blue-700 block leading-none">{totalRegistos}</span>
-                  <span className="text-[10px] font-bold text-slate-600 mt-1 block">Cadastradas</span>
-                </div>
-                <div className="bg-amber-50 rounded-2xl p-3 border border-amber-100">
-                  <span className="text-xl font-black text-amber-700 block leading-none">{totalEmAnalise}</span>
-                  <span className="text-[10px] font-bold text-slate-600 mt-1 block">Em análise</span>
-                </div>
-                <div className="bg-emerald-50 rounded-2xl p-3 border border-emerald-100">
-                  <span className="text-xl font-black text-emerald-700 block leading-none">{totalResolvidos}</span>
-                  <span className="text-[10px] font-bold text-slate-600 mt-1 block">Resolvidas</span>
-                </div>
-              </div>
-            </section>
-
-            <section className="bg-slate-50 rounded-3xl p-5 border border-slate-200">
-              <div className="flex items-start gap-3">
-                <div className="w-10 h-10 rounded-2xl bg-blue-100 text-blue-700 flex items-center justify-center text-lg shrink-0">
-                  🏙️
-                </div>
-                <div>
-                  <h2 className="text-base font-black text-slate-800">Sobre o Zelador Digital</h2>
-                  <p className="text-xs text-slate-600 leading-relaxed mt-2">
-                    Plataforma comunitária independente desenvolvida para apoiar os moradores de Ananindeua no mapeamento e acompanhamento de demandas urbanas como focos de lixo, iluminação pública e vias.
-                  </p>
-                </div>
-              </div>
-
-              <div className="mt-4 pt-4 border-t border-slate-200">
-                <p className="text-[10px] font-black uppercase tracking-wider text-slate-400">Desenvolvido por</p>
-                <p className="text-sm font-black text-slate-800 mt-1">Dante Dias Monteiro</p>
-                <p className="text-[11px] text-slate-500 mt-0.5">Criador &amp; Desenvolvedor de Software</p>
-              </div>
-
-              <div className="flex flex-wrap gap-2 mt-4">
-                <span className="px-2.5 py-1 rounded-full bg-white border border-slate-200 text-[10px] font-bold text-slate-600">
-                  Projeto Independente
-                </span>
-                <span className="px-2.5 py-1 rounded-full bg-white border border-slate-200 text-[10px] font-bold text-slate-600">
-                  Tecnologia Cívica
-                </span>
-                <span className="px-2.5 py-1 rounded-full bg-white border border-slate-200 text-[10px] font-bold text-slate-600">
-                  Ananindeua - PA
-                </span>
-              </div>
-            </section>
           </div>
         )}
 
