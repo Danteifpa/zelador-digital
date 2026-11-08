@@ -3,12 +3,12 @@ import { MapContainer, TileLayer, Marker, Popup, Circle, useMap } from 'react-le
 import L from 'leaflet'
 import 'leaflet/dist/leaflet.css'
 
-// Ponto comunitário: Residencial Novo Cristo / Icuí - Ananindeua
+// Centro territorial de Ananindeua
 const CENTRO_COMUNITARIO = {
-  latitude: -1.345000,
-  longitude: -48.415000,
-  raioMetros: 3500,
-  nome: 'Residencial Novo Cristo / Icuí'
+  latitude: -1.365000,
+  longitude: -48.375000,
+  raioMetros: 18000,
+  nome: 'Ananindeua'
 }
 
 // Criação segura de ícones
@@ -207,11 +207,11 @@ export default function MapaOcorrencias({ ocorrencias = [], onRecarregar }) {
       <div className="relative rounded-3xl overflow-hidden border border-slate-200 shadow-sm h-[400px] bg-slate-100">
         <MapContainer
           center={centro}
-          zoom={14}
+          zoom={11}
           scrollWheelZoom={true}
           style={{ width: '100%', height: '100%' }}
         >
-          <AjustarVisualizacao centro={centro} zoom={14} />
+          <AjustarVisualizacao centro={centro} zoom={11} />
 
           <TileLayer
             attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
@@ -219,7 +219,7 @@ export default function MapaOcorrencias({ ocorrencias = [], onRecarregar }) {
             maxZoom={19}
           />
 
-          {/* Círculo Territorial Comunitário (3,5 km) */}
+          {/* Círculo Territorial Comunitário (18 km) */}
           <Circle
             center={centro}
             radius={CENTRO_COMUNITARIO.raioMetros}

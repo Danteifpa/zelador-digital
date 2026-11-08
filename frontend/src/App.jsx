@@ -3,12 +3,12 @@ import { supabase } from './lib/supabase'
 import PainelGestor from './components/PainelGestor'
 import MapaOcorrencias from './components/MapaOcorrencias'
 
-// Coordenadas centrais comunitárias (Residencial Novo Cristo, Icuí - Ananindeua)
+// Coordenadas centrais comunitárias (Ananindeua)
 const CENTRO_COMUNITARIO = {
-  latitude: -1.345000,
-  longitude: -48.415000,
-  raioMaximoKm: 3.5,
-  nome: 'Residencial Novo Cristo / Icuí'
+  latitude: -1.365000,
+  longitude: -48.375000,
+  raioMaximoKm: 18.0,
+  nome: 'Ananindeua'
 }
 
 const CATEGORIAS = [
