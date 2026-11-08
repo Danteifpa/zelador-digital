@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import { supabase } from './lib/supabase'
 import PainelGestor from './components/PainelGestor'
 import MapaOcorrencias from './components/MapaOcorrencias'
@@ -204,7 +204,7 @@ function analisarTiffGps(view, tiffOffset) {
       if (lngRef === 'W') finalLng = -finalLng
       return { latitude: finalLat, longitude: finalLng }
     }
-  } catch (err) {
+  } catch {
     console.warn('Metadados EXIF GPS não encontrados')
   }
   return null
@@ -1816,12 +1816,7 @@ export default function App() {
           </div>
         )}
 
-        {/* 5. PERFIL */}
-        {abaAtiva === 'perfil' && (
-          <PainelGestor ocorrencias={registos} onAtualizarDados={carregarRegistos} />
-        )}
-
-        {/* 6. GESTÃO */}
+        {/* 5. GESTÃO */}
         {abaAtiva === 'gestao' && (
           <PainelGestor ocorrencias={registos} onAtualizarDados={carregarRegistos} />
         )}
@@ -1887,11 +1882,11 @@ export default function App() {
           <button
             onClick={() => {
               feedbackSensorial.toqueSuave()
-              setAbaAtiva('perfil')
+              setAbaAtiva('gestao')
               setOcorrenciaSelecionada(null)
             }}
             className={`flex flex-col items-center justify-center space-y-1 transition-colors cursor-pointer ${
-              abaAtiva === 'perfil' ? 'text-blue-600' : 'text-slate-400 hover:text-slate-700'
+              abaAtiva === 'gestao' ? 'text-blue-600' : 'text-slate-400 hover:text-slate-700'
             }`}
           >
             <span className="text-lg">⚙️</span>
