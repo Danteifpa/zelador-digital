@@ -289,6 +289,7 @@ export default function App() {
   // Notificações
   const [mostrarNotificacoes, setMostrarNotificacoes] = useState(false)
   const [notificacoesLidas, setNotificacoesLidas] = useState([])
+  const [modalSobreAberto, setModalSobreAberto] = useState(false)
 
   // Conectividade
   const [estaOnline, setEstaOnline] = useState(navigator.onLine)
@@ -1186,23 +1187,68 @@ export default function App() {
             </div>
           </button>
 
-          <button
-            onClick={() => {
-              feedbackSensorial.toqueSuave()
-              setMostrarNotificacoes(true)
-            }}
-            className="w-10 h-10 rounded-2xl text-base bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-200 flex items-center justify-center relative transition-colors cursor-pointer"
-            title="Avisos e Notificações"
-          >
-            <span>🔔</span>
-            {notificacoesNaoLidas > 0 && (
-              <span className="absolute -top-1 -right-1 w-4 h-4 bg-rose-600 text-white text-[9px] font-black rounded-full flex items-center justify-center border-2 border-white shadow-2xs">
-                {notificacoesNaoLidas}
-              </span>
-            )}
-          </button>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => {
+                feedbackSensorial.toqueSuave()
+                setMostrarNotificacoes(true)
+              }}
+              className="w-10 h-10 rounded-2xl text-base bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-200 flex items-center justify-center relative transition-colors cursor-pointer"
+              title="Avisos e Notificações"
+            >
+              <span>🔔</span>
+              {notificacoesNaoLidas > 0 && (
+                <span className="absolute -top-1 -right-1 w-4 h-4 bg-rose-600 text-white text-[9px] font-black rounded-full flex items-center justify-center border-2 border-white shadow-2xs">
+                  {notificacoesNaoLidas}
+                </span>
+              )}
+            </button>
+            <button
+              type="button"
+              onClick={() => setModalSobreAberto(true)}
+              className="w-10 h-10 rounded-2xl text-base bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-200 flex items-center justify-center transition-colors cursor-pointer"
+              title="Sobre o desenvolvedor"
+              aria-label="Sobre o desenvolvedor"
+            >
+              ℹ️
+            </button>
+          </div>
         </div>
       </header>
+
+      {modalSobreAberto && (
+        <div className="fixed inset-0 z-50 bg-slate-950/70 backdrop-blur-xs flex items-end sm:items-center justify-center p-0 sm:p-4">
+          <div className="bg-white w-full max-w-md rounded-t-3xl sm:rounded-3xl p-6 border border-slate-200 shadow-2xl">
+            <div className="flex items-start justify-between gap-4">
+              <div>
+                <span className="text-[10px] font-black uppercase tracking-wider text-blue-600">Zelador Digital</span>
+                <h2 className="text-lg font-black text-slate-800 mt-1">Sobre o Desenvolvedor</h2>
+              </div>
+              <button
+                type="button"
+                onClick={() => setModalSobreAberto(false)}
+                className="w-8 h-8 rounded-full bg-slate-100 text-slate-500 hover:bg-slate-200 flex items-center justify-center font-bold cursor-pointer"
+                aria-label="Fechar"
+              >
+                ✕
+              </button>
+            </div>
+            <div className="mt-5 space-y-2">
+              <p className="text-base font-black text-slate-800">Dante Dias Monteiro</p>
+              <p className="text-sm text-slate-600 leading-relaxed">
+                Criador e desenvolvedor do Zelador Digital, projeto de iniciativa comunitária independente para mapeamento e acompanhamento de zeladoria urbana em Ananindeua.
+              </p>
+            </div>
+            <button
+              type="button"
+              onClick={() => setModalSobreAberto(false)}
+              className="w-full mt-6 py-3 rounded-2xl bg-slate-900 hover:bg-slate-800 text-white text-sm font-bold transition-colors cursor-pointer"
+            >
+              Fechar
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* Conteúdo Central */}
       <main className="max-w-md w-full mx-auto px-4 py-4 flex-1">
@@ -1425,6 +1471,13 @@ export default function App() {
               </div>
             </div>
 
+            <section className="bg-white rounded-3xl p-5 border border-slate-200 shadow-2xs">
+              <h2 className="text-base font-black text-slate-800">Sobre o Projeto</h2>
+              <p className="text-xs text-slate-600 leading-relaxed mt-2">
+                O Zelador Digital ajuda a comunidade de Ananindeua a mapear demandas urbanas.
+                Registe ocorrências, acompanhe os encaminhamentos e contribua para uma cidade mais cuidada.
+              </p>
+            </section>
           </div>
         )}
 
