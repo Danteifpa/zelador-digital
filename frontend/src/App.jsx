@@ -1822,7 +1822,9 @@ export default function App() {
         )}
 
         {/* 6. GESTÃO */}
-        {abaAtiva === 'gestao' && <PainelGestor />}
+        {abaAtiva === 'gestao' && (
+          <PainelGestor ocorrencias={registos} onAtualizarDados={carregarRegistos} />
+        )}
       </main>
 
       {/* BARRA DE NAVEGAÇÃO INFERIOR */}

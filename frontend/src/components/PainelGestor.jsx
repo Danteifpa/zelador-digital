@@ -1,195 +1,134 @@
-﻿import React, { useState, useEffect, useMemo } from 'react'
+﻿import React, { useState } from 'react'
 import { supabase } from '../lib/supabase'
 
-export default function PainelGestor() {
+export default function PainelGestor({ ocorrencias = [], onAtualizarDados }) {
   const [autenticado, setAutenticado] = useState(false)
-  const [pin, setPin] = useState('')
+  const [pinEntrada, setPinEntrada] = useState('')
   const [erroPin, setErroPin] = useState(false)
-
-  const [ocorrencias, setOcorrencias] = useState([])
-  const [carregando, setCarregando] = useState(false)
   const [filtroStatus, setFiltroStatus] = useState('todos')
-  const [filtroCategoria, setFiltroCategoria] = useState('todas')
   const [termoBusca, setTermoBusca] = useState('')
-  const [dataInicio, setDataInicio] = useState('')
-  const [dataFim, setDataFim] = useState('')
-  const [atualizandoId, setAtualizandoId] = useState(null)
+  const [itemEdicao, setItemEdicao] = useState(null)
+  const [carregandoAcao, setCarregandoAcao] = useState(false)
 
-  const PIN_CORRETO = '2026'
+  // PIN de acesso para o gestor comunitário
+  const PIN_MESTRE = '2026'
 
-  useEffect(() => {
-    const authSalva = sessionStorage.getItem('zelador_gestor_auth')
-    if (authSalva === 'true') {
-      setAutenticado(true)
-      carregarOcorrencias()
-    }
-  }, [])
-
-  const handleLogin = (e) => {
+  const verificarAcesso = (e) => {
     e.preventDefault()
-    if (pin === PIN_CORRETO) {
+    if (pinEntrada === PIN_MESTRE) {
       setAutenticado(true)
       setErroPin(false)
-      sessionStorage.setItem('zelador_gestor_auth', 'true')
-      carregarOcorrencias()
     } else {
       setErroPin(true)
+      setPinEntrada('')
     }
   }
 
-  const handleLogout = () => {
-    sessionStorage.removeItem('zelador_gestor_auth')
-    setAutenticado(false)
-    setPin('')
-  }
-
-  const carregarOcorrencias = async () => {
+  const alterarStatusOcorrencia = async (id, novoStatus) => {
+    setCarregandoAcao(true)
     try {
-      setCarregando(true)
-      const { data, error } = await supabase
-        .from('ocorrencias_georreferenciadas')
-        .select('*')
-        .order('created_at', { ascending: false })
-
-      if (error) throw error
-      setOcorrencias(data || [])
-    } catch (err) {
-      console.error('Erro ao carregar chamados no painel:', err.message)
-    } finally {
-      setCarregando(false)
-    }
-  }
-
-  const atualizarStatus = async (id, novoStatus) => {
-    try {
-      setAtualizandoId(id)
       const { error } = await supabase
         .from('ocorrencias')
         .update({ status: novoStatus })
         .eq('id', id)
 
       if (error) throw error
-
-      setOcorrencias((prev) =>
-        prev.map((item) => (item.id === id ? { ...item, status: novoStatus } : item))
-      )
+      if (onAtualizarDados) await onAtualizarDados()
     } catch (err) {
-      alert(`Erro ao atualizar estado: ${err.message}`)
+      alert('Erro ao atualizar estado: ' + err.message)
     } finally {
-      setAtualizandoId(null)
+      setCarregandoAcao(false)
     }
   }
 
-  const limparFiltroDatas = () => {
-    setDataInicio('')
-    setDataFim('')
-  }
+  const eliminarOcorrencia = async (id) => {
+    const confirmar = window.confirm('Deseja realmente eliminar permanentemente este registo?')
+    if (!confirmar) return
 
-  // Filtragem avançada incluindo intervalo temporal
-  const ocorrenciasFiltradas = useMemo(() => {
-    return ocorrencias.filter((item) => {
-      const bateuStatus =
-        filtroStatus === 'todos' ||
-        (filtroStatus === 'resolvido' && (item.status === 'resolvido' || item.status === 'concluido')) ||
-        (filtroStatus === 'pendente' && item.status !== 'resolvido' && item.status !== 'concluido')
+    setCarregandoAcao(true)
+    try {
+      const { error } = await supabase
+        .from('ocorrencias')
+        .delete()
+        .eq('id', id)
 
-      const bateuCategoria = filtroCategoria === 'todas' || item.categoria === filtroCategoria
-
-      const bateuTexto =
-        !termoBusca.trim() ||
-        (item.descricao && item.descricao.toLowerCase().includes(termoBusca.toLowerCase())) ||
-        (item.categoria && item.categoria.toLowerCase().includes(termoBusca.toLowerCase()))
-
-      // Validação de intervalo de data
-      let bateuData = true
-      if (item.created_at) {
-        const dataItem = new Date(item.created_at)
-        if (dataInicio) {
-          const inicio = new Date(`${dataInicio}T00:00:00`)
-          if (dataItem < inicio) bateuData = false
-        }
-        if (dataFim) {
-          const fim = new Date(`${dataFim}T23:59:59`)
-          if (dataItem > fim) bateuData = false
-        }
-      }
-
-      return bateuStatus && bateuCategoria && bateuTexto && bateuData
-    })
-  }, [ocorrencias, filtroStatus, filtroCategoria, termoBusca, dataInicio, dataFim])
-
-  // Contadores dinâmicos baseados nos filtros ativos
-  const contadores = useMemo(() => {
-    const total = ocorrenciasFiltradas.length
-    const lixo = ocorrenciasFiltradas.filter((o) => o.categoria === 'lixo').length
-    const iluminacao = ocorrenciasFiltradas.filter((o) => o.categoria === 'iluminacao').length
-    const buraco = ocorrenciasFiltradas.filter((o) => o.categoria === 'buraco').length
-    const esgoto = ocorrenciasFiltradas.filter((o) => o.categoria === 'esgoto').length
-    return { total, lixo, iluminacao, buraco, esgoto }
-  }, [ocorrenciasFiltradas])
-
-  // Exportação para CSV sanitizado com período
-  const exportarCSV = () => {
-    if (ocorrenciasFiltradas.length === 0) {
-      alert('Nenhum dado disponível no período selecionado para exportar.')
-      return
+      if (error) throw error
+      if (onAtualizarDados) await onAtualizarDados()
+    } catch (err) {
+      alert('Erro ao eliminar ocorrência: ' + err.message)
+    } finally {
+      setCarregandoAcao(false)
     }
-
-    const colunas = ['ID', 'Data', 'Categoria', 'Descricao', 'Status', 'Latitude', 'Longitude', 'Foto_URL']
-    const linhas = ocorrenciasFiltradas.map((o) => [
-      o.id,
-      o.created_at ? new Date(o.created_at).toLocaleString('pt-BR') : '',
-      `"${o.categoria || ''}"`,
-      `"${(o.descricao || '').replace(/"/g, '""')}"`,
-      o.status || 'pendente',
-      o.latitude || '',
-      o.longitude || '',
-      `"${o.foto_url || ''}"`
-    ])
-
-    const periodoStr = dataInicio || dataFim ? `_periodo_${dataInicio || 'inicio'}_a_${dataFim || 'hoje'}` : ''
-    const conteudoCSV = [colunas.join(','), ...linhas.map((l) => l.join(','))].join('\n')
-    const blob = new Blob(['\uFEFF' + conteudoCSV], { type: 'text/csv;charset=utf-8;' })
-    const link = document.createElement('a')
-    link.href = URL.createObjectURL(blob)
-    link.download = `zelador_digital_relatorio${periodoStr}_${new Date().toISOString().slice(0, 10)}.csv`
-    link.click()
   }
 
-  const imprimirRelatorio = () => {
-    window.print()
+  const salvarEdicao = async (e) => {
+    e.preventDefault()
+    if (!itemEdicao) return
+
+    setCarregandoAcao(true)
+    try {
+      const { error } = await supabase
+        .from('ocorrencias')
+        .update({
+          descricao: itemEdicao.descricao,
+          categoria: itemEdicao.categoria,
+          status: itemEdicao.status
+        })
+        .eq('id', itemEdicao.id)
+
+      if (error) throw error
+      setItemEdicao(null)
+      if (onAtualizarDados) await onAtualizarDados()
+    } catch (err) {
+      alert('Erro ao guardar alterações: ' + err.message)
+    } finally {
+      setCarregandoAcao(false)
+    }
   }
 
+  const ocorrenciasFiltradas = ocorrencias.filter((item) => {
+    const bateuStatus = filtroStatus === 'todos' || item.status === filtroStatus
+    const busca = termoBusca.toLowerCase()
+    const bateuTexto =
+      (item.descricao || '').toLowerCase().includes(busca) ||
+      (item.categoria || '').toLowerCase().includes(busca) ||
+      (item.id || '').toString().includes(busca)
+    return bateuStatus && bateuTexto
+  })
+
+  // Ecrã de Bloqueio por PIN
   if (!autenticado) {
     return (
-      <div className="bg-white rounded-3xl p-6 border border-slate-200 shadow-xs max-w-sm mx-auto text-center space-y-5">
-        <div className="w-14 h-14 rounded-2xl bg-slate-900 text-white flex items-center justify-center text-2xl mx-auto shadow-sm">
-          🔒
+      <div className="bg-white rounded-3xl p-6 border border-slate-200 shadow-sm max-w-sm mx-auto my-6 text-center">
+        <div className="w-14 h-14 bg-blue-50 border border-blue-200 text-blue-600 rounded-2xl flex items-center justify-center text-2xl mx-auto mb-4">
+          🔐
         </div>
-        <div>
-          <h2 className="text-base font-black text-slate-800">Painel de Gestão Territorial</h2>
-          <p className="text-xs text-slate-500 mt-1">Acesso administrativo restrito à triagem de chamados.</p>
-        </div>
+        <h2 className="text-lg font-black text-slate-800">Painel de Gestão</h2>
+        <p className="text-xs text-slate-500 mt-1 mb-5">
+          Introduza o PIN de acesso para gerir, editar e eliminar ocorrências comunitárias.
+        </p>
 
-        <form onSubmit={handleLogin} className="space-y-3">
+        <form onSubmit={verificarAcesso} className="space-y-4">
           <input
             type="password"
-            maxLength={4}
-            placeholder="Digite o PIN (ex: 2026)"
-            value={pin}
-            onChange={(e) => setPin(e.target.value)}
-            className="w-full text-center tracking-widest text-lg font-black py-2.5 rounded-xl border border-slate-200 bg-slate-50 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-600"
+            maxLength={6}
+            placeholder="PIN de acesso (Padrão: 2026)"
+            value={pinEntrada}
+            onChange={(e) => setPinEntrada(e.target.value)}
+            className="w-full text-center tracking-widest text-lg font-black py-2.5 px-4 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:border-blue-500"
           />
 
           {erroPin && (
-            <p className="text-xs text-rose-600 font-bold">PIN incorreto. Tente novamente.</p>
+            <p className="text-xs text-rose-600 font-bold">
+              PIN incorreto. Tente novamente.
+            </p>
           )}
 
           <button
             type="submit"
-            className="w-full py-3 bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs uppercase rounded-xl transition-all shadow-xs cursor-pointer"
+            className="w-full bg-blue-600 hover:bg-blue-700 text-white font-black py-3 rounded-xl text-sm transition-all shadow-sm cursor-pointer"
           >
-            Entrar no Painel →
+            Aceder ao Painel
           </button>
         </form>
       </div>
@@ -197,196 +136,209 @@ export default function PainelGestor() {
   }
 
   return (
-    <div className="bg-white rounded-3xl p-5 border border-slate-200 shadow-xs space-y-5">
-      {/* Cabeçalho do Painel */}
-      <div className="flex items-center justify-between border-b border-slate-100 pb-4">
+    <div className="space-y-4 pb-8">
+      {/* Topo do Gestor */}
+      <div className="flex items-center justify-between bg-slate-900 text-white p-4 rounded-3xl shadow-sm">
         <div>
-          <div className="flex items-center space-x-2">
-            <span className="text-lg">⚙️</span>
-            <h2 className="text-base font-black text-slate-800">Gestão de Ocorrências</h2>
-          </div>
-          <p className="text-[11px] text-slate-400 mt-0.5">Triagem, auditoria territorial e relatórios</p>
+          <span className="text-[10px] font-black uppercase tracking-wider text-blue-400">Administração Comunitária</span>
+          <h2 className="text-base font-black">Gestão de Ocorrências</h2>
         </div>
-
         <button
-          onClick={handleLogout}
-          className="text-xs text-slate-500 hover:text-rose-600 font-bold px-2.5 py-1 rounded-lg border border-slate-200 bg-slate-50 cursor-pointer"
+          type="button"
+          onClick={() => setAutenticado(false)}
+          className="bg-slate-800 hover:bg-slate-700 text-xs text-slate-300 font-bold px-3 py-1.5 rounded-xl border border-slate-700 transition-colors cursor-pointer"
         >
-          Sair
+          Bloquear 🔒
         </button>
       </div>
 
-      {/* Cartões Rápidos de Demanda */}
-      <div className="grid grid-cols-4 gap-2 text-center">
-        <div className="bg-amber-50 border border-amber-200 rounded-2xl p-2.5">
-          <span className="text-lg block">🗑️</span>
-          <span className="text-sm font-black text-amber-800 leading-none">{contadores.lixo}</span>
-          <span className="text-[9px] font-bold text-amber-600 block mt-0.5">Lixo</span>
-        </div>
-        <div className="bg-indigo-50 border border-indigo-200 rounded-2xl p-2.5">
-          <span className="text-lg block">💡</span>
-          <span className="text-sm font-black text-indigo-800 leading-none">{contadores.iluminacao}</span>
-          <span className="text-[9px] font-bold text-indigo-600 block mt-0.5">Postes</span>
-        </div>
-        <div className="bg-orange-50 border border-orange-200 rounded-2xl p-2.5">
-          <span className="text-lg block">🕳️</span>
-          <span className="text-sm font-black text-orange-800 leading-none">{contadores.buraco}</span>
-          <span className="text-[9px] font-bold text-orange-600 block mt-0.5">Buracos</span>
-        </div>
-        <div className="bg-sky-50 border border-sky-200 rounded-2xl p-2.5">
-          <span className="text-lg block">💧</span>
-          <span className="text-sm font-black text-sky-800 leading-none">{contadores.esgoto}</span>
-          <span className="text-[9px] font-bold text-sky-600 block mt-0.5">Esgoto</span>
-        </div>
-      </div>
-
-      {/* Barra de Filtros e Intervalo Temporal */}
-      <div className="space-y-2.5">
+      {/* Busca e Filtros */}
+      <div className="space-y-2">
         <input
           type="text"
-          placeholder="Pesquisar chamado por descrição..."
+          placeholder="Filtrar por descrição ou categoria..."
           value={termoBusca}
           onChange={(e) => setTermoBusca(e.target.value)}
-          className="w-full px-3 py-2 rounded-xl border border-slate-200 bg-slate-50 text-xs focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-600"
+          className="w-full bg-white border border-slate-200 rounded-2xl px-4 py-2.5 text-xs font-medium focus:outline-none focus:border-blue-500 shadow-2xs"
         />
 
-        {/* Seletores de Período */}
-        <div className="bg-slate-50 p-2.5 rounded-2xl border border-slate-200/80 flex flex-wrap items-center justify-between gap-2">
-          <div className="flex items-center space-x-1.5 text-xs text-slate-600 font-bold">
-            <span>📅 De:</span>
-            <input
-              type="date"
-              value={dataInicio}
-              onChange={(e) => setDataInicio(e.target.value)}
-              className="text-[11px] font-medium bg-white border border-slate-200 rounded-lg px-2 py-1 text-slate-700"
-            />
-            <span>Até:</span>
-            <input
-              type="date"
-              value={dataFim}
-              onChange={(e) => setDataFim(e.target.value)}
-              className="text-[11px] font-medium bg-white border border-slate-200 rounded-lg px-2 py-1 text-slate-700"
-            />
-          </div>
-
-          {(dataInicio || dataFim) && (
+        <div className="flex space-x-1.5 overflow-x-auto pb-1 text-xs">
+          {['todos', 'pendente', 'em analise', 'resolvido'].map((status) => (
             <button
-              onClick={limparFiltroDatas}
-              className="text-[10px] font-black text-rose-600 hover:underline px-1 cursor-pointer"
+              key={status}
+              type="button"
+              onClick={() => setFiltroStatus(status)}
+              className={`px-3 py-1.5 rounded-xl text-[11px] font-bold capitalize transition-all shrink-0 cursor-pointer ${
+                filtroStatus === status
+                  ? 'bg-blue-600 text-white shadow-2xs'
+                  : 'bg-white border border-slate-200 text-slate-600 hover:bg-slate-50'
+              }`}
             >
-              ✕ Limpar datas
+              {status}
             </button>
-          )}
-        </div>
-
-        <div className="flex items-center justify-between gap-2 overflow-x-auto pb-1">
-          <div className="flex space-x-1.5 shrink-0">
-            <select
-              value={filtroStatus}
-              onChange={(e) => setFiltroStatus(e.target.value)}
-              className="text-[11px] font-bold bg-slate-100 border border-slate-200 rounded-xl px-2.5 py-1.5 text-slate-700 cursor-pointer"
-            >
-              <option value="todos">Status: Todos</option>
-              <option value="pendente">Pendentes</option>
-              <option value="resolvido">Resolvidos</option>
-            </select>
-
-            <select
-              value={filtroCategoria}
-              onChange={(e) => setFiltroCategoria(e.target.value)}
-              className="text-[11px] font-bold bg-slate-100 border border-slate-200 rounded-xl px-2.5 py-1.5 text-slate-700 cursor-pointer"
-            >
-              <option value="todas">Tipologia: Todas</option>
-              <option value="lixo">Lixo</option>
-              <option value="iluminacao">Iluminação</option>
-              <option value="buraco">Buraco</option>
-              <option value="esgoto">Esgoto</option>
-            </select>
-          </div>
-
-          <div className="flex space-x-1.5 shrink-0">
-            <button
-              onClick={exportarCSV}
-              className="text-[11px] font-black bg-emerald-600 hover:bg-emerald-700 text-white px-3 py-1.5 rounded-xl transition-all flex items-center gap-1 shadow-2xs cursor-pointer"
-            >
-              <span>📥</span>
-              <span>CSV</span>
-            </button>
-            <button
-              onClick={imprimirRelatorio}
-              className="text-[11px] font-bold bg-slate-100 hover:bg-slate-200 text-slate-700 px-3 py-1.5 rounded-xl transition-all border border-slate-200 cursor-pointer"
-            >
-              🖨️ PDF
-            </button>
-          </div>
+          ))}
         </div>
       </div>
 
-      {/* Lista de Registos com Ações */}
-      {carregando ? (
-        <div className="py-16 text-center text-xs text-slate-400">A carregar registos...</div>
-      ) : ocorrenciasFiltradas.length === 0 ? (
-        <div className="py-12 text-center text-xs text-slate-400 font-bold">
-          Nenhum chamado localizado com os filtros e período selecionados.
+      {/* Formulário de Edição */}
+      {itemEdicao && (
+        <div className="bg-amber-50/80 border border-amber-200 rounded-3xl p-4 space-y-3">
+          <div className="flex items-center justify-between">
+            <span className="text-xs font-black text-amber-900">Editar Registo #{itemEdicao.id}</span>
+            <button
+              type="button"
+              onClick={() => setItemEdicao(null)}
+              className="text-amber-800 text-xs font-bold hover:underline cursor-pointer"
+            >
+              Cancelar
+            </button>
+          </div>
+
+          <form onSubmit={salvarEdicao} className="space-y-3">
+            <div>
+              <label className="text-[11px] font-bold text-slate-700 block mb-1">Categoria:</label>
+              <select
+                value={itemEdicao.categoria}
+                onChange={(e) => setItemEdicao({ ...itemEdicao, categoria: e.target.value })}
+                className="w-full bg-white border border-slate-300 rounded-xl px-3 py-2 text-xs font-bold"
+              >
+                <option value="lixo">🗑️ Lixo Irregular</option>
+                <option value="iluminacao">💡 Iluminação Pública</option>
+                <option value="buraco">🕳️ Buraco / Pavimentação</option>
+                <option value="esgoto">💧 Esgoto / Drenagem</option>
+                <option value="outro">📍 Outro</option>
+              </select>
+            </div>
+
+            <div>
+              <label className="text-[11px] font-bold text-slate-700 block mb-1">Descrição:</label>
+              <textarea
+                rows={3}
+                value={itemEdicao.descricao}
+                onChange={(e) => setItemEdicao({ ...itemEdicao, descricao: e.target.value })}
+                className="w-full bg-white border border-slate-300 rounded-xl p-2.5 text-xs font-medium focus:outline-none"
+              />
+            </div>
+
+            <div>
+              <label className="text-[11px] font-bold text-slate-700 block mb-1">Estado:</label>
+              <select
+                value={itemEdicao.status || 'pendente'}
+                onChange={(e) => setItemEdicao({ ...itemEdicao, status: e.target.value })}
+                className="w-full bg-white border border-slate-300 rounded-xl px-3 py-2 text-xs font-bold"
+              >
+                <option value="pendente">Pendente</option>
+                <option value="em analise">Em Análise</option>
+                <option value="resolvido">Resolvido</option>
+              </select>
+            </div>
+
+            <button
+              type="submit"
+              disabled={carregandoAcao}
+              className="w-full bg-amber-600 hover:bg-amber-700 text-white font-black py-2.5 rounded-xl text-xs transition-colors shadow-2xs cursor-pointer"
+            >
+              {carregandoAcao ? 'A guardar...' : 'Guardar Alterações'}
+            </button>
+          </form>
         </div>
-      ) : (
-        <div className="space-y-3">
-          {ocorrenciasFiltradas.map((item) => (
+      )}
+
+      {/* Lista de Ocorrências com Ações Diretas */}
+      <div className="space-y-3">
+        {ocorrenciasFiltradas.length === 0 ? (
+          <div className="bg-white rounded-3xl p-8 border border-slate-200 text-center text-xs text-slate-400">
+            Nenhum registo encontrado para este filtro.
+          </div>
+        ) : (
+          ocorrenciasFiltradas.map((item) => (
             <div
               key={item.id}
-              className="p-3.5 rounded-2xl border border-slate-200 bg-slate-50/70 space-y-3"
+              className="bg-white rounded-2xl p-4 border border-slate-200 shadow-2xs space-y-3"
             >
-              <div className="flex items-start justify-between gap-3">
-                <div className="space-y-1">
-                  <div className="flex items-center space-x-2">
-                    <span className="font-black text-xs capitalize text-slate-800">{item.categoria}</span>
-                    <span className="text-[10px] text-slate-400 font-mono">
-                      #{item.id} — {item.created_at ? new Date(item.created_at).toLocaleDateString('pt-BR') : ''}
-                    </span>
-                  </div>
-                  <p className="text-xs text-slate-600 leading-snug">{item.descricao}</p>
+              <div className="flex items-start justify-between gap-2">
+                <div className="flex items-center space-x-2">
+                  <span className="text-xs font-black capitalize text-slate-800">
+                    {item.categoria}
+                  </span>
+                  <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full capitalize ${
+                    item.status === 'resolvido'
+                      ? 'bg-emerald-100 text-emerald-800'
+                      : item.status === 'em analise'
+                      ? 'bg-sky-100 text-sky-800'
+                      : 'bg-amber-100 text-amber-800'
+                  }`}>
+                    {item.status || 'Pendente'}
+                  </span>
                 </div>
-
-                {item.foto_url && (
-                  <img
-                    src={item.foto_url}
-                    alt="Foto do chamado"
-                    className="w-12 h-12 rounded-xl object-cover shrink-0 border border-slate-200"
-                  />
-                )}
+                <span className="text-[10px] text-slate-400 font-mono">
+                  {item.created_at ? new Date(item.created_at).toLocaleDateString('pt-BR') : ''}
+                </span>
               </div>
 
-              <div className="flex items-center justify-between border-t border-slate-200/80 pt-2 text-xs">
-                <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400">Alterar Estado:</span>
-                <div className="flex space-x-1.5">
+              {item.foto_url && (
+                <img
+                  src={item.foto_url}
+                  alt="Registo"
+                  className="w-full h-32 object-cover rounded-xl border border-slate-100"
+                />
+              )}
+
+              <p className="text-xs text-slate-600 leading-relaxed">
+                {item.descricao || 'Sem descrição registada.'}
+              </p>
+
+              {/* Botões de Ação */}
+              <div className="pt-2 border-t border-slate-100 flex items-center justify-between gap-1 flex-wrap">
+                <div className="flex items-center space-x-1">
                   <button
-                    disabled={atualizandoId === item.id}
-                    onClick={() => atualizarStatus(item.id, 'pendente')}
-                    className={`px-2.5 py-1 rounded-lg text-[10px] font-black transition-all cursor-pointer ${
-                      item.status !== 'resolvido' && item.status !== 'concluido'
-                        ? 'bg-amber-500 text-white shadow-2xs'
-                        : 'bg-white border border-slate-200 text-slate-600 hover:bg-slate-100'
-                    }`}
+                    type="button"
+                    disabled={carregandoAcao}
+                    onClick={() => alterarStatusOcorrencia(item.id, 'pendente')}
+                    className="text-[10px] font-bold px-2 py-1 rounded-lg bg-amber-50 text-amber-700 hover:bg-amber-100 border border-amber-200 transition-colors cursor-pointer"
                   >
                     Pendente
                   </button>
                   <button
-                    disabled={atualizandoId === item.id}
-                    onClick={() => atualizarStatus(item.id, 'resolvido')}
-                    className={`px-2.5 py-1 rounded-lg text-[10px] font-black transition-all cursor-pointer ${
-                      item.status === 'resolvido' || item.status === 'concluido'
-                        ? 'bg-emerald-600 text-white shadow-2xs'
-                        : 'bg-white border border-slate-200 text-slate-600 hover:bg-slate-100'
-                    }`}
+                    type="button"
+                    disabled={carregandoAcao}
+                    onClick={() => alterarStatusOcorrencia(item.id, 'em analise')}
+                    className="text-[10px] font-bold px-2 py-1 rounded-lg bg-sky-50 text-sky-700 hover:bg-sky-100 border border-sky-200 transition-colors cursor-pointer"
                   >
-                    Resolvido ✓
+                    Em Análise
+                  </button>
+                  <button
+                    type="button"
+                    disabled={carregandoAcao}
+                    onClick={() => alterarStatusOcorrencia(item.id, 'resolvido')}
+                    className="text-[10px] font-bold px-2 py-1 rounded-lg bg-emerald-50 text-emerald-700 hover:bg-emerald-100 border border-emerald-200 transition-colors cursor-pointer"
+                  >
+                    ✓ Resolvido
+                  </button>
+                </div>
+
+                <div className="flex items-center space-x-1.5 ml-auto">
+                  <button
+                    type="button"
+                    onClick={() => setItemEdicao({ ...item, status: item.status || 'pendente' })}
+                    className="text-[11px] font-bold text-blue-600 hover:text-blue-800 px-2 py-1 rounded-lg bg-blue-50 border border-blue-200 transition-colors cursor-pointer"
+                  >
+                    ✏️ Editar
+                  </button>
+                  <button
+                    type="button"
+                    disabled={carregandoAcao}
+                    onClick={() => eliminarOcorrencia(item.id)}
+                    className="text-[11px] font-bold text-rose-600 hover:text-rose-800 px-2 py-1 rounded-lg bg-rose-50 border border-rose-200 transition-colors cursor-pointer"
+                  >
+                    🗑️ Excluir
                   </button>
                 </div>
               </div>
             </div>
-          ))}
-        </div>
-      )}
+          ))
+        )}
+      </div>
     </div>
   )
 }
