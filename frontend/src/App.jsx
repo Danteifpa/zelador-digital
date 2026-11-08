@@ -1179,14 +1179,10 @@ export default function App() {
               setAbaAtiva('inicio')
               setOcorrenciaSelecionada(null)
             }}
-            className="flex items-center space-x-2.5 text-left focus:outline-none cursor-pointer"
+            className="text-left focus:outline-none cursor-pointer"
           >
-            <div className="w-9 h-9 rounded-2xl bg-gradient-to-tr from-blue-600 to-emerald-500 flex items-center justify-center text-white text-base shadow-sm">
-              🏙️
-            </div>
             <div>
-              <span className="text-xl font-black text-blue-600 tracking-tight leading-none">Zelador</span>
-              <span className="text-xl font-light text-slate-700 tracking-tight leading-none">Digital</span>
+              <span className="text-xl font-black text-blue-600 tracking-tight leading-none">Zelador Digital</span>
             </div>
           </button>
 

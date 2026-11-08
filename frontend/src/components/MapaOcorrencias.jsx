@@ -107,13 +107,14 @@ export default function MapaOcorrencias({ ocorrencias = [], onRecarregar }) {
 
   return (
     <div className="space-y-3">
-      {/* Botões de Ação */}
-      <div className="flex items-center justify-between gap-2">
-        <div className="bg-slate-100 p-1 rounded-2xl flex items-center border border-slate-200">
+      {/* Barra de ferramentas do mapa */}
+      <div className="bg-white border border-slate-200 rounded-2xl p-2.5 shadow-2xs space-y-2.5">
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <div className="bg-slate-100 p-1 rounded-2xl flex items-center gap-1 border border-slate-200">
           <button
             type="button"
             onClick={() => setModoVisualizacao('pontos')}
-            className={`px-3 py-1.5 rounded-xl text-xs font-black transition-all cursor-pointer ${
+            className={`min-h-10 px-3 rounded-xl text-xs font-black transition-all cursor-pointer ${
               modoVisualizacao === 'pontos' ? 'bg-blue-600 text-white shadow-xs' : 'text-slate-600'
             }`}
           >
@@ -122,44 +123,31 @@ export default function MapaOcorrencias({ ocorrencias = [], onRecarregar }) {
           <button
             type="button"
             onClick={() => setModoVisualizacao('calor')}
-            className={`px-3 py-1.5 rounded-xl text-xs font-black transition-all cursor-pointer ${
+            className={`min-h-10 px-3 rounded-xl text-xs font-black transition-all cursor-pointer ${
               modoVisualizacao === 'calor' ? 'bg-amber-500 text-white shadow-xs' : 'text-slate-600'
             }`}
           >
             🔥 Calor
           </button>
-        </div>
-
-        <div className="flex items-center space-x-1.5">
-          <button
-            type="button"
-            onClick={obterGpsUsuario}
-            disabled={obtendoGps}
-            className="w-9 h-9 rounded-2xl bg-slate-100 border border-slate-200 text-slate-700 flex items-center justify-center text-sm font-bold shadow-2xs cursor-pointer"
-            title="Minha posição"
-          >
-            {obtendoGps ? '⏳' : '🎯'}
-          </button>
+          </div>
 
           {onRecarregar && (
             <button
               type="button"
               onClick={onRecarregar}
-              className="w-9 h-9 rounded-2xl bg-slate-100 border border-slate-200 text-slate-700 flex items-center justify-center text-sm font-bold shadow-2xs cursor-pointer"
+              className="min-h-10 min-w-10 px-3 rounded-xl bg-slate-100 border border-slate-200 text-slate-700 flex items-center justify-center text-sm font-bold shadow-2xs cursor-pointer"
               title="Atualizar"
             >
-              🔄
+              🔄 <span className="ml-1.5 text-[11px]">Atualizar</span>
             </button>
           )}
         </div>
-      </div>
 
-      {/* Filtros Rápidos */}
-      <div className="flex space-x-1.5 overflow-x-auto pb-1 text-xs">
+        <div className="flex flex-wrap items-center gap-1.5 text-xs">
         <button
           type="button"
           onClick={() => setFiltroTipo('todas')}
-          className={`px-3 py-1 rounded-xl text-[11px] font-bold transition-all shrink-0 cursor-pointer ${
+          className={`min-h-10 px-3 rounded-xl text-[11px] font-bold transition-all shrink-0 cursor-pointer ${
             filtroTipo === 'todas' ? 'bg-slate-900 text-white' : 'bg-slate-100 text-slate-600'
           }`}
         >
@@ -168,7 +156,7 @@ export default function MapaOcorrencias({ ocorrencias = [], onRecarregar }) {
         <button
           type="button"
           onClick={() => setFiltroTipo('lixo')}
-          className={`px-2.5 py-1 rounded-xl text-[11px] font-bold shrink-0 cursor-pointer ${
+          className={`min-h-10 px-3 rounded-xl text-[11px] font-bold shrink-0 cursor-pointer ${
             filtroTipo === 'lixo' ? 'bg-amber-500 text-white' : 'bg-slate-100 text-slate-600'
           }`}
         >
@@ -177,7 +165,7 @@ export default function MapaOcorrencias({ ocorrencias = [], onRecarregar }) {
         <button
           type="button"
           onClick={() => setFiltroTipo('iluminacao')}
-          className={`px-2.5 py-1 rounded-xl text-[11px] font-bold shrink-0 cursor-pointer ${
+          className={`min-h-10 px-3 rounded-xl text-[11px] font-bold shrink-0 cursor-pointer ${
             filtroTipo === 'iluminacao' ? 'bg-indigo-600 text-white' : 'bg-slate-100 text-slate-600'
           }`}
         >
@@ -186,7 +174,7 @@ export default function MapaOcorrencias({ ocorrencias = [], onRecarregar }) {
         <button
           type="button"
           onClick={() => setFiltroTipo('buraco')}
-          className={`px-2.5 py-1 rounded-xl text-[11px] font-bold shrink-0 cursor-pointer ${
+          className={`min-h-10 px-3 rounded-xl text-[11px] font-bold shrink-0 cursor-pointer ${
             filtroTipo === 'buraco' ? 'bg-orange-600 text-white' : 'bg-slate-100 text-slate-600'
           }`}
         >
@@ -195,12 +183,13 @@ export default function MapaOcorrencias({ ocorrencias = [], onRecarregar }) {
         <button
           type="button"
           onClick={() => setFiltroTipo('esgoto')}
-          className={`px-2.5 py-1 rounded-xl text-[11px] font-bold shrink-0 cursor-pointer ${
+          className={`min-h-10 px-3 rounded-xl text-[11px] font-bold shrink-0 cursor-pointer ${
             filtroTipo === 'esgoto' ? 'bg-sky-600 text-white' : 'bg-slate-100 text-slate-600'
           }`}
         >
           💧 Esgoto
         </button>
+        </div>
       </div>
 
       {/* Caixa do Mapa Leaflet */}
@@ -292,6 +281,17 @@ export default function MapaOcorrencias({ ocorrencias = [], onRecarregar }) {
               )
             })}
         </MapContainer>
+
+        <button
+          type="button"
+          onClick={obterGpsUsuario}
+          disabled={obtendoGps}
+          className="absolute top-3 right-3 z-[1000] w-12 h-12 rounded-full bg-white/95 backdrop-blur-md border border-slate-200 text-slate-700 flex items-center justify-center text-lg font-bold shadow-lg transition-all hover:bg-white active:scale-95 disabled:cursor-wait"
+          title="Recentralizar na minha posição"
+          aria-label="Recentralizar na minha posição"
+        >
+          {obtendoGps ? '⏳' : '🎯'}
+        </button>
 
         {/* Legenda com z-index inline seguro */}
         <div
