@@ -124,6 +124,8 @@ export default function PainelGestor({ ocorrencias = [], onAtualizarDados }) {
   const [acaoEmAndamento, setAcaoEmAndamento] = useState(null)
   const [mostrarBoletim, setMostrarBoletim] = useState(false)
   const [boletimCopiado, setBoletimCopiado] = useState(false)
+  const [itemResolucao, setItemResolucao] = useState(null)
+  const [fotoResolucaoPorId, setFotoResolucaoPorId] = useState({})
 
   // PIN de acesso para o gestor comunitário
   const PIN_MESTRE = '2026'
@@ -180,6 +182,49 @@ export default function PainelGestor({ ocorrencias = [], onAtualizarDados }) {
       if (onAtualizarDados) await onAtualizarDados()
     } catch (err) {
       alert('Erro ao atualizar estado: ' + err.message)
+    } finally {
+      setCarregandoAcao(false)
+      setAcaoEmAndamento(null)
+    }
+  }
+
+  const confirmarResolucao = async () => {
+    if (!itemResolucao) return
+    const { id } = itemResolucao
+    const foto = fotoResolucaoPorId[id]
+    setCarregandoAcao(true)
+    setAcaoEmAndamento(`status-${id}`)
+    try {
+      let fotoResolucao = null
+      if (foto) {
+        const extensao = foto.name.split('.').pop()?.toLowerCase() || 'jpg'
+        const caminho = `resolucoes/${id}-${Date.now()}.${extensao}`
+        const { error: uploadError } = await supabase.storage
+          .from('ocorrencias')
+          .upload(caminho, foto, { cacheControl: '3600', upsert: false })
+
+        if (uploadError) throw uploadError
+        const { data: publicData } = supabase.storage.from('ocorrencias').getPublicUrl(caminho)
+        fotoResolucao = publicData.publicUrl
+      }
+
+      const atualizacao = {
+        status: 'resolvido',
+        updated_at: new Date().toISOString()
+      }
+      if (fotoResolucao) atualizacao.foto_resolucao = fotoResolucao
+
+      const { error } = await supabase
+        .from('ocorrencias')
+        .update(atualizacao)
+        .eq('id', id)
+
+      if (error) throw error
+      setItemResolucao(null)
+      setFotoResolucaoPorId((atuais) => ({ ...atuais, [id]: null }))
+      if (onAtualizarDados) await onAtualizarDados()
+    } catch (err) {
+      alert('Erro ao registrar resolução: ' + err.message)
     } finally {
       setCarregandoAcao(false)
       setAcaoEmAndamento(null)
@@ -326,6 +371,7 @@ export default function PainelGestor({ ocorrencias = [], onAtualizarDados }) {
 
   const pendentes = useMemo(() => ocorrencias.filter((item) => !eResolvida(item)), [ocorrencias])
   const pendentesSelecionadas = pendentes.filter((item) => selecionadasOficio.includes(item.id))
+  const resolvidasAuditadas = ocorrencias.filter((item) => eResolvida(item) && item.foto_url && item.foto_resolucao)
   const maxCategoria = Math.max(1, ...analiseCategorias.map(([, quantidade]) => quantidade))
   const maxTemporal = Math.max(1, ...analiseTemporal.map((item) => item.quantidade))
 
@@ -821,6 +867,61 @@ export default function PainelGestor({ ocorrencias = [], onAtualizarDados }) {
                 />
               )}
 
+              {eResolvida(item) && item.foto_url && item.foto_resolucao && (
+                <div className="rounded-2xl border border-emerald-200 bg-emerald-50/70 p-3">
+                  <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
+                    <span className="text-[10px] font-black uppercase tracking-wide text-emerald-800">Auditoria fotográfica</span>
+                    <span className="rounded-full bg-emerald-600 px-2 py-1 text-[9px] font-black text-white">
+                      Comprovado por Auditoria Visual
+                    </span>
+                  </div>
+                  <div className="grid grid-cols-2 gap-2">
+                    <figure>
+                      <img src={item.foto_url} alt="Antes: registro inicial" className="h-28 w-full rounded-xl object-cover border border-emerald-200" />
+                      <figcaption className="mt-1 text-[9px] font-bold text-emerald-900">Antes (Registro Inicial)</figcaption>
+                    </figure>
+                    <figure>
+                      <img src={item.foto_resolucao} alt="Depois: intervenção concluída" className="h-28 w-full rounded-xl object-cover border border-emerald-200" />
+                      <figcaption className="mt-1 text-[9px] font-bold text-emerald-900">Depois (Intervenção Concluída)</figcaption>
+                    </figure>
+                  </div>
+                </div>
+              )}
+
+              {itemResolucao?.id === item.id && (
+                <div className="rounded-2xl border border-indigo-200 bg-indigo-50/70 p-3">
+                  <p className="text-[11px] font-black text-indigo-900">📸 Anexar Foto da Resolução (Depois)</p>
+                  <p className="mt-1 text-[10px] text-indigo-700">Opcional. A imagem será armazenada no bucket de ocorrências.</p>
+                  <input
+                    type="file"
+                    accept="image/*"
+                    onChange={(e) => setFotoResolucaoPorId((atuais) => ({ ...atuais, [item.id]: e.target.files?.[0] || null }))}
+                    className="mt-2 block w-full rounded-xl border border-indigo-200 bg-white p-2 text-[10px] text-slate-700"
+                  />
+                  {fotoResolucaoPorId[item.id] && (
+                    <p className="mt-1 truncate text-[10px] text-indigo-700">{fotoResolucaoPorId[item.id].name}</p>
+                  )}
+                  <div className="mt-3 flex gap-2">
+                    <button
+                      type="button"
+                      onClick={() => setItemResolucao(null)}
+                      className="rounded-xl border border-indigo-200 px-3 py-2 text-[10px] font-bold text-indigo-800 hover:bg-white cursor-pointer"
+                    >
+                      Cancelar
+                    </button>
+                    <button
+                      type="button"
+                      disabled={carregandoAcao}
+                      onClick={confirmarResolucao}
+                      className="inline-flex items-center gap-2 rounded-xl bg-indigo-600 px-3 py-2 text-[10px] font-black text-white hover:bg-indigo-700 disabled:opacity-60 cursor-pointer"
+                    >
+                      {acaoEmAndamento === `status-${item.id}` && <Spinner />}
+                      {acaoEmAndamento === `status-${item.id}` ? 'A registrar...' : 'Confirmar Resolvido'}
+                    </button>
+                  </div>
+                </div>
+              )}
+
               <p className="text-xs text-slate-600 leading-relaxed">
                 {item.descricao || 'Sem descrição registada.'}
               </p>
@@ -912,10 +1013,13 @@ export default function PainelGestor({ ocorrencias = [], onAtualizarDados }) {
                 <button
                   type="button"
                   disabled={carregandoAcao}
-                  onClick={() => alterarStatusOcorrencia(item.id, 'resolvido')}
+                  onClick={() => {
+                    setItemResolucao({ id: item.id, foto: null })
+                    setFotoResolucaoPorId((atuais) => ({ ...atuais, [item.id]: null }))
+                  }}
                   className="text-[10px] font-bold px-2 py-1 rounded-lg bg-emerald-50 text-emerald-700 hover:bg-emerald-100 border border-emerald-200 transition-colors cursor-pointer"
                 >
-                  {acaoEmAndamento === `status-${item.id}` && <Spinner />} ✓ Resolvido
+                  ✓ Resolvido
                 </button>
                 <button
                   type="button"
@@ -1104,6 +1208,25 @@ export default function PainelGestor({ ocorrencias = [], onAtualizarDados }) {
                   </tbody>
                 </table>
               </div>
+
+              {resolvidasAuditadas.length > 0 && (
+                <section className="mt-8 break-inside-avoid">
+                  <h2 className="border-b border-slate-400 pb-2 text-xs font-black uppercase">Anexo fotográfico — prestação de contas</h2>
+                  <div className="mt-3 grid grid-cols-2 gap-3">
+                    {resolvidasAuditadas.map((item) => (
+                      <figure key={item.id} className="break-inside-avoid">
+                        <div className="grid grid-cols-2 gap-1">
+                          <img src={item.foto_url} alt="Registro inicial" className="h-24 w-full object-cover border border-slate-300" />
+                          <img src={item.foto_resolucao} alt="Intervenção concluída" className="h-24 w-full object-cover border border-slate-300" />
+                        </div>
+                        <figcaption className="mt-1 text-[8px]">
+                          {protocoloCivico(item.id)} — Antes / Depois — {item.categoria || 'Não classificado'}
+                        </figcaption>
+                      </figure>
+                    ))}
+                  </div>
+                </section>
+              )}
 
               <p className="mt-6">
                 Sem mais para o momento, aguardamos o encaminhamento das medidas cabíveis e a comunicação do cronograma de atendimento, reafirmando o compromisso da comunidade com a transparência e o monitoramento responsável dos serviços públicos.
