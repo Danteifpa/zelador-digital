@@ -1,4 +1,5 @@
 import { useState, useEffect, useMemo } from 'react'
+import { Bell, Info, QrCode, Search } from 'lucide-react'
 import { supabase } from './lib/supabase'
 import PainelGestor from './components/PainelGestor'
 import MapaOcorrencias from './components/MapaOcorrencias'
@@ -359,6 +360,12 @@ export default function App() {
   const [erroProtocolo, setErroProtocolo] = useState('')
   const [notificacoesAtivadas, setNotificacoesAtivadas] = useState(false)
   const [duplicataEncontrada, setDuplicataEncontrada] = useState(null)
+
+  const imprimirCartazA4 = () => {
+    feedbackSensorial.toqueSuave()
+    setMostrarQrCode(true)
+    window.setTimeout(() => window.print(), 100)
+  }
 
   useEffect(() => {
     const isStandalone = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone
@@ -1419,38 +1426,14 @@ export default function App() {
 
           <div className="flex items-center gap-2">
             <button
-              type="button"
-              onClick={() => {
-                feedbackSensorial.toqueSuave()
-                setMostrarQrCode(true)
-              }}
-              className="h-10 whitespace-nowrap rounded-2xl bg-slate-100 px-3 text-[10px] font-black text-slate-700 border border-slate-200 flex items-center justify-center transition-colors hover:bg-slate-200 cursor-pointer"
-              title="Compartilhar aplicação"
-              aria-label="Compartilhar aplicação por QR Code"
-            >
-              📱 Cartaz & QR Code
-            </button>
-            <button
-              type="button"
-              onClick={() => {
-                setErroProtocolo('')
-                setResultadoProtocolo(null)
-                setProtocoloConsulta('')
-                setMostrarConsultaProtocolo(true)
-              }}
-              className="rounded-2xl border border-blue-200 bg-blue-50 px-3 py-2 text-[10px] font-black text-blue-700 hover:bg-blue-100 cursor-pointer"
-            >
-              Consultar Protocolo
-            </button>
-            <button
               onClick={() => {
                 feedbackSensorial.toqueSuave()
                 setMostrarNotificacoes(true)
               }}
-              className="w-10 h-10 rounded-2xl text-base bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-200 flex items-center justify-center relative transition-colors cursor-pointer"
+              className="relative flex h-10 w-10 items-center justify-center rounded-full border border-slate-200 bg-slate-100 text-slate-700 transition-colors hover:bg-slate-200 cursor-pointer"
               title="Avisos e Notificações"
             >
-              <span>🔔</span>
+              <Bell size={18} strokeWidth={2.25} />
               {notificacoesNaoLidas > 0 && (
                 <span className="absolute -top-1 -right-1 w-4 h-4 bg-rose-600 text-white text-[9px] font-black rounded-full flex items-center justify-center border-2 border-white shadow-2xs">
                   {notificacoesNaoLidas}
@@ -1460,11 +1443,11 @@ export default function App() {
             <button
               type="button"
               onClick={() => setModalSobreAberto(true)}
-              className="w-10 h-10 rounded-2xl text-base bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-200 flex items-center justify-center transition-colors cursor-pointer"
+              className="flex h-10 w-10 items-center justify-center rounded-full border border-slate-200 bg-slate-100 text-slate-700 transition-colors hover:bg-slate-200 cursor-pointer"
               title="Sobre o desenvolvedor"
               aria-label="Sobre o desenvolvedor"
             >
-              ℹ️
+              <Info size={18} strokeWidth={2.25} />
             </button>
           </div>
         </div>
@@ -1694,7 +1677,7 @@ export default function App() {
                 <span className="text-2xl">📸</span>
               </button>
 
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
                 <button
                   onClick={() => {
                     feedbackSensorial.toqueSuave()
@@ -1722,15 +1705,59 @@ export default function App() {
                   <span className="text-xs font-black text-slate-800">Ver Mapa</span>
                   <span className="text-[11px] text-slate-400 mt-0.5">Pontos e calor térmico</span>
                 </button>
+
+                <button
+                  type="button"
+                  onClick={() => {
+                    feedbackSensorial.toqueSuave()
+                    setErroProtocolo('')
+                    setResultadoProtocolo(null)
+                    setProtocoloConsulta('')
+                    setMostrarConsultaProtocolo(true)
+                  }}
+                  className="bg-white hover:bg-slate-50 border border-slate-200/90 rounded-3xl p-4 shadow-2xs flex flex-col items-start transition-all cursor-pointer text-left"
+                >
+                  <div className="w-10 h-10 rounded-2xl bg-indigo-50 text-indigo-600 flex items-center justify-center mb-3 border border-indigo-100">
+                    <Search size={20} strokeWidth={2.25} />
+                  </div>
+                  <span className="text-xs font-black text-slate-800">Consultar Protocolo</span>
+                  <span className="text-[11px] text-slate-400 mt-0.5">Acompanhar andamento</span>
+                </button>
               </div>
             </div>
 
-            <section className="bg-white rounded-3xl p-5 border border-slate-200 shadow-2xs">
-              <h2 className="text-base font-black text-slate-800">Sobre o Projeto</h2>
-              <p className="text-xs text-slate-600 leading-relaxed mt-2">
-                O Zelador Digital ajuda a comunidade de Ananindeua a mapear demandas urbanas.
-                Registe ocorrências, acompanhe os encaminhamentos e contribua para uma cidade mais cuidada.
-              </p>
+            <section className="bg-white rounded-3xl p-5 border border-slate-200 shadow-sm">
+              <div className="flex items-start gap-3">
+                <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-blue-50 text-blue-600">
+                  <QrCode size={22} strokeWidth={2.25} />
+                </div>
+                <div>
+                  <h2 className="text-base font-black text-slate-800">Divulgação Comunitária &amp; Fiscalização</h2>
+                  <p className="mt-2 text-xs leading-relaxed text-slate-600">
+                    Ajude a fortalecer a fiscalização cívica em Ananindeua. Compartilhe o acesso direto ou gere o cartaz oficial para impressão.
+                  </p>
+                </div>
+              </div>
+              <div className="mt-4 flex flex-col gap-2 sm:flex-row">
+                <button
+                  type="button"
+                  onClick={() => {
+                    feedbackSensorial.toqueSuave()
+                    setMostrarQrCode(true)
+                  }}
+                  className="flex flex-1 items-center justify-center gap-2 rounded-2xl bg-blue-600 px-4 py-3 text-xs font-black text-white transition-colors hover:bg-blue-700 cursor-pointer"
+                >
+                  <QrCode size={16} strokeWidth={2.25} />
+                  Abrir QR Code
+                </button>
+                <button
+                  type="button"
+                  onClick={imprimirCartazA4}
+                  className="flex flex-1 items-center justify-center gap-2 rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-xs font-black text-slate-700 transition-colors hover:bg-slate-100 cursor-pointer"
+                >
+                  🖨️ Imprimir Cartaz A4
+                </button>
+              </div>
             </section>
           </div>
         )}
