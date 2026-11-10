@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo } from 'react'
-import { Bell, Info, QrCode, Search } from 'lucide-react'
+import { Search } from 'lucide-react'
 import { supabase } from './lib/supabase'
 import PainelGestor from './components/PainelGestor'
 import MapaOcorrencias from './components/MapaOcorrencias'
@@ -7,6 +7,10 @@ import ModalQRCode from './components/ModalQRCode'
 import { solicitarPermissaoNotificacoes } from './lib/notifications'
 import useNetworkStatus from './lib/useNetworkStatus'
 import { otimizarImagem } from './lib/imageOptimizer'
+import Header from './components/Header'
+import RegisterButton from './components/RegisterButton'
+import StatsOverview from './components/StatsOverview'
+import CommunityAlert from './components/CommunityAlert'
 
 // Coordenadas centrais comunitárias (Ananindeua)
 const CENTRO_COMUNITARIO = {
@@ -1032,26 +1036,23 @@ export default function App() {
   const urlApp = typeof window !== 'undefined' ? window.location.origin : 'https://zelador-digital.vercel.app'
   return (
     <div className={`min-h-screen flex flex-col justify-between font-sans pb-20 ${modo === 'facil' ? 'bg-amber-50/30 text-slate-900' : 'bg-slate-100/70 text-slate-800'}`}>
-      {/* AVISO OFFLINE */}
-      {!estaOnline && (
-        <div className="bg-amber-500 text-white text-[11px] font-black py-1.5 px-4 text-center tracking-wide sticky top-0 z-50 flex items-center justify-center gap-1.5 shadow-xs">
-          <span>⚠️</span>
-          <span>Modo Offline Ativo: Registos serão sincronizados quando recuperar rede</span>
-        </div>
-      )}
-
-      {filaOffline.length > 0 && estaOnline && (
-        <div className="bg-blue-600 text-white text-[11px] font-bold py-1.5 px-4 text-center sticky top-0 z-50 flex items-center justify-between">
-          <span>{filaOffline.length} registo(s) pendente(s) para sincronização</span>
-          <button
-            onClick={sincronizarFilaOffline}
-            disabled={sincronizandoFila}
-            className="bg-white text-blue-700 px-2 py-0.5 rounded-lg text-[10px] font-black uppercase cursor-pointer"
-          >
-            {sincronizandoFila ? 'A sincronizar...' : 'Sincronizar Agora 🔄'}
-          </button>
-        </div>
-      )}
+      <Header
+        estaOnline={estaOnline}
+        filaPendente={filaOffline.length}
+        sincronizandoFila={sincronizandoFila}
+        onSincronizar={sincronizarFilaOffline}
+        notificacoesNaoLidas={notificacoesNaoLidas}
+        onIrParaInicio={() => {
+          feedbackSensorial.toqueSuave()
+          setAbaAtiva('inicio')
+          setOcorrenciaSelecionada(null)
+        }}
+        onAbrirNotificacoes={() => {
+          feedbackSensorial.toqueSuave()
+          setMostrarNotificacoes(true)
+        }}
+        onAbrirSobre={() => setModalSobreAberto(true)}
+      />
 
       {/* TOAST FLUTUANTE */}
       {mensagemToast && (
@@ -1408,51 +1409,6 @@ export default function App() {
         </div>
       )}
 
-      {/* TOPO / NAVBAR MINIMALISTA */}
-      <header className="bg-white/90 backdrop-blur-md border-b border-slate-200 sticky top-0 z-40 shadow-xs">
-        <div className="max-w-md mx-auto px-4 h-16 flex items-center justify-between">
-          <button
-            onClick={() => {
-              feedbackSensorial.toqueSuave()
-              setAbaAtiva('inicio')
-              setOcorrenciaSelecionada(null)
-            }}
-            className="text-left focus:outline-none cursor-pointer"
-          >
-            <div>
-              <span className="text-xl font-black text-blue-600 tracking-tight leading-none">Zelador Digital</span>
-            </div>
-          </button>
-
-          <div className="flex items-center gap-2">
-            <button
-              onClick={() => {
-                feedbackSensorial.toqueSuave()
-                setMostrarNotificacoes(true)
-              }}
-              className="relative flex h-10 w-10 items-center justify-center rounded-full border border-slate-200 bg-slate-100 text-slate-700 transition-colors hover:bg-slate-200 cursor-pointer"
-              title="Avisos e Notificações"
-            >
-              <Bell size={18} strokeWidth={2.25} />
-              {notificacoesNaoLidas > 0 && (
-                <span className="absolute -top-1 -right-1 w-4 h-4 bg-rose-600 text-white text-[9px] font-black rounded-full flex items-center justify-center border-2 border-white shadow-2xs">
-                  {notificacoesNaoLidas}
-                </span>
-              )}
-            </button>
-            <button
-              type="button"
-              onClick={() => setModalSobreAberto(true)}
-              className="flex h-10 w-10 items-center justify-center rounded-full border border-slate-200 bg-slate-100 text-slate-700 transition-colors hover:bg-slate-200 cursor-pointer"
-              title="Sobre o desenvolvedor"
-              aria-label="Sobre o desenvolvedor"
-            >
-              <Info size={18} strokeWidth={2.25} />
-            </button>
-          </div>
-        </div>
-      </header>
-
       {modalSobreAberto && (
         <div className="fixed inset-0 z-50 bg-slate-950/70 backdrop-blur-xs flex items-end sm:items-center justify-center p-0 sm:p-4">
           <div className="bg-white w-full max-w-md rounded-t-3xl sm:rounded-3xl p-6 border border-slate-200 shadow-2xl">
@@ -1628,54 +1584,17 @@ export default function App() {
               </div>
             )}
 
-            <div className="w-full rounded-3xl bg-gradient-to-br from-blue-600 via-sky-600 to-emerald-500 p-3.5 text-white shadow-md relative overflow-hidden">
-              <div className="flex items-center justify-between mb-3">
-                <div>
-                  <span className="text-[11px] uppercase tracking-wider text-sky-100 font-bold">Monitoramento Cívico</span>
-                  <h1 className="text-xl font-black mt-0.5">Visão Geral</h1>
-                </div>
-                <div className="w-9 h-9 rounded-2xl bg-white/20 backdrop-blur-md flex items-center justify-center text-lg shadow-inner">
-                  📍
-                </div>
-              </div>
-
-              <div className="grid grid-cols-3 gap-2 text-center">
-                <div className="bg-white/15 backdrop-blur-sm rounded-2xl p-3 border border-white/20">
-                  <span className="text-2xl font-bold block leading-none">{totalRegistos}</span>
-                  <span className="text-xs font-semibold text-sky-100 mt-1 block">Total</span>
-                </div>
-                <div className="bg-white/15 backdrop-blur-sm rounded-2xl p-3 border border-white/20">
-                  <span className="text-2xl font-bold block leading-none">{totalResolvidos}</span>
-                  <span className="text-xs font-semibold text-sky-100 mt-1 block">Resolvidos</span>
-                </div>
-                <div className="bg-white/15 backdrop-blur-sm rounded-2xl p-3 border border-white/20">
-                  <span className="text-2xl font-bold block leading-none">{totalPendentes}</span>
-                  <span className="text-xs font-semibold text-sky-100 mt-1 block">Pendentes</span>
-                </div>
-              </div>
-            </div>
+            <StatsOverview total={totalRegistos} resolvidos={totalResolvidos} pendentes={totalPendentes} />
 
             <div>
               <h2 className="mb-1.5 text-xs font-bold text-slate-500 uppercase tracking-wider px-1">Ações Rápidas</h2>
 
-              <button
+              <RegisterButton
                 onClick={() => {
                   feedbackSensorial.toqueSuave()
                   setAbaAtiva('reportar')
                 }}
-                className="w-full py-6 px-5 bg-gradient-to-r from-blue-600 to-indigo-700 text-white rounded-2xl flex items-center justify-between shadow-lg active:scale-[0.99] transition-all"
-              >
-                <div className="flex items-center space-x-3">
-                  <div className="w-14 h-14 rounded-2xl bg-white/25 flex items-center justify-center text-3xl font-extrabold shrink-0 border border-white/30">
-                    ➕
-                  </div>
-                  <div className="text-left">
-                    <span className="text-xl font-bold text-white tracking-tight block">Registar Nova Ocorrência</span>
-                    <span className="text-sm text-blue-50 mt-1 font-medium block">Buraco, poste apagado, lixo ou esgoto</span>
-                  </div>
-                </div>
-                <span className="shrink-0 text-3xl">📸</span>
-              </button>
+              />
 
               <div className="grid grid-cols-3 gap-2 mt-2.5">
                 <button
@@ -1726,39 +1645,13 @@ export default function App() {
               </div>
             </div>
 
-            <section className="w-full bg-white rounded-3xl p-3 border border-slate-200 shadow-sm">
-              <div className="flex items-center gap-2">
-                <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-blue-50 text-blue-600">
-                  <QrCode size={18} strokeWidth={2.25} />
-                </div>
-                <div>
-                  <h2 className="text-sm font-semibold text-slate-800">Divulgação Comunitária &amp; Fiscalização</h2>
-                  <p className="mt-0.5 line-clamp-1 text-xs leading-relaxed text-slate-600">
-                    Ajude a fortalecer a fiscalização cívica em Ananindeua. Compartilhe o acesso direto ou gere o cartaz oficial para impressão.
-                  </p>
-                </div>
-              </div>
-              <div className="mt-2 flex gap-2">
-                <button
-                  type="button"
-                  onClick={() => {
-                    feedbackSensorial.toqueSuave()
-                    setMostrarQrCode(true)
-                  }}
-                  className="flex flex-1 items-center justify-center gap-1 rounded-xl bg-blue-600 py-2 px-3 text-xs font-black text-white transition-colors hover:bg-blue-700 cursor-pointer"
-                >
-                  <QrCode size={14} strokeWidth={2.25} />
-                  Abrir QR Code
-                </button>
-                <button
-                  type="button"
-                  onClick={imprimirCartazA4}
-                  className="flex flex-1 items-center justify-center gap-1 rounded-xl border border-slate-200 bg-slate-50 py-2 px-3 text-xs font-black text-slate-700 transition-colors hover:bg-slate-100 cursor-pointer"
-                >
-                  🖨️ Imprimir Cartaz A4
-                </button>
-              </div>
-            </section>
+            <CommunityAlert
+              onAbrirQrCode={() => {
+                feedbackSensorial.toqueSuave()
+                setMostrarQrCode(true)
+              }}
+              onImprimirCartaz={imprimirCartazA4}
+            />
           </div>
         )}
 
