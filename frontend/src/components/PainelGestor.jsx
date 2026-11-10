@@ -2,6 +2,8 @@ import { useEffect, useMemo, useState } from 'react'
 import { CircleMarker, MapContainer, Popup, TileLayer, useMap } from 'react-leaflet'
 import 'leaflet/dist/leaflet.css'
 import { supabase } from '../lib/supabase'
+import useSessaoGestor from '../lib/useSessaoGestor'
+import LoginGestor from './LoginGestor'
 
 const STATUS_RESOLVIDOS = ['resolvido', 'concluido']
 const RAIO_RECURRENCIA_METROS = 500
@@ -113,12 +115,7 @@ function dispararAvisoAtualizacao(titulo, corpo) {
 }
 
 export default function PainelGestor({ ocorrencias = [], onAtualizarDados }) {
-  const [autenticado, setAutenticado] = useState(() => sessionStorage.getItem('gestao_autenticada') === 'true')
-  const [pinEntrada, setPinEntrada] = useState('')
-  const [erroPin, setErroPin] = useState(false)
-  const [tentativasPin, setTentativasPin] = useState(0)
-  const [bloqueadoAte, setBloqueadoAte] = useState(0)
-  const [agora, setAgora] = useState(() => Date.now())
+  const { sessao, ehGestor, carregando: aVerificarSessao, erroVerificacao, entrar, sair } = useSessaoGestor()
   const [filtroStatus, setFiltroStatus] = useState('todos')
   const [termoBusca, setTermoBusca] = useState('')
   const [itemEdicao, setItemEdicao] = useState(null)
@@ -135,48 +132,6 @@ export default function PainelGestor({ ocorrencias = [], onAtualizarDados }) {
   const [boletimCopiado, setBoletimCopiado] = useState(false)
   const [itemResolucao, setItemResolucao] = useState(null)
   const [fotoResolucaoPorId, setFotoResolucaoPorId] = useState({})
-
-  // PIN de acesso para o gestor comunitário
-  const PIN_MESTRE = '2026'
-  const bloqueioAtivo = bloqueadoAte > agora
-  const segundosBloqueio = Math.max(0, Math.ceil((bloqueadoAte - agora) / 1000))
-
-  useEffect(() => {
-    if (!bloqueioAtivo) return undefined
-    const timer = window.setInterval(() => setAgora(Date.now()), 1000)
-    return () => window.clearInterval(timer)
-  }, [bloqueioAtivo])
-
-  const verificarAcesso = (e) => {
-    e.preventDefault()
-    if (bloqueioAtivo) return
-    const tentativasAtuais = bloqueadoAte ? 0 : tentativasPin
-    if (bloqueadoAte) setBloqueadoAte(0)
-
-    if (pinEntrada === PIN_MESTRE) {
-      setAutenticado(true)
-      sessionStorage.setItem('gestao_autenticada', 'true')
-      setErroPin(false)
-      setTentativasPin(0)
-      setPinEntrada('')
-    } else {
-      const novasTentativas = tentativasAtuais + 1
-      setTentativasPin(novasTentativas)
-      setPinEntrada('')
-      setErroPin(true)
-      if (novasTentativas >= 3) {
-        setBloqueadoAte(Date.now() + 60 * 1000)
-      }
-    }
-  }
-
-  const encerrarSessao = () => {
-    sessionStorage.removeItem('gestao_autenticada')
-    setAutenticado(false)
-    setPinEntrada('')
-    setErroPin(false)
-    setTentativasPin(0)
-  }
 
   const alterarStatusOcorrencia = async (id, novoStatus) => {
     setCarregandoAcao(true)
@@ -488,47 +443,33 @@ export default function PainelGestor({ ocorrencias = [], onAtualizarDados }) {
     setMostrarOficio(true)
   }
 
-  // Ecrã de Bloqueio por PIN
-  if (!autenticado) {
+  // Acesso: sessão do Supabase Auth + confirmação no servidor (public.eh_gestor)
+  if (aVerificarSessao) {
     return (
-      <div className="bg-white rounded-3xl p-6 border border-slate-200 shadow-sm max-w-sm mx-auto my-6 text-center">
-        <div className="w-14 h-14 bg-blue-50 border border-blue-200 text-blue-600 rounded-2xl flex items-center justify-center text-2xl mx-auto mb-4">
-          🔐
-        </div>
-        <h2 className="text-lg font-black text-slate-800">Painel de Gestão</h2>
-        <p className="text-xs text-slate-500 mt-1 mb-5">
-          Introduza o PIN de acesso para gerir, editar e eliminar ocorrências comunitárias.
+      <div role="status" className="bg-white rounded-3xl p-6 border border-slate-200 shadow-sm max-w-sm mx-auto my-6 text-center text-sm font-bold text-slate-500">
+        A verificar o acesso...
+      </div>
+    )
+  }
+
+  if (!sessao) {
+    return <LoginGestor onEntrar={entrar} />
+  }
+
+  if (!ehGestor) {
+    return (
+      <div role="alert" className="bg-white rounded-3xl p-6 border border-amber-200 shadow-sm max-w-sm mx-auto my-6 text-center">
+        <h2 className="text-lg font-black text-slate-800">Sem acesso de gestor</h2>
+        <p className="text-sm text-slate-600 mt-2">
+          {erroVerificacao || `A conta ${sessao.user?.email || ''} entrou, mas não está registada como gestora.`}
         </p>
-
-        <form onSubmit={verificarAcesso} className="space-y-4">
-          <input
-            type="password"
-            maxLength={6}
-            placeholder="PIN de acesso (Padrão: 2026)"
-            value={pinEntrada}
-            onChange={(e) => setPinEntrada(e.target.value)}
-            disabled={bloqueioAtivo}
-            className="w-full text-center tracking-widest text-lg font-black py-2.5 px-4 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:border-blue-500"
-          />
-
-          {bloqueioAtivo ? (
-            <p className="text-xs text-rose-600 font-bold">
-              Muitas tentativas. Novo acesso disponível em {segundosBloqueio}s.
-            </p>
-          ) : erroPin && (
-            <p className="text-xs text-rose-600 font-bold">
-              PIN incorreto. Tentativa {tentativasPin} de 3.
-            </p>
-          )}
-
-          <button
-            type="submit"
-            disabled={bloqueioAtivo}
-            className="w-full bg-blue-600 hover:bg-blue-700 text-white font-black py-3 rounded-xl text-sm transition-all shadow-sm cursor-pointer"
-          >
-            Aceder ao Painel
-          </button>
-        </form>
+        <button
+          type="button"
+          onClick={sair}
+          className="mt-5 w-full min-h-12 rounded-xl bg-slate-900 hover:bg-slate-800 text-white text-sm font-black cursor-pointer"
+        >
+          Sair e usar outra conta
+        </button>
       </div>
     )
   }
@@ -540,10 +481,11 @@ export default function PainelGestor({ ocorrencias = [], onAtualizarDados }) {
         <div>
           <span className="text-[10px] font-black uppercase tracking-wider text-blue-400">Administração Comunitária</span>
           <h2 className="text-base font-black">Gestão de Ocorrências</h2>
+          <p className="text-[11px] text-slate-400 truncate">{sessao.user?.email}</p>
         </div>
         <button
           type="button"
-          onClick={encerrarSessao}
+          onClick={sair}
           className="bg-slate-800 hover:bg-slate-700 text-xs text-slate-300 font-bold px-3 py-1.5 rounded-xl border border-slate-700 transition-colors cursor-pointer"
         >
           Encerrar Sessão 🔒
