@@ -4,6 +4,7 @@ import PainelGestor from './components/PainelGestor'
 import MapaOcorrencias from './components/MapaOcorrencias'
 import { solicitarPermissaoNotificacoes } from './lib/notifications'
 import useNetworkStatus from './lib/useNetworkStatus'
+import { otimizarImagem } from './lib/imageOptimizer'
 
 // Coordenadas centrais comunitárias (Ananindeua)
 const CENTRO_COMUNITARIO = {
@@ -34,6 +35,19 @@ function etapaProtocolo(status) {
   if (statusResolvido(status)) return 3
   if (status === 'em analise' || status === 'oficiada') return 2
   return 1
+}
+
+function distanciaMetros(a, b) {
+  if (![a.latitude, a.longitude, b.latitude, b.longitude].every((valor) => Number.isFinite(Number(valor)))) return Infinity
+  const raioTerra = 6371000
+  const latitudeA = (Number(a.latitude) * Math.PI) / 180
+  const latitudeB = (Number(b.latitude) * Math.PI) / 180
+  const deltaLatitude = ((Number(b.latitude) - Number(a.latitude)) * Math.PI) / 180
+  const deltaLongitude = ((Number(b.longitude) - Number(a.longitude)) * Math.PI) / 180
+  const haversine =
+    Math.sin(deltaLatitude / 2) ** 2 +
+    Math.cos(latitudeA) * Math.cos(latitudeB) * Math.sin(deltaLongitude / 2) ** 2
+  return 2 * raioTerra * Math.atan2(Math.sqrt(haversine), Math.sqrt(1 - haversine))
 }
 
 const ETAPAS_ONBOARDING = [
@@ -343,6 +357,7 @@ export default function App() {
   const [consultandoProtocolo, setConsultandoProtocolo] = useState(false)
   const [erroProtocolo, setErroProtocolo] = useState('')
   const [notificacoesAtivadas, setNotificacoesAtivadas] = useState(false)
+  const [duplicataEncontrada, setDuplicataEncontrada] = useState(null)
 
   useEffect(() => {
     const isStandalone = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone
@@ -792,7 +807,19 @@ export default function App() {
     }
   }
 
-  const handleSubmit = async (e) => {
+  const encontrarDuplicata = async () => {
+    const { data, error } = await supabase
+      .from('ocorrencias_georreferenciadas')
+      .select('id,categoria,status,latitude,longitude')
+      .eq('categoria', categoria)
+      .in('status', ['pendente', 'em analise', 'em_analise'])
+      .limit(500)
+
+    if (error) throw error
+    return (data || []).find((item) => distanciaMetros(localizacao, item) < 50) || null
+  }
+
+  const handleSubmit = async (e, ignorarDuplicidade = false) => {
     e.preventDefault()
 
     if (!localizacao) {
@@ -802,13 +829,31 @@ export default function App() {
       return
     }
 
+    const latitudeValida = localizacao.latitude >= -1.45 && localizacao.latitude <= -1.25
+    const longitudeValida = localizacao.longitude >= -48.45 && localizacao.longitude <= -48.30
+    if (!latitudeValida || !longitudeValida) {
+      feedbackSensorial.alertaErro()
+      mostrarAlertaToast('A localização capturada está fora da área aproximada de Ananindeua. Confirme o GPS antes de enviar.')
+      return
+    }
+
     try {
       setEnviando(true)
 
+      if (navigator.onLine && !ignorarDuplicidade) {
+        const duplicata = await encontrarDuplicata()
+        if (duplicata) {
+          setDuplicataEncontrada(duplicata)
+          return
+        }
+      }
+
+      const fotoOtimizada = foto ? await otimizarImagem(foto) : null
+
       if (!navigator.onLine) {
         let base64Foto = null
-        if (foto) {
-          base64Foto = await arquivoParaBase64(foto)
+        if (fotoOtimizada) {
+          base64Foto = await arquivoParaBase64(fotoOtimizada)
         }
 
         const itemOffline = {
@@ -848,12 +893,15 @@ export default function App() {
 
       let urlFotoPublica = null
 
-      if (foto) {
-        const fileExt = foto.name.split('.').pop()
+      if (fotoOtimizada) {
+        const fileExt = fotoOtimizada.name.split('.').pop()
         const fileName = `${Date.now()}_${Math.random().toString(36).substring(2, 8)}.${fileExt}`
         const filePath = `ocorrencias/${fileName}`
 
-        const uploadResult = await supabase.storage.from('ocorrencias').upload(filePath, foto)
+        const uploadResult = await supabase.storage.from('ocorrencias').upload(filePath, fotoOtimizada, {
+          contentType: fotoOtimizada.type,
+          cacheControl: '3600'
+        })
         if (uploadResult.error) {
           throw new Error(`Erro ao enviar foto: ${uploadResult.error.message}`)
         }
@@ -898,7 +946,8 @@ export default function App() {
     } catch (err) {
       if (!navigator.onLine || /network|fetch|failed to fetch|offline/i.test(err.message || '')) {
         try {
-          const fotoBase64 = foto ? await arquivoParaBase64(foto) : null
+          const fotoOtimizada = foto ? await otimizarImagem(foto) : null
+          const fotoBase64 = fotoOtimizada ? await arquivoParaBase64(fotoOtimizada) : null
           const itemOffline = {
             id: Date.now(),
             categoria,
@@ -1137,6 +1186,37 @@ export default function App() {
                   </div>
                 )
               })}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {duplicataEncontrada && (
+        <div className="fixed inset-0 z-[70] bg-slate-950/75 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="w-full max-w-sm rounded-3xl bg-white p-6 shadow-2xl border border-slate-200">
+            <div className="w-12 h-12 rounded-2xl bg-amber-100 text-amber-700 flex items-center justify-center text-xl mb-4">⚠️</div>
+            <h2 className="text-base font-black text-slate-900">Chamado semelhante encontrado</h2>
+            <p className="mt-2 text-xs leading-relaxed text-slate-600">
+              Já existe um chamado em aberto neste local (Protocolo {protocoloCivico(duplicataEncontrada.id)}). Deseja registrar mesmo assim ou retornar?
+            </p>
+            <div className="mt-5 grid grid-cols-2 gap-2">
+              <button
+                type="button"
+                onClick={() => setDuplicataEncontrada(null)}
+                className="rounded-xl border border-slate-200 px-3 py-2.5 text-xs font-bold text-slate-700 hover:bg-slate-50 cursor-pointer"
+              >
+                Retornar
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setDuplicataEncontrada(null)
+                  handleSubmit({ preventDefault: () => {} }, true)
+                }}
+                className="rounded-xl bg-amber-600 px-3 py-2.5 text-xs font-black text-white hover:bg-amber-700 cursor-pointer"
+              >
+                Registrar mesmo assim
+              </button>
             </div>
           </div>
         </div>
