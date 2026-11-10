@@ -81,6 +81,20 @@ function rotuloCriticidade(pontuacao) {
   return 'Rotina (GUT Baixa)'
 }
 
+function Spinner() {
+  return <span className="inline-block h-3 w-3 animate-spin rounded-full border-2 border-current border-t-transparent" aria-label="A carregar" />
+}
+
+function protocoloCivico(id) {
+  return `Protocolo ZD-${String(id).slice(0, 6).toUpperCase()}`
+}
+
+function etapaStatus(item) {
+  if (eResolvida(item)) return 3
+  if (item.status === 'em analise' || item.status === 'oficiada') return 2
+  return 1
+}
+
 function AjustarMapa({ centro, zoom }) {
   const mapa = useMap()
   useEffect(() => {
@@ -105,6 +119,9 @@ export default function PainelGestor({ ocorrencias = [], onAtualizarDados }) {
   const [carregandoAcao, setCarregandoAcao] = useState(false)
   const [abaPainel, setAbaPainel] = useState('lista')
   const [ordenarPorGut, setOrdenarPorGut] = useState(false)
+  const [tramitacaoAberta, setTramitacaoAberta] = useState(null)
+  const [despachoPorId, setDespachoPorId] = useState({})
+  const [acaoEmAndamento, setAcaoEmAndamento] = useState(null)
 
   // PIN de acesso para o gestor comunitário
   const PIN_MESTRE = '2026'
@@ -150,10 +167,11 @@ export default function PainelGestor({ ocorrencias = [], onAtualizarDados }) {
 
   const alterarStatusOcorrencia = async (id, novoStatus) => {
     setCarregandoAcao(true)
+    setAcaoEmAndamento(`status-${id}`)
     try {
       const { error } = await supabase
         .from('ocorrencias')
-        .update({ status: novoStatus })
+        .update({ status: novoStatus, updated_at: new Date().toISOString() })
         .eq('id', id)
 
       if (error) throw error
@@ -162,6 +180,30 @@ export default function PainelGestor({ ocorrencias = [], onAtualizarDados }) {
       alert('Erro ao atualizar estado: ' + err.message)
     } finally {
       setCarregandoAcao(false)
+      setAcaoEmAndamento(null)
+    }
+  }
+
+  const salvarDespacho = async (item) => {
+    setCarregandoAcao(true)
+    setAcaoEmAndamento(`despacho-${item.id}`)
+    try {
+      const { error } = await supabase
+        .from('ocorrencias')
+        .update({
+          observacoes: despachoPorId[item.id] ?? item.observacoes ?? '',
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', item.id)
+
+      if (error) throw error
+      setTramitacaoAberta(null)
+      if (onAtualizarDados) await onAtualizarDados()
+    } catch (err) {
+      alert('Erro ao salvar despacho: ' + err.message)
+    } finally {
+      setCarregandoAcao(false)
+      setAcaoEmAndamento(null)
     }
   }
 
@@ -648,10 +690,12 @@ export default function PainelGestor({ ocorrencias = [], onAtualizarDados }) {
               className="bg-white rounded-2xl p-4 border border-slate-200 shadow-2xs space-y-3"
             >
               <div className="flex items-start justify-between gap-2">
-                <div className="flex items-center space-x-2">
-                  <span className="text-xs font-black capitalize text-slate-800">
-                    {item.categoria}
-                  </span>
+                <div className="min-w-0">
+                  <p className="text-[10px] font-black uppercase tracking-wide text-slate-500">{protocoloCivico(item.id)}</p>
+                  <div className="flex flex-wrap items-center gap-2 mt-1">
+                    <span className="text-xs font-black capitalize text-slate-800">
+                      {item.categoria}
+                    </span>
                   <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full capitalize ${
                     item.status === 'resolvido'
                       ? 'bg-emerald-100 text-emerald-800'
@@ -668,6 +712,7 @@ export default function PainelGestor({ ocorrencias = [], onAtualizarDados }) {
                   >
                     {rotuloCriticidade(item.gut.pontuacao)}
                   </span>
+                  </div>
                 </div>
                 <span className="text-[10px] text-slate-400 font-mono">
                   {item.created_at ? new Date(item.created_at).toLocaleDateString('pt-BR') : ''}
@@ -686,6 +731,72 @@ export default function PainelGestor({ ocorrencias = [], onAtualizarDados }) {
                 {item.descricao || 'Sem descrição registada.'}
               </p>
 
+              <div className="rounded-2xl border border-slate-200 bg-slate-50 p-3">
+                <div className="flex items-center justify-between gap-2">
+                  <span className="text-[10px] font-black uppercase tracking-wide text-slate-500">Tramitação</span>
+                  <span className="text-[10px] font-bold text-slate-500">{item.updated_at ? `Atualizado em ${formatarData(item.updated_at)}` : 'Sem despacho registrado'}</span>
+                </div>
+                <div className="mt-3 flex items-start">
+                  {[
+                    ['Registada', item.created_at ? formatarData(item.created_at) : 'Data não informada'],
+                    ['Em Análise / Oficiada', item.updated_at ? formatarData(item.updated_at) : 'Aguardando tramitação'],
+                    ['Resolvida', eResolvida(item) ? formatarData(item.updated_at || item.created_at) : 'Pendente']
+                  ].map(([titulo, data], index) => {
+                    const etapaAtual = etapaStatus(item)
+                    const concluida = index + 1 <= etapaAtual
+                    return (
+                      <div key={titulo} className="flex flex-1 items-start">
+                        <div className="flex min-w-0 flex-col items-center text-center">
+                          <span className={`flex h-6 w-6 items-center justify-center rounded-full text-[10px] font-black ${
+                            concluida ? 'bg-slate-800 text-white' : 'border border-slate-300 bg-white text-slate-400'
+                          }`}>
+                            {concluida ? '✓' : index + 1}
+                          </span>
+                          <span className="mt-1 text-[9px] font-black text-slate-600">{titulo}</span>
+                          <span className="mt-0.5 text-[9px] text-slate-400">{data}</span>
+                        </div>
+                        {index < 2 && <span className={`mt-3 h-0.5 flex-1 ${index + 1 < etapaAtual ? 'bg-slate-800' : 'bg-slate-200'}`} />}
+                      </div>
+                    )
+                  })}
+                </div>
+                {item.observacoes && (
+                  <p className="mt-3 border-t border-slate-200 pt-2 text-[10px] leading-relaxed text-slate-600">
+                    <strong>Despacho:</strong> {item.observacoes}
+                  </p>
+                )}
+                <button
+                  type="button"
+                  onClick={() => {
+                    setTramitacaoAberta(tramitacaoAberta === item.id ? null : item.id)
+                    setDespachoPorId((atuais) => ({ ...atuais, [item.id]: atuais[item.id] ?? item.observacoes ?? '' }))
+                  }}
+                  className="mt-3 text-[10px] font-black text-indigo-600 hover:text-indigo-800 cursor-pointer"
+                >
+                  📋 {tramitacaoAberta === item.id ? 'Fechar Tramitação / Despacho' : 'Adicionar Tramitação / Despacho'}
+                </button>
+                {tramitacaoAberta === item.id && (
+                  <div className="mt-2 space-y-2">
+                    <textarea
+                      rows={3}
+                      value={despachoPorId[item.id] ?? ''}
+                      onChange={(e) => setDespachoPorId((atuais) => ({ ...atuais, [item.id]: e.target.value }))}
+                      placeholder="Órgão oficiado, protocolo externo ou observações da vistoria..."
+                      className="w-full rounded-xl border border-slate-300 bg-white p-2.5 text-xs text-slate-700 focus:border-indigo-500 focus:outline-none"
+                    />
+                    <button
+                      type="button"
+                      disabled={carregandoAcao}
+                      onClick={() => salvarDespacho(item)}
+                      className="inline-flex items-center gap-2 rounded-xl bg-indigo-600 px-3 py-2 text-[10px] font-black text-white hover:bg-indigo-700 disabled:opacity-60 cursor-pointer"
+                    >
+                      {acaoEmAndamento === `despacho-${item.id}` && <Spinner />}
+                      {acaoEmAndamento === `despacho-${item.id}` ? 'A salvar...' : 'Salvar Despacho'}
+                    </button>
+                  </div>
+                )}
+              </div>
+
               {/* Botões de Ação */}
               <div className="pt-2 border-t border-slate-100 flex flex-wrap items-center justify-center gap-2">
                 <button
@@ -694,7 +805,7 @@ export default function PainelGestor({ ocorrencias = [], onAtualizarDados }) {
                   onClick={() => alterarStatusOcorrencia(item.id, 'pendente')}
                   className="text-[10px] font-bold px-2 py-1 rounded-lg bg-amber-50 text-amber-700 hover:bg-amber-100 border border-amber-200 transition-colors cursor-pointer"
                 >
-                  Pendente
+                  {acaoEmAndamento === `status-${item.id}` && <Spinner />} Pendente
                 </button>
                 <button
                   type="button"
@@ -702,7 +813,7 @@ export default function PainelGestor({ ocorrencias = [], onAtualizarDados }) {
                   onClick={() => alterarStatusOcorrencia(item.id, 'em analise')}
                   className="text-[10px] font-bold px-2 py-1 rounded-lg bg-sky-50 text-sky-700 hover:bg-sky-100 border border-sky-200 transition-colors cursor-pointer"
                 >
-                  Em Análise
+                  {acaoEmAndamento === `status-${item.id}` && <Spinner />} Em Análise
                 </button>
                 <button
                   type="button"
@@ -710,7 +821,7 @@ export default function PainelGestor({ ocorrencias = [], onAtualizarDados }) {
                   onClick={() => alterarStatusOcorrencia(item.id, 'resolvido')}
                   className="text-[10px] font-bold px-2 py-1 rounded-lg bg-emerald-50 text-emerald-700 hover:bg-emerald-100 border border-emerald-200 transition-colors cursor-pointer"
                 >
-                  ✓ Resolvido
+                  {acaoEmAndamento === `status-${item.id}` && <Spinner />} ✓ Resolvido
                 </button>
                 <button
                   type="button"
