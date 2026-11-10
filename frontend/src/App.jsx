@@ -1663,10 +1663,10 @@ export default function App() {
                   feedbackSensorial.toqueSuave()
                   setAbaAtiva('reportar')
                 }}
-                className="w-full bg-blue-600 hover:bg-blue-700 text-white rounded-3xl py-4 px-4 shadow-sm flex items-center justify-between transition-all active:scale-[0.99] cursor-pointer"
+                className="w-full bg-gradient-to-r from-blue-600 to-blue-700 text-white rounded-2xl p-4 sm:p-5 flex items-center justify-between shadow-md active:scale-[0.99] transition-all"
               >
                 <div className="flex items-center space-x-3">
-                  <div className="w-11 h-11 shrink-0 rounded-2xl bg-white/20 flex items-center justify-center text-xl font-bold">
+                  <div className="w-12 h-12 rounded-xl bg-white/20 flex items-center justify-center text-2xl font-bold">
                     ➕
                   </div>
                   <div className="text-left">
