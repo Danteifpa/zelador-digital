@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from 'react'
+import { useState, useEffect, useMemo, useRef } from 'react'
 import { Search } from 'lucide-react'
 import { supabase } from './lib/supabase'
 import PainelGestor from './components/PainelGestor'
@@ -12,6 +12,8 @@ import RegisterButton from './components/RegisterButton'
 import StatsOverview from './components/StatsOverview'
 import CommunityAlert from './components/CommunityAlert'
 import ReportModal from './components/ReportModal'
+import ErrorBoundary from './components/ErrorBoundary'
+import { lerFila, adicionarAFila, atualizarItemNaFila, removerDaFila, FilaCheiaError } from './lib/filaOffline'
 import { gerarIdOcorrencia, ehUuid, protocoloCivico } from './lib/protocolo'
 
 // Coordenadas centrais comunitárias (Ananindeua)
@@ -28,8 +30,6 @@ const CATEGORIAS = [
   { id: 'buraco', label: 'Buraco na Rua', icon: '🕳️', border: 'border-orange-500', activeBg: 'bg-orange-600 text-white', fala: 'Selecionado: Buraco na Rua e Vias' },
   { id: 'esgoto', label: 'Esgoto / Água', icon: '💧', border: 'border-sky-400', activeBg: 'bg-sky-600 text-white', fala: 'Selecionado: Vazamento de Água ou Esgoto' }
 ]
-
-const FILA_OFFLINE_KEY = 'fila_ocorrencias_offline'
 
 function statusResolvido(status) {
   return status === 'resolvido' || status === 'concluido'
@@ -329,8 +329,11 @@ export default function App() {
 
   // Conectividade
   const estaOnline = useNetworkStatus()
-  const [filaOffline, setFilaOffline] = useState([])
+  const [filaOffline, setFilaOffline] = useState(() => lerFila())
   const [sincronizandoFila, setSincronizandoFila] = useState(false)
+  // Trinco síncrono: impede duas sincronizações em paralelo (evento online + botão).
+  const sincronizandoRef = useRef(false)
+  const sincronizarRef = useRef(null)
 
   // Formulário
   const [categoria, setCategoria] = useState('buraco')
@@ -412,17 +415,6 @@ export default function App() {
   }
 
   useEffect(() => {
-    const filaSalva = localStorage.getItem(FILA_OFFLINE_KEY) || localStorage.getItem('zelador_fila_offline')
-    if (filaSalva) {
-      try {
-        const fila = JSON.parse(filaSalva)
-        setFilaOffline(fila)
-        localStorage.setItem(FILA_OFFLINE_KEY, JSON.stringify(fila))
-      } catch (e) {
-        console.warn('Erro ao carregar fila offline:', e)
-      }
-    }
-
     const lidasSalvas = localStorage.getItem('zelador_notificacoes_lidas')
     if (lidasSalvas) {
       try {
@@ -436,7 +428,7 @@ export default function App() {
   useEffect(() => {
     const handleOnline = () => {
       mostrarAlertaToast('Ligação restabelecida! A sincronizar dados...')
-      sincronizarFilaOffline()
+      sincronizarRef.current?.()
     }
     const handleOffline = () => {
       mostrarAlertaToast('Sem ligação à internet. A sua ocorrência será guardada e enviada automaticamente.')
@@ -449,7 +441,15 @@ export default function App() {
       window.removeEventListener('online', handleOnline)
       window.removeEventListener('offline', handleOffline)
     }
-  }, [filaOffline])
+    // Os handlers usam refs/setters estáveis; registar uma única vez.
+  }, [])
+
+  // Se o app abrir já com rede e com registos pendentes, sincroniza sem esperar por um evento "online".
+  useEffect(() => {
+    if (!navigator.onLine || lerFila().length === 0) return undefined
+    const temporizador = window.setTimeout(() => sincronizarRef.current?.(), 2000)
+    return () => window.clearTimeout(temporizador)
+  }, [])
 
   useEffect(() => {
     const onboardingVisto = localStorage.getItem('zelador_onboarding_concluido')
@@ -772,61 +772,87 @@ export default function App() {
   }
 
   const sincronizarFilaOffline = async () => {
-    const filaAtual = JSON.parse(localStorage.getItem(FILA_OFFLINE_KEY) || '[]')
-    if (filaAtual.length === 0 || sincronizandoFila) return
+    if (sincronizandoRef.current) return
+    const pendentes = lerFila()
+    if (pendentes.length === 0) {
+      setFilaOffline([])
+      return
+    }
 
+    sincronizandoRef.current = true
     setSincronizandoFila(true)
-    const pendentes = [...filaAtual]
-    const filaRestante = []
+    const sincronizados = []
 
-    for (const item of pendentes) {
-      try {
-        let urlFotoPublica = null
+    try {
+      for (const item of pendentes) {
+        try {
+          let urlFotoPublica = item.fotoUrl || null
 
-        if (item.fotoBase64) {
-          const blob = await base64ParaBlob(item.fotoBase64)
-          const fileName = `${Date.now()}_offline_${Math.random().toString(36).substring(2, 7)}.jpg`
-          const filePath = `ocorrencias/${fileName}`
+          // Envia a foto uma única vez. Se o upload falhar, o item fica na fila (nunca segue sem foto).
+          if (!urlFotoPublica && item.fotoBase64) {
+            const blob = await base64ParaBlob(item.fotoBase64)
+            const extensao = blob.type === 'image/webp' ? 'webp' : 'jpg'
+            const filePath = `ocorrencias/${Date.now()}_offline_${Math.random().toString(36).substring(2, 7)}.${extensao}`
 
-          const uploadResult = await supabase.storage.from('ocorrencias').upload(filePath, blob, {
-            contentType: 'image/jpeg'
-          })
+            const uploadResult = await supabase.storage.from('ocorrencias').upload(filePath, blob, {
+              contentType: blob.type || 'image/jpeg'
+            })
+            if (uploadResult.error) throw uploadResult.error
 
-          if (!uploadResult.error) {
             const { data: publicData } = supabase.storage.from('ocorrencias').getPublicUrl(filePath)
             urlFotoPublica = publicData?.publicUrl || null
+            // Guarda o URL e liberta o base64: uma nova tentativa já não repete o upload.
+            atualizarItemNaFila(item.id, { fotoUrl: urlFotoPublica, fotoBase64: null })
           }
-        }
 
-        const pontoWKT = `POINT(${item.longitude} ${item.latitude})`
-        const { error: insertError } = await supabase.from('ocorrencias').insert([
-          {
-            ...(ehUuid(item.id) ? { id: item.id } : {}),
-            categoria: item.categoria,
-            descricao: item.descricao,
-            foto_url: urlFotoPublica,
-            localizacao: pontoWKT,
-            status: 'pendente'
-          }
-        ])
-        // 23505 = chave duplicada: este registo já chegou ao servidor numa tentativa anterior.
-        if (insertError && insertError.code !== '23505') throw insertError
-      } catch (e) {
-        console.error('Falha ao sincronizar item offline:', e)
-        filaRestante.push(item)
+          const pontoWKT = `POINT(${item.longitude} ${item.latitude})`
+          const { error: insertError } = await supabase.from('ocorrencias').insert([
+            {
+              ...(ehUuid(item.id) ? { id: item.id } : {}),
+              categoria: item.categoria,
+              descricao: item.descricao,
+              foto_url: urlFotoPublica,
+              localizacao: pontoWKT,
+              status: 'pendente'
+            }
+          ])
+          // 23505 = chave duplicada: este registo já chegou ao servidor numa tentativa anterior.
+          if (insertError && insertError.code !== '23505') throw insertError
+          sincronizados.push(item.id)
+        } catch (e) {
+          console.error('Falha ao sincronizar item offline:', e)
+        }
       }
+    } finally {
+      // Remove só o que foi enviado, relendo a fila: registos guardados entretanto não se perdem.
+      let filaRestante = lerFila()
+      try {
+        filaRestante = removerDaFila(sincronizados)
+      } catch (e) {
+        console.error('Falha ao atualizar a fila offline:', e)
+      }
+      setFilaOffline(filaRestante)
+      sincronizandoRef.current = false
+      setSincronizandoFila(false)
     }
 
-    localStorage.setItem(FILA_OFFLINE_KEY, JSON.stringify(filaRestante))
-    setFilaOffline(filaRestante)
-    setSincronizandoFila(false)
-    carregarRegistos()
+    if (sincronizados.length > 0) carregarRegistos()
 
-    if (filaRestante.length === 0) {
+    const falhados = pendentes.length - sincronizados.length
+    if (falhados === 0) {
       feedbackSensorial.envioSucesso()
       mostrarAlertaToast('Todos os registos offline foram sincronizados com sucesso!')
+    } else if (sincronizados.length > 0) {
+      mostrarAlertaToast(`${sincronizados.length} registo(s) enviado(s). ${falhados} ficam no telemóvel para nova tentativa.`)
+    } else {
+      mostrarAlertaToast('Não foi possível enviar os registos pendentes agora. Ficam guardados no telemóvel para nova tentativa.')
     }
   }
+
+  // Mantém o ref apontado para a versão atual da função de sincronização.
+  useEffect(() => {
+    sincronizarRef.current = sincronizarFilaOffline
+  })
 
   // Insere com o UUID gerado no telemóvel. Se o esquema não aceitar um id vindo do cliente
   // (coluna não-UUID ou identity), repete sem id e usa o id devolvido pelo servidor.
@@ -904,9 +930,7 @@ export default function App() {
           criadoEm: new Date().toISOString()
         }
 
-        const novaFila = [...filaOffline, itemOffline]
-        localStorage.setItem(FILA_OFFLINE_KEY, JSON.stringify(novaFila))
-        setFilaOffline(novaFila)
+        setFilaOffline(adicionarAFila(itemOffline))
 
         feedbackSensorial.envioSucesso()
         const mensagemOffline = 'Sem ligação à internet. A sua ocorrência foi guardada e será enviada automaticamente assim que a rede voltar.'
@@ -992,10 +1016,7 @@ export default function App() {
             fotoBase64,
             criadoEm: new Date().toISOString()
           }
-          const filaAtual = JSON.parse(localStorage.getItem(FILA_OFFLINE_KEY) || '[]')
-          const novaFila = [...filaAtual, itemOffline]
-          localStorage.setItem(FILA_OFFLINE_KEY, JSON.stringify(novaFila))
-          setFilaOffline(novaFila)
+          setFilaOffline(adicionarAFila(itemOffline))
           const mensagemOffline = 'Sem ligação à internet. A sua ocorrência foi guardada e será enviada automaticamente assim que a rede voltar.'
           mostrarAlertaToast(mensagemOffline)
           if (modo === 'facil') falarTexto(mensagemOffline)
@@ -1014,9 +1035,18 @@ export default function App() {
           return
         } catch (queueError) {
           console.error('Falha ao guardar ocorrência offline:', queueError)
+          if (queueError instanceof FilaCheiaError) {
+            feedbackSensorial.alertaErro()
+            mostrarAlertaToast(queueError.message)
+            return
+          }
         }
       }
       feedbackSensorial.alertaErro()
+      if (err instanceof FilaCheiaError) {
+        mostrarAlertaToast(err.message)
+        return
+      }
       console.error('Erro de envio:', err)
       mostrarAlertaToast(`Falha no registo: ${err.message || 'Erro de comunicação'}`)
     } finally {
@@ -1101,48 +1131,64 @@ export default function App() {
       {mostrarQrCode && <ModalQRCode url={urlApp} onClose={() => setMostrarQrCode(false)} />}
 
       {mostrarReportModal && (
-        <ReportModal
-          onFechar={() => {
-            feedbackSensorial.toqueSuave()
-            setMostrarReportModal(false)
-            setSucessoEnvio(null)
-          }}
-          modo={modo}
-          falarTexto={falarTexto}
-          estaOnline={estaOnline}
-          categorias={CATEGORIAS}
-          resultado={sucessoEnvio}
-          form={{
-            categoria,
-            fotoPreview,
-            processandoFoto,
-            localizacao,
-            origemLocalizacao,
-            capturandoGps,
-            erroGps,
-            distanciaKm: distanciaAtualKm,
-            raioMaximoKm: CENTRO_COMUNITARIO.raioMaximoKm,
-            pontoReferencia,
-            gravandoVoz,
-            enviando
-          }}
-          acoes={{
-            selecionarCategoria,
-            fotoChange: handleFotoChange,
-            removerFoto,
-            capturarGps: obterLocalizacaoAtual,
-            pontoReferenciaChange: setPontoReferencia,
-            alternarVoz: alternarReconhecimentoVoz,
-            enviar: () => handleSubmit({ preventDefault: () => {} }),
-            partilhar: partilharOcorrencia,
-            verRegistos: () => {
+        <ErrorBoundary
+          nome="Nova ocorrência"
+          fallback={({ tentarDeNovo }) => (
+            <div className="fixed inset-0 z-[60] bg-slate-950/75 flex items-center justify-center p-4">
+              <div role="alertdialog" aria-modal="true" aria-labelledby="erro-registo-titulo" className="w-full max-w-sm rounded-3xl bg-white p-6 text-center shadow-2xl">
+                <h2 id="erro-registo-titulo" className="text-base font-black text-slate-800">O registo encontrou um erro</h2>
+                <p className="mt-2 text-sm text-slate-600">Os dados que já preencheu continuam guardados.</p>
+                <div className="mt-5 grid grid-cols-2 gap-2">
+                  <button type="button" onClick={() => setMostrarReportModal(false)} className="min-h-12 rounded-2xl border border-slate-200 text-sm font-bold text-slate-700 hover:bg-slate-50 cursor-pointer">Fechar</button>
+                  <button type="button" onClick={tentarDeNovo} className="min-h-12 rounded-2xl bg-blue-600 text-sm font-black text-white hover:bg-blue-700 cursor-pointer">Tentar de novo</button>
+                </div>
+              </div>
+            </div>
+          )}
+        >
+          <ReportModal
+            onFechar={() => {
               feedbackSensorial.toqueSuave()
               setMostrarReportModal(false)
               setSucessoEnvio(null)
-              setAbaAtiva('registos')
-            }
-          }}
-        />
+            }}
+            modo={modo}
+            falarTexto={falarTexto}
+            estaOnline={estaOnline}
+            categorias={CATEGORIAS}
+            resultado={sucessoEnvio}
+            form={{
+              categoria,
+              fotoPreview,
+              processandoFoto,
+              localizacao,
+              origemLocalizacao,
+              capturandoGps,
+              erroGps,
+              distanciaKm: distanciaAtualKm,
+              raioMaximoKm: CENTRO_COMUNITARIO.raioMaximoKm,
+              pontoReferencia,
+              gravandoVoz,
+              enviando
+            }}
+            acoes={{
+              selecionarCategoria,
+              fotoChange: handleFotoChange,
+              removerFoto,
+              capturarGps: obterLocalizacaoAtual,
+              pontoReferenciaChange: setPontoReferencia,
+              alternarVoz: alternarReconhecimentoVoz,
+              enviar: () => handleSubmit({ preventDefault: () => {} }),
+              partilhar: partilharOcorrencia,
+              verRegistos: () => {
+                feedbackSensorial.toqueSuave()
+                setMostrarReportModal(false)
+                setSucessoEnvio(null)
+                setAbaAtiva('registos')
+              }
+            }}
+          />
+        </ErrorBoundary>
       )}
 
       {/* MODAL DE NOTIFICAÇÕES */}
@@ -1921,7 +1967,9 @@ export default function App() {
         {/* 3. MAPA */}
         {abaAtiva === 'mapa' && (
           <div className="bg-white rounded-3xl p-4 border border-slate-200 shadow-xs">
-            <MapaOcorrencias ocorrencias={registos} />
+            <ErrorBoundary nome="Mapa" chaveReset={abaAtiva}>
+              <MapaOcorrencias ocorrencias={registos} />
+            </ErrorBoundary>
           </div>
         )}
 
@@ -2111,7 +2159,9 @@ export default function App() {
 
         {/* 5. GESTÃO */}
         {abaAtiva === 'gestao' && (
-          <PainelGestor ocorrencias={registos} onAtualizarDados={carregarRegistos} />
+          <ErrorBoundary nome="Gestão" chaveReset={abaAtiva}>
+            <PainelGestor ocorrencias={registos} onAtualizarDados={carregarRegistos} />
+          </ErrorBoundary>
         )}
       </main>
 
