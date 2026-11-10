@@ -3,6 +3,7 @@ import { supabase } from './lib/supabase'
 import PainelGestor from './components/PainelGestor'
 import MapaOcorrencias from './components/MapaOcorrencias'
 import { solicitarPermissaoNotificacoes } from './lib/notifications'
+import useNetworkStatus from './lib/useNetworkStatus'
 
 // Coordenadas centrais comunitárias (Ananindeua)
 const CENTRO_COMUNITARIO = {
@@ -18,6 +19,8 @@ const CATEGORIAS = [
   { id: 'buraco', label: 'Buraco na Rua', icon: '🕳️', border: 'border-orange-500', activeBg: 'bg-orange-600 text-white', fala: 'Selecionado: Buraco na Rua e Vias' },
   { id: 'esgoto', label: 'Esgoto / Água', icon: '💧', border: 'border-sky-400', activeBg: 'bg-sky-600 text-white', fala: 'Selecionado: Vazamento de Água ou Esgoto' }
 ]
+
+const FILA_OFFLINE_KEY = 'fila_ocorrencias_offline'
 
 function protocoloCivico(id) {
   return `ZD-${String(id).slice(0, 6).toUpperCase()}`
@@ -307,7 +310,7 @@ export default function App() {
   const [modalSobreAberto, setModalSobreAberto] = useState(false)
 
   // Conectividade
-  const [estaOnline, setEstaOnline] = useState(navigator.onLine)
+  const estaOnline = useNetworkStatus()
   const [filaOffline, setFilaOffline] = useState([])
   const [sincronizandoFila, setSincronizandoFila] = useState(false)
 
@@ -382,10 +385,12 @@ export default function App() {
   }
 
   useEffect(() => {
-    const filaSalva = localStorage.getItem('zelador_fila_offline')
+    const filaSalva = localStorage.getItem(FILA_OFFLINE_KEY) || localStorage.getItem('zelador_fila_offline')
     if (filaSalva) {
       try {
-        setFilaOffline(JSON.parse(filaSalva))
+        const fila = JSON.parse(filaSalva)
+        setFilaOffline(fila)
+        localStorage.setItem(FILA_OFFLINE_KEY, JSON.stringify(fila))
       } catch (e) {
         console.warn('Erro ao carregar fila offline:', e)
       }
@@ -403,13 +408,11 @@ export default function App() {
 
   useEffect(() => {
     const handleOnline = () => {
-      setEstaOnline(true)
       mostrarAlertaToast('Ligação restabelecida! A sincronizar dados...')
       sincronizarFilaOffline()
     }
     const handleOffline = () => {
-      setEstaOnline(false)
-      mostrarAlertaToast('Sem ligação à Internet. Os novos registos serão guardados no telemóvel.')
+      mostrarAlertaToast('Sem ligação à internet. A sua ocorrência será guardada e enviada automaticamente.')
     }
 
     window.addEventListener('online', handleOnline)
@@ -735,7 +738,7 @@ export default function App() {
   }
 
   const sincronizarFilaOffline = async () => {
-    const filaAtual = JSON.parse(localStorage.getItem('zelador_fila_offline') || '[]')
+    const filaAtual = JSON.parse(localStorage.getItem(FILA_OFFLINE_KEY) || '[]')
     if (filaAtual.length === 0 || sincronizandoFila) return
 
     setSincronizandoFila(true)
@@ -762,7 +765,7 @@ export default function App() {
         }
 
         const pontoWKT = `POINT(${item.longitude} ${item.latitude})`
-        await supabase.from('ocorrencias').insert([
+        const { error: insertError } = await supabase.from('ocorrencias').insert([
           {
             categoria: item.categoria,
             descricao: item.descricao,
@@ -771,13 +774,14 @@ export default function App() {
             status: 'pendente'
           }
         ])
+        if (insertError) throw insertError
       } catch (e) {
         console.error('Falha ao sincronizar item offline:', e)
         filaRestante.push(item)
       }
     }
 
-    localStorage.setItem('zelador_fila_offline', JSON.stringify(filaRestante))
+    localStorage.setItem(FILA_OFFLINE_KEY, JSON.stringify(filaRestante))
     setFilaOffline(filaRestante)
     setSincronizandoFila(false)
     carregarRegistos()
@@ -818,13 +822,13 @@ export default function App() {
         }
 
         const novaFila = [...filaOffline, itemOffline]
-        localStorage.setItem('zelador_fila_offline', JSON.stringify(novaFila))
+        localStorage.setItem(FILA_OFFLINE_KEY, JSON.stringify(novaFila))
         setFilaOffline(novaFila)
 
         feedbackSensorial.envioSucesso()
-        if (modo === 'facil') {
-          falarTexto('Registo guardado no telemóvel. Será enviado logo que tiver ligação à Internet.')
-        }
+        const mensagemOffline = 'Sem ligação à internet. A sua ocorrência foi guardada e será enviada automaticamente assim que a rede voltar.'
+        mostrarAlertaToast(mensagemOffline)
+        if (modo === 'facil') falarTexto(mensagemOffline)
 
         setSucessoEnvio({
           id: itemOffline.id,
@@ -892,6 +896,42 @@ export default function App() {
       setFotoPreview(null)
       carregarRegistos()
     } catch (err) {
+      if (!navigator.onLine || /network|fetch|failed to fetch|offline/i.test(err.message || '')) {
+        try {
+          const fotoBase64 = foto ? await arquivoParaBase64(foto) : null
+          const itemOffline = {
+            id: Date.now(),
+            categoria,
+            descricao: pontoReferencia.trim() || 'Ocorrência registada pela comunidade',
+            latitude: localizacao.latitude,
+            longitude: localizacao.longitude,
+            fotoBase64,
+            criadoEm: new Date().toISOString()
+          }
+          const filaAtual = JSON.parse(localStorage.getItem(FILA_OFFLINE_KEY) || '[]')
+          const novaFila = [...filaAtual, itemOffline]
+          localStorage.setItem(FILA_OFFLINE_KEY, JSON.stringify(novaFila))
+          setFilaOffline(novaFila)
+          const mensagemOffline = 'Sem ligação à internet. A sua ocorrência foi guardada e será enviada automaticamente assim que a rede voltar.'
+          mostrarAlertaToast(mensagemOffline)
+          if (modo === 'facil') falarTexto(mensagemOffline)
+          setSucessoEnvio({
+            id: itemOffline.id,
+            categoria,
+            foto_url: fotoPreview,
+            descricao: `${itemOffline.descricao} (Guardado Offline)`,
+            latitude: localizacao.latitude,
+            longitude: localizacao.longitude,
+            status: 'pendente'
+          })
+          setPontoReferencia('')
+          setFoto(null)
+          setFotoPreview(null)
+          return
+        } catch (queueError) {
+          console.error('Falha ao guardar ocorrência offline:', queueError)
+        }
+      }
       feedbackSensorial.alertaErro()
       console.error('Erro de envio:', err)
       mostrarAlertaToast(`Falha no registo: ${err.message || 'Erro de comunicação'}`)
