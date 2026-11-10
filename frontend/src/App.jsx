@@ -2,6 +2,7 @@ import { useState, useEffect, useMemo } from 'react'
 import { supabase } from './lib/supabase'
 import PainelGestor from './components/PainelGestor'
 import MapaOcorrencias from './components/MapaOcorrencias'
+import { solicitarPermissaoNotificacoes } from './lib/notifications'
 
 // Coordenadas centrais comunitárias (Ananindeua)
 const CENTRO_COMUNITARIO = {
@@ -17,6 +18,20 @@ const CATEGORIAS = [
   { id: 'buraco', label: 'Buraco na Rua', icon: '🕳️', border: 'border-orange-500', activeBg: 'bg-orange-600 text-white', fala: 'Selecionado: Buraco na Rua e Vias' },
   { id: 'esgoto', label: 'Esgoto / Água', icon: '💧', border: 'border-sky-400', activeBg: 'bg-sky-600 text-white', fala: 'Selecionado: Vazamento de Água ou Esgoto' }
 ]
+
+function protocoloCivico(id) {
+  return `ZD-${String(id).slice(0, 6).toUpperCase()}`
+}
+
+function statusResolvido(status) {
+  return status === 'resolvido' || status === 'concluido'
+}
+
+function etapaProtocolo(status) {
+  if (statusResolvido(status)) return 3
+  if (status === 'em analise' || status === 'oficiada') return 2
+  return 1
+}
 
 const ETAPAS_ONBOARDING = [
   {
@@ -319,6 +334,12 @@ export default function App() {
   const [ocorrenciaSelecionada, setOcorrenciaSelecionada] = useState(null)
   const [registos, setRegistos] = useState([])
   const [carregandoRegistos, setCarregandoRegistos] = useState(false)
+  const [mostrarConsultaProtocolo, setMostrarConsultaProtocolo] = useState(false)
+  const [protocoloConsulta, setProtocoloConsulta] = useState('')
+  const [resultadoProtocolo, setResultadoProtocolo] = useState(null)
+  const [consultandoProtocolo, setConsultandoProtocolo] = useState(false)
+  const [erroProtocolo, setErroProtocolo] = useState('')
+  const [notificacoesAtivadas, setNotificacoesAtivadas] = useState(false)
 
   useEffect(() => {
     const isStandalone = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone
@@ -436,6 +457,55 @@ export default function App() {
     setTimeout(() => {
       setMensagemToast(null)
     }, 4500)
+  }
+
+  const consultarProtocolo = async (e) => {
+    e.preventDefault()
+    const codigo = protocoloConsulta.trim().toUpperCase().replace(/^PROTOCOLO\s+/, '')
+    const prefixo = codigo.replace(/^ZD-/, '')
+    if (!prefixo || prefixo.length < 6) {
+      setErroProtocolo('Digite um protocolo no formato ZD-XXXXXX.')
+      setResultadoProtocolo(null)
+      return
+    }
+
+    setConsultandoProtocolo(true)
+    setErroProtocolo('')
+    try {
+      let resultado = registos.find((item) => protocoloCivico(item.id) === `ZD-${prefixo.slice(0, 6)}`)
+      if (!resultado) {
+        const { data, error } = await supabase
+          .from('ocorrencias')
+          .select('id,categoria,created_at,updated_at,status,observacoes,foto_url,foto_resolucao,bairro,endereco,morada,latitude,longitude,descricao')
+          .limit(1000)
+        if (error) throw error
+        resultado = data?.find((item) => protocoloCivico(item.id) === `ZD-${prefixo.slice(0, 6)}`)
+      }
+
+      if (!resultado) {
+        setErroProtocolo('Nenhuma ocorrência encontrada para esse protocolo.')
+        setResultadoProtocolo(null)
+      } else {
+        setResultadoProtocolo(resultado)
+      }
+    } catch (err) {
+      setErroProtocolo('Não foi possível consultar o protocolo: ' + err.message)
+      setResultadoProtocolo(null)
+    } finally {
+      setConsultandoProtocolo(false)
+    }
+  }
+
+  const ativarNotificacoes = async () => {
+    const permissao = await solicitarPermissaoNotificacoes()
+    if (permissao === 'granted') {
+      setNotificacoesAtivadas(true)
+      mostrarAlertaToast('Notificações ativadas para este dispositivo.')
+    } else if (permissao === 'denied') {
+      mostrarAlertaToast('Notificações bloqueadas. Altere a permissão nas configurações do navegador.')
+    } else {
+      mostrarAlertaToast('Este navegador não suporta notificações locais.')
+    }
   }
 
   const concluirOnboarding = () => {
@@ -757,6 +827,7 @@ export default function App() {
         }
 
         setSucessoEnvio({
+          id: itemOffline.id,
           categoria,
           foto_url: fotoPreview,
           descricao: `${pontoReferencia.trim() || 'Ocorrência comunitária'} (Guardado Offline)`,
@@ -789,7 +860,7 @@ export default function App() {
 
       const pontoWKT = `POINT(${localizacao.longitude} ${localizacao.latitude})`
 
-      const { error: insertError } = await supabase.from('ocorrencias').insert([
+      const { data: ocorrenciaCriada, error: insertError } = await supabase.from('ocorrencias').insert([
         {
           categoria: categoria,
           descricao: pontoReferencia.trim() || 'Ocorrência registada pela comunidade',
@@ -797,7 +868,7 @@ export default function App() {
           localizacao: pontoWKT,
           status: 'pendente'
         }
-      ])
+      ]).select('id').single()
 
       if (insertError) throw new Error(insertError.message)
 
@@ -807,6 +878,7 @@ export default function App() {
       }
 
       setSucessoEnvio({
+        id: ocorrenciaCriada?.id,
         categoria,
         foto_url: urlFotoPublica,
         descricao: pontoReferencia.trim() || 'Ocorrência registada pela comunidade',
@@ -1031,6 +1103,78 @@ export default function App() {
       )}
 
       {/* MODAL DE SUCESSO */}
+      {mostrarConsultaProtocolo && (
+        <div className="fixed inset-0 z-50 bg-slate-950/75 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="bg-white w-full max-w-md rounded-3xl p-5 shadow-2xl border border-slate-200 max-h-[90vh] overflow-y-auto">
+            <div className="flex items-start justify-between gap-3">
+              <div>
+                <span className="text-[10px] font-black uppercase tracking-wider text-blue-600">Acompanhamento cidadão</span>
+                <h2 className="text-lg font-black text-slate-800 mt-1">Consultar Protocolo</h2>
+              </div>
+              <button type="button" onClick={() => setMostrarConsultaProtocolo(false)} className="text-slate-400 hover:text-slate-700 font-bold cursor-pointer">✕</button>
+            </div>
+            <form onSubmit={consultarProtocolo} className="mt-4 flex gap-2">
+              <input
+                type="text"
+                value={protocoloConsulta}
+                onChange={(e) => setProtocoloConsulta(e.target.value)}
+                placeholder="Ex.: ZD-XXXXXX"
+                className="min-w-0 flex-1 rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-xs font-bold uppercase tracking-wider focus:border-blue-500 focus:outline-none"
+              />
+              <button type="submit" disabled={consultandoProtocolo} className="rounded-xl bg-blue-600 px-4 py-2.5 text-xs font-black text-white hover:bg-blue-700 disabled:opacity-60 cursor-pointer">
+                {consultandoProtocolo ? 'A buscar...' : 'Buscar'}
+              </button>
+            </form>
+            {erroProtocolo && <p className="mt-2 text-xs font-bold text-rose-600">{erroProtocolo}</p>}
+
+            {resultadoProtocolo && (
+              <div className="mt-5 space-y-3">
+                <div className="rounded-2xl bg-slate-900 p-4 text-white">
+                  <p className="text-[10px] font-black uppercase tracking-wider text-blue-300">{protocoloCivico(resultadoProtocolo.id)}</p>
+                  <h3 className="mt-1 text-base font-black capitalize">{resultadoProtocolo.categoria || 'Não classificado'}</h3>
+                  <p className="mt-1 text-[11px] text-slate-300">{resultadoProtocolo.bairro || resultadoProtocolo.endereco || resultadoProtocolo.morada || 'Bairro não informado'}</p>
+                  <p className="mt-1 text-[10px] text-slate-400">Aberta em {resultadoProtocolo.created_at ? new Date(resultadoProtocolo.created_at).toLocaleDateString('pt-BR') : 'data não informada'}</p>
+                </div>
+                <div className="rounded-2xl border border-slate-200 bg-slate-50 p-3">
+                  <div className="flex items-start">
+                    {['Registada', 'Em Análise / Oficiada', 'Resolvida'].map((titulo, index) => {
+                      const atual = etapaProtocolo(resultadoProtocolo.status)
+                      const concluida = index + 1 <= atual
+                      return (
+                        <div key={titulo} className="flex flex-1 items-start">
+                          <div className="flex min-w-0 flex-col items-center text-center">
+                            <span className={`flex h-6 w-6 items-center justify-center rounded-full text-[10px] font-black ${concluida ? 'bg-blue-600 text-white' : 'border border-slate-300 bg-white text-slate-400'}`}>{concluida ? '✓' : index + 1}</span>
+                            <span className="mt-1 text-[9px] font-black text-slate-600">{titulo}</span>
+                          </div>
+                          {index < 2 && <span className={`mt-3 h-0.5 flex-1 ${index + 1 < atual ? 'bg-blue-600' : 'bg-slate-200'}`} />}
+                        </div>
+                      )
+                    })}
+                  </div>
+                  <p className="mt-3 text-xs font-black text-slate-700">Status atual: <span className="capitalize text-blue-700">{resultadoProtocolo.status || 'Pendente'}</span></p>
+                </div>
+                {resultadoProtocolo.observacoes && (
+                  <div className="rounded-2xl border border-indigo-200 bg-indigo-50 p-3 text-xs text-indigo-900">
+                    <strong>Notas e despachos públicos:</strong>
+                    <p className="mt-1 leading-relaxed">{resultadoProtocolo.observacoes}</p>
+                  </div>
+                )}
+                {statusResolvido(resultadoProtocolo.status) && resultadoProtocolo.foto_url && resultadoProtocolo.foto_resolucao && (
+                  <div className="rounded-2xl border border-emerald-200 bg-emerald-50 p-3">
+                    <span className="rounded-full bg-emerald-600 px-2 py-1 text-[9px] font-black text-white">Comprovado por Auditoria Visual</span>
+                    <div className="mt-2 grid grid-cols-2 gap-2">
+                      <img src={resultadoProtocolo.foto_url} alt="Antes: registro inicial" className="h-28 w-full rounded-xl object-cover" />
+                      <img src={resultadoProtocolo.foto_resolucao} alt="Depois: intervenção concluída" className="h-28 w-full rounded-xl object-cover" />
+                    </div>
+                    <div className="mt-1 grid grid-cols-2 gap-2 text-[9px] font-bold text-emerald-800"><span>Antes</span><span>Depois</span></div>
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
       {sucessoEnvio && (
         <div className="fixed inset-0 z-50 bg-slate-950/75 backdrop-blur-sm flex items-center justify-center p-4 animate-in fade-in zoom-in-95 duration-200">
           <div className="bg-white w-full max-w-sm rounded-3xl p-6 shadow-2xl text-center space-y-5 border border-slate-100">
@@ -1067,6 +1211,24 @@ export default function App() {
                   {sucessoEnvio.descricao}
                 </p>
               </div>
+            </div>
+            {sucessoEnvio.id && (
+              <div className="rounded-2xl border border-blue-200 bg-blue-50 p-3 text-left">
+                <p className="text-[10px] font-black uppercase tracking-wider text-blue-600">Seu protocolo</p>
+                <p className="mt-1 text-sm font-black text-blue-900">{protocoloCivico(sucessoEnvio.id)}</p>
+              </div>
+            )}
+            <div className="rounded-2xl border border-indigo-200 bg-indigo-50 p-3 text-left">
+              <p className="text-xs font-black text-indigo-900">🔔 Receba atualizações deste protocolo</p>
+              <p className="mt-1 text-[10px] text-indigo-700">Ative as notificações deste dispositivo para acompanhar mudanças de status.</p>
+              <button
+                type="button"
+                onClick={ativarNotificacoes}
+                disabled={notificacoesAtivadas}
+                className="mt-2 rounded-xl bg-indigo-600 px-3 py-2 text-[10px] font-black text-white hover:bg-indigo-700 disabled:bg-emerald-600 cursor-pointer"
+              >
+                {notificacoesAtivadas ? '✓ Notificações ativadas' : 'Ativar notificações'}
+              </button>
             </div>
 
             <div className="space-y-2 pt-1">
@@ -1188,6 +1350,18 @@ export default function App() {
           </button>
 
           <div className="flex items-center gap-2">
+            <button
+              type="button"
+              onClick={() => {
+                setErroProtocolo('')
+                setResultadoProtocolo(null)
+                setProtocoloConsulta('')
+                setMostrarConsultaProtocolo(true)
+              }}
+              className="rounded-2xl border border-blue-200 bg-blue-50 px-3 py-2 text-[10px] font-black text-blue-700 hover:bg-blue-100 cursor-pointer"
+            >
+              Consultar Protocolo
+            </button>
             <button
               onClick={() => {
                 feedbackSensorial.toqueSuave()

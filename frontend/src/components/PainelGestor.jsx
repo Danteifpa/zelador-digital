@@ -103,6 +103,15 @@ function AjustarMapa({ centro, zoom }) {
   return null
 }
 
+function dispararAvisoAtualizacao(titulo, corpo) {
+  if (typeof navigator !== 'undefined' && 'vibrate' in navigator) {
+    navigator.vibrate([20, 30, 20])
+  }
+  if (typeof window !== 'undefined' && 'Notification' in window && Notification.permission === 'granted') {
+    new Notification(titulo, { body: corpo })
+  }
+}
+
 export default function PainelGestor({ ocorrencias = [], onAtualizarDados }) {
   const [autenticado, setAutenticado] = useState(() => sessionStorage.getItem('gestao_autenticada') === 'true')
   const [pinEntrada, setPinEntrada] = useState('')
@@ -179,6 +188,9 @@ export default function PainelGestor({ ocorrencias = [], onAtualizarDados }) {
         .eq('id', id)
 
       if (error) throw error
+      if (novoStatus === 'resolvido') {
+        dispararAvisoAtualizacao('Ocorrência resolvida', 'A atualização foi registrada no painel comunitário.')
+      }
       if (onAtualizarDados) await onAtualizarDados()
     } catch (err) {
       alert('Erro ao atualizar estado: ' + err.message)
@@ -220,6 +232,9 @@ export default function PainelGestor({ ocorrencias = [], onAtualizarDados }) {
         .eq('id', id)
 
       if (error) throw error
+      if (fotoResolucao) {
+        dispararAvisoAtualizacao('Resolução comprovada', 'A foto da intervenção foi anexada ao protocolo.')
+      }
       setItemResolucao(null)
       setFotoResolucaoPorId((atuais) => ({ ...atuais, [id]: null }))
       if (onAtualizarDados) await onAtualizarDados()
@@ -244,6 +259,7 @@ export default function PainelGestor({ ocorrencias = [], onAtualizarDados }) {
         .eq('id', item.id)
 
       if (error) throw error
+      dispararAvisoAtualizacao('Despacho registrado', 'A tramitação da ocorrência foi atualizada.')
       setTramitacaoAberta(null)
       if (onAtualizarDados) await onAtualizarDados()
     } catch (err) {
