@@ -504,12 +504,21 @@ export default function App() {
     try {
       let resultado = registos.find((item) => protocoloCivico(item.id) === `ZD-${prefixo.slice(0, 6)}`)
       if (!resultado) {
-        const { data, error } = await supabase
-          .from('ocorrencias')
-          .select('id,categoria,created_at,updated_at,status,observacoes,foto_url,foto_resolucao,bairro,endereco,morada,latitude,longitude,descricao')
-          .limit(1000)
-        if (error) throw error
-        resultado = data?.find((item) => protocoloCivico(item.id) === `ZD-${prefixo.slice(0, 6)}`)
+        // Procura no servidor: devolve só a ocorrência pedida (public.consultar_protocolo).
+        const { data, error } = await supabase.rpc('consultar_protocolo', { codigo: `ZD-${prefixo.slice(0, 6)}` })
+        if (!error) {
+          resultado = data?.[0]
+        } else if (['PGRST202', '42883'].includes(error.code)) {
+          // Função ainda não criada no Supabase: recorre à procura antiga no cliente.
+          const antigo = await supabase
+            .from('ocorrencias_georreferenciadas')
+            .select('*')
+            .limit(1000)
+          if (antigo.error) throw antigo.error
+          resultado = antigo.data?.find((item) => protocoloCivico(item.id) === `ZD-${prefixo.slice(0, 6)}`)
+        } else {
+          throw error
+        }
       }
 
       if (!resultado) {
