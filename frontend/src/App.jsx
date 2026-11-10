@@ -1663,18 +1663,18 @@ export default function App() {
                   feedbackSensorial.toqueSuave()
                   setAbaAtiva('reportar')
                 }}
-                className="w-full bg-blue-600 hover:bg-blue-700 text-white rounded-3xl py-3 px-4 shadow-sm flex items-center justify-between transition-all active:scale-[0.99] cursor-pointer"
+                className="w-full bg-blue-600 hover:bg-blue-700 text-white rounded-3xl py-4 px-4 shadow-sm flex items-center justify-between transition-all active:scale-[0.99] cursor-pointer"
               >
                 <div className="flex items-center space-x-3">
-                  <div className="w-9 h-9 rounded-2xl bg-white/20 flex items-center justify-center text-xl font-bold">
+                  <div className="w-11 h-11 shrink-0 rounded-2xl bg-white/20 flex items-center justify-center text-xl font-bold">
                     ➕
                   </div>
                   <div className="text-left">
-                    <span className="text-sm font-black block">Registar Nova Ocorrência</span>
-                    <span className="text-[11px] text-blue-100">Buraco, poste apagado, lixo ou esgoto</span>
+                    <span className="text-base font-bold text-white block">Registar Nova Ocorrência</span>
+                    <span className="text-xs text-blue-100/90">Buraco, poste apagado, lixo ou esgoto</span>
                   </div>
                 </div>
-                <span className="text-xl">📸</span>
+                <span className="shrink-0 text-xl">📸</span>
               </button>
 
               <div className="grid grid-cols-3 gap-2 mt-2.5">
