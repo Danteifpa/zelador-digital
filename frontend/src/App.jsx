@@ -2,6 +2,7 @@ import { useState, useEffect, useMemo } from 'react'
 import { supabase } from './lib/supabase'
 import PainelGestor from './components/PainelGestor'
 import MapaOcorrencias from './components/MapaOcorrencias'
+import ModalQRCode from './components/ModalQRCode'
 import { solicitarPermissaoNotificacoes } from './lib/notifications'
 import useNetworkStatus from './lib/useNetworkStatus'
 import { otimizarImagem } from './lib/imageOptimizer'
@@ -1022,8 +1023,6 @@ export default function App() {
   const taxaResolucao = totalRegistos > 0 ? Math.round((totalResolvidos / totalRegistos) * 100) : 0
 
   const urlApp = typeof window !== 'undefined' ? window.location.origin : 'https://zelador-digital.vercel.app'
-  const qrCodeUrl = `https://api.qrserver.com/v1/create-qr-code/?size=240x240&data=${encodeURIComponent(urlApp)}&bgcolor=ffffff&color=1e293b&qzone=1`
-
   return (
     <div className={`min-h-screen flex flex-col justify-between font-sans pb-20 ${modo === 'facil' ? 'bg-amber-50/30 text-slate-900' : 'bg-slate-100/70 text-slate-800'}`}>
       {/* AVISO OFFLINE */}
@@ -1068,58 +1067,7 @@ export default function App() {
         </div>
       )}
 
-      {/* MODAL QR CODE COMUNITÁRIO */}
-      {mostrarQrCode && (
-        <div className="fixed inset-0 z-50 bg-slate-950/75 backdrop-blur-sm flex items-center justify-center p-4 animate-in fade-in zoom-in-95 duration-200">
-          <div className="bg-white w-full max-w-sm rounded-3xl p-6 shadow-2xl text-center space-y-4 border border-slate-100">
-            <div className="flex items-center justify-between border-b border-slate-100 pb-2">
-              <div className="flex items-center space-x-2">
-                <span className="text-xl">📲</span>
-                <h3 className="text-sm font-black text-slate-800">Partilha com Vizinhos</h3>
-              </div>
-              <button
-                onClick={() => {
-                  feedbackSensorial.toqueSuave()
-                  setMostrarQrCode(false)
-                }}
-                className="w-7 h-7 rounded-full bg-slate-100 text-slate-400 hover:text-slate-700 flex items-center justify-center text-xs font-bold cursor-pointer"
-              >
-                ✕
-              </button>
-            </div>
-
-            <p className="text-xs text-slate-500 leading-relaxed">
-              Aponte a câmara do telemóvel para abrir e instalar a aplicação comunitária sem digitar o link.
-            </p>
-
-            <div className="bg-slate-50 p-4 rounded-3xl border border-slate-200/90 inline-block shadow-inner">
-              <img
-                src={qrCodeUrl}
-                alt="QR Code da aplicação"
-                className="w-52 h-52 mx-auto rounded-2xl mix-blend-multiply"
-              />
-            </div>
-
-            <div className="space-y-2 pt-1">
-              <button
-                type="button"
-                onClick={async () => {
-                  feedbackSensorial.toqueSuave()
-                  try {
-                    await navigator.clipboard.writeText(urlApp)
-                    mostrarAlertaToast('Hiperligação copiada para a área de transferência!')
-                  } catch (e) {
-                    mostrarAlertaToast('Erro ao copiar hiperligação.')
-                  }
-                }}
-                className="w-full py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-2xl font-bold text-xs uppercase tracking-wider transition-all shadow-sm cursor-pointer"
-              >
-                Copiar Hiperligação da Aplicação 🔗
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+      {mostrarQrCode && <ModalQRCode url={urlApp} onClose={() => setMostrarQrCode(false)} />}
 
       {/* MODAL DE NOTIFICAÇÕES */}
       {mostrarNotificacoes && (
@@ -1470,6 +1418,18 @@ export default function App() {
           </button>
 
           <div className="flex items-center gap-2">
+            <button
+              type="button"
+              onClick={() => {
+                feedbackSensorial.toqueSuave()
+                setMostrarQrCode(true)
+              }}
+              className="h-10 whitespace-nowrap rounded-2xl bg-slate-100 px-3 text-[10px] font-black text-slate-700 border border-slate-200 flex items-center justify-center transition-colors hover:bg-slate-200 cursor-pointer"
+              title="Compartilhar aplicação"
+              aria-label="Compartilhar aplicação por QR Code"
+            >
+              📱 Cartaz & QR Code
+            </button>
             <button
               type="button"
               onClick={() => {
