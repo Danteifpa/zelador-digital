@@ -1593,7 +1593,7 @@ export default function App() {
 
         {/* 1. INÍCIO */}
         {abaAtiva === 'inicio' && (
-          <div className="flex flex-col gap-3 px-2.5 py-2 max-w-lg mx-auto w-full">
+          <div className="flex flex-col gap-2.5 px-2.5 py-2 max-w-lg mx-auto w-full">
             {!pwaInstalado && !bannerPwaIgnorado && (
               <div className="bg-gradient-to-r from-slate-900 to-blue-950 text-white rounded-3xl p-4 shadow-sm border border-slate-800 relative overflow-hidden">
                 <button
@@ -1663,18 +1663,18 @@ export default function App() {
                   feedbackSensorial.toqueSuave()
                   setAbaAtiva('reportar')
                 }}
-                className="w-full bg-gradient-to-r from-blue-600 to-blue-700 text-white rounded-2xl p-4 sm:p-5 flex items-center justify-between shadow-md active:scale-[0.99] transition-all"
+                className="w-full min-h-[105px] py-6 px-5 bg-gradient-to-r from-blue-600 via-blue-600 to-indigo-700 text-white rounded-3xl flex items-center justify-between shadow-lg shadow-blue-500/25 active:scale-[0.98] transition-all"
               >
                 <div className="flex items-center space-x-3">
-                  <div className="w-12 h-12 rounded-xl bg-white/20 flex items-center justify-center text-2xl font-bold">
+                  <div className="w-14 h-14 rounded-2xl bg-white/20 backdrop-blur-sm flex items-center justify-center text-3xl font-bold border border-white/30 shrink-0">
                     ➕
                   </div>
                   <div className="text-left">
-                    <span className="text-base font-bold text-white block">Registar Nova Ocorrência</span>
-                    <span className="text-xs text-blue-100/90">Buraco, poste apagado, lixo ou esgoto</span>
+                    <span className="text-lg font-extrabold tracking-tight text-white block">Registar Nova Ocorrência</span>
+                    <span className="text-xs font-medium text-blue-100/90 mt-1 block">Buraco, poste apagado, lixo ou esgoto</span>
                   </div>
                 </div>
-                <span className="shrink-0 text-xl">📸</span>
+                <span className="w-10 h-10 shrink-0 flex items-center justify-center text-3xl">📸</span>
               </button>
 
               <div className="grid grid-cols-3 gap-2 mt-2.5">
