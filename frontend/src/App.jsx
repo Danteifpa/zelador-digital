@@ -1759,6 +1759,15 @@ export default function App() {
                 </button>
               </div>
             </section>
+
+            <div className="rounded-xl border border-slate-200/80 bg-slate-50/70 p-2.5 text-center">
+              <p className="text-[11px] font-semibold text-slate-700 flex items-center justify-center gap-1.5">
+                <span>🌱</span> Iniciativa Cívica Independente • Ananindeua
+              </p>
+              <p className="text-[10px] text-slate-500 leading-tight mt-0.5">
+                Plataforma comunitária para mapear, dar visibilidade e cobrar soluções para os bairros.
+              </p>
+            </div>
           </div>
         )}
 
