@@ -1065,7 +1065,7 @@ export default function App() {
   const totalPendentes = registos.filter((r) => r.status !== 'resolvido' && r.status !== 'concluido').length
   const taxaResolucao = totalRegistos > 0 ? Math.round((totalResolvidos / totalRegistos) * 100) : 0
 
-  const urlApp = typeof window !== 'undefined' ? window.location.origin : 'https://zelador-digital.vercel.app'
+  const urlApp = typeof window !== 'undefined' ? window.location.origin : 'https://zeladordigital.vercel.app'
   return (
     <div className={`min-h-screen flex flex-col justify-between font-sans pb-20 ${modo === 'facil' ? 'bg-amber-50/30 text-slate-900' : 'bg-slate-100/70 text-slate-800'}`}>
       <Header
