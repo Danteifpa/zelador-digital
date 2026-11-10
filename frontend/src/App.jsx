@@ -11,6 +11,8 @@ import Header from './components/Header'
 import RegisterButton from './components/RegisterButton'
 import StatsOverview from './components/StatsOverview'
 import CommunityAlert from './components/CommunityAlert'
+import ReportModal from './components/ReportModal'
+import { gerarIdOcorrencia, ehUuid, protocoloCivico } from './lib/protocolo'
 
 // Coordenadas centrais comunitárias (Ananindeua)
 const CENTRO_COMUNITARIO = {
@@ -28,10 +30,6 @@ const CATEGORIAS = [
 ]
 
 const FILA_OFFLINE_KEY = 'fila_ocorrencias_offline'
-
-function protocoloCivico(id) {
-  return `ZD-${String(id).slice(0, 6).toUpperCase()}`
-}
 
 function statusResolvido(status) {
   return status === 'resolvido' || status === 'concluido'
@@ -364,6 +362,8 @@ export default function App() {
   const [erroProtocolo, setErroProtocolo] = useState('')
   const [notificacoesAtivadas, setNotificacoesAtivadas] = useState(false)
   const [duplicataEncontrada, setDuplicataEncontrada] = useState(null)
+  const [mostrarReportModal, setMostrarReportModal] = useState(false)
+  const [erroGps, setErroGps] = useState(null)
 
   const imprimirCartazA4 = () => {
     feedbackSensorial.toqueSuave()
@@ -632,6 +632,7 @@ export default function App() {
     }
 
     setCapturandoGps(true)
+    setErroGps(null)
     navigator.geolocation.getCurrentPosition(
       (pos) => {
         const coords = {
@@ -662,6 +663,12 @@ export default function App() {
       (err) => {
         console.warn('GPS pendente:', err.message)
         setCapturandoGps(false)
+        const mensagens = {
+          1: 'Permissão de localização negada. Ative a localização para este site nas definições do navegador.',
+          2: 'Não foi possível determinar a localização. Vá para um local aberto e tente de novo.',
+          3: 'O GPS demorou demasiado a responder. Tente de novo.'
+        }
+        setErroGps(mensagens[err.code] || 'Não foi possível obter a localização.')
       },
       { enableHighAccuracy: true, timeout: 15000, maximumAge: 0 }
     )
@@ -794,6 +801,7 @@ export default function App() {
         const pontoWKT = `POINT(${item.longitude} ${item.latitude})`
         const { error: insertError } = await supabase.from('ocorrencias').insert([
           {
+            ...(ehUuid(item.id) ? { id: item.id } : {}),
             categoria: item.categoria,
             descricao: item.descricao,
             foto_url: urlFotoPublica,
@@ -801,7 +809,8 @@ export default function App() {
             status: 'pendente'
           }
         ])
-        if (insertError) throw insertError
+        // 23505 = chave duplicada: este registo já chegou ao servidor numa tentativa anterior.
+        if (insertError && insertError.code !== '23505') throw insertError
       } catch (e) {
         console.error('Falha ao sincronizar item offline:', e)
         filaRestante.push(item)
@@ -817,6 +826,21 @@ export default function App() {
       feedbackSensorial.envioSucesso()
       mostrarAlertaToast('Todos os registos offline foram sincronizados com sucesso!')
     }
+  }
+
+  // Insere com o UUID gerado no telemóvel. Se o esquema não aceitar um id vindo do cliente
+  // (coluna não-UUID ou identity), repete sem id e usa o id devolvido pelo servidor.
+  const inserirOcorrencia = async (registo) => {
+    const tentativa = await supabase.from('ocorrencias').insert([registo]).select('id').single()
+    if (!tentativa.error) return tentativa.data
+    if (['22P02', '428C9', '42703'].includes(tentativa.error.code)) {
+      const semId = { ...registo }
+      delete semId.id
+      const repeticao = await supabase.from('ocorrencias').insert([semId]).select('id').single()
+      if (repeticao.error) throw new Error(repeticao.error.message)
+      return repeticao.data
+    }
+    throw new Error(tentativa.error.message)
   }
 
   const encontrarDuplicata = async () => {
@@ -849,6 +873,8 @@ export default function App() {
       return
     }
 
+    const idOcorrencia = gerarIdOcorrencia()
+
     try {
       setEnviando(true)
 
@@ -869,7 +895,7 @@ export default function App() {
         }
 
         const itemOffline = {
-          id: Date.now(),
+          id: idOcorrencia,
           categoria,
           descricao: pontoReferencia.trim() || 'Ocorrência registada offline',
           latitude: localizacao.latitude,
@@ -924,17 +950,14 @@ export default function App() {
 
       const pontoWKT = `POINT(${localizacao.longitude} ${localizacao.latitude})`
 
-      const { data: ocorrenciaCriada, error: insertError } = await supabase.from('ocorrencias').insert([
-        {
-          categoria: categoria,
-          descricao: pontoReferencia.trim() || 'Ocorrência registada pela comunidade',
-          foto_url: urlFotoPublica,
-          localizacao: pontoWKT,
-          status: 'pendente'
-        }
-      ]).select('id').single()
-
-      if (insertError) throw new Error(insertError.message)
+      const ocorrenciaCriada = await inserirOcorrencia({
+        id: idOcorrencia,
+        categoria: categoria,
+        descricao: pontoReferencia.trim() || 'Ocorrência registada pela comunidade',
+        foto_url: urlFotoPublica,
+        localizacao: pontoWKT,
+        status: 'pendente'
+      })
 
       feedbackSensorial.envioSucesso()
       if (modo === 'facil') {
@@ -961,7 +984,7 @@ export default function App() {
           const fotoOtimizada = foto ? await otimizarImagem(foto) : null
           const fotoBase64 = fotoOtimizada ? await arquivoParaBase64(fotoOtimizada) : null
           const itemOffline = {
-            id: Date.now(),
+            id: idOcorrencia,
             categoria,
             descricao: pontoReferencia.trim() || 'Ocorrência registada pela comunidade',
             latitude: localizacao.latitude,
@@ -1056,7 +1079,7 @@ export default function App() {
 
       {/* TOAST FLUTUANTE */}
       {mensagemToast && (
-        <div className="fixed top-4 left-4 right-4 z-50 max-w-md mx-auto animate-in slide-in-from-top-4 duration-200">
+        <div className="fixed top-4 left-4 right-4 z-[80] max-w-md mx-auto animate-in slide-in-from-top-4 duration-200">
           <div className="bg-slate-900/95 text-white p-3.5 rounded-2xl shadow-xl flex items-center justify-between border border-slate-700/80 backdrop-blur-md">
             <div className="flex items-center space-x-2.5">
               <span className="text-amber-400 text-lg">ℹ️</span>
@@ -1076,6 +1099,51 @@ export default function App() {
       )}
 
       {mostrarQrCode && <ModalQRCode url={urlApp} onClose={() => setMostrarQrCode(false)} />}
+
+      {mostrarReportModal && (
+        <ReportModal
+          onFechar={() => {
+            feedbackSensorial.toqueSuave()
+            setMostrarReportModal(false)
+            setSucessoEnvio(null)
+          }}
+          modo={modo}
+          falarTexto={falarTexto}
+          estaOnline={estaOnline}
+          categorias={CATEGORIAS}
+          resultado={sucessoEnvio}
+          form={{
+            categoria,
+            fotoPreview,
+            processandoFoto,
+            localizacao,
+            origemLocalizacao,
+            capturandoGps,
+            erroGps,
+            distanciaKm: distanciaAtualKm,
+            raioMaximoKm: CENTRO_COMUNITARIO.raioMaximoKm,
+            pontoReferencia,
+            gravandoVoz,
+            enviando
+          }}
+          acoes={{
+            selecionarCategoria,
+            fotoChange: handleFotoChange,
+            removerFoto,
+            capturarGps: obterLocalizacaoAtual,
+            pontoReferenciaChange: setPontoReferencia,
+            alternarVoz: alternarReconhecimentoVoz,
+            enviar: () => handleSubmit({ preventDefault: () => {} }),
+            partilhar: partilharOcorrencia,
+            verRegistos: () => {
+              feedbackSensorial.toqueSuave()
+              setMostrarReportModal(false)
+              setSucessoEnvio(null)
+              setAbaAtiva('registos')
+            }
+          }}
+        />
+      )}
 
       {/* MODAL DE NOTIFICAÇÕES */}
       {mostrarNotificacoes && (
@@ -1251,7 +1319,7 @@ export default function App() {
         </div>
       )}
 
-      {sucessoEnvio && (
+      {sucessoEnvio && !mostrarReportModal && (
         <div className="fixed inset-0 z-50 bg-slate-950/75 backdrop-blur-sm flex items-center justify-center p-4 animate-in fade-in zoom-in-95 duration-200">
           <div className="bg-white w-full max-w-sm rounded-3xl p-6 shadow-2xl text-center space-y-5 border border-slate-100">
             <div className="w-16 h-16 mx-auto rounded-3xl bg-emerald-100 text-emerald-600 flex items-center justify-center text-3xl shadow-inner animate-bounce">
@@ -1592,7 +1660,8 @@ export default function App() {
               <RegisterButton
                 onClick={() => {
                   feedbackSensorial.toqueSuave()
-                  setAbaAtiva('reportar')
+                  setSucessoEnvio(null)
+                  setMostrarReportModal(true)
                 }}
               />
 
