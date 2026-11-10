@@ -511,8 +511,8 @@ export default function App() {
         } else if (['PGRST202', '42883'].includes(error.code)) {
           // Função ainda não criada no Supabase: recorre à procura antiga no cliente.
           const antigo = await supabase
-            .from('ocorrencias')
-            .select('id,categoria,created_at,updated_at,status,observacoes,foto_url,foto_resolucao,bairro,endereco,morada,latitude,longitude,descricao')
+            .from('ocorrencias_georreferenciadas')
+            .select('*')
             .limit(1000)
           if (antigo.error) throw antigo.error
           resultado = antigo.data?.find((item) => protocoloCivico(item.id) === `ZD-${prefixo.slice(0, 6)}`)

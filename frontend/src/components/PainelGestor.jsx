@@ -179,7 +179,8 @@ export default function PainelGestor({ ocorrencias = [], onAtualizarDados }) {
         status: 'resolvido',
         updated_at: new Date().toISOString()
       }
-      if (fotoResolucao) atualizacao.foto_resolucao = fotoResolucao
+      // Coluna real na tabela; a vista ocorrencias_georreferenciadas expõe-na como foto_resolucao.
+      if (fotoResolucao) atualizacao.foto_resolucao_url = fotoResolucao
 
       const { error } = await supabase
         .from('ocorrencias')

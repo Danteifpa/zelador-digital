@@ -3,14 +3,18 @@
 -- =============================================================================
 -- Substitui o PIN fixo no código do cliente. Depois deste script:
 --   * qualquer pessoa pode LER ocorrências e REGISTAR novas (sempre como 'pendente');
---   * só utilizadores na tabela public.gestores podem ALTERAR ou APAGAR ocorrências.
+--   * só utilizadores na tabela public.gestores podem ALTERAR ou APAGAR ocorrências;
+--   * a vista ocorrencias_georreferenciadas passa a ser só de leitura e a respeitar o RLS.
 --
 -- Como aplicar: Supabase → SQL Editor → New query → colar este ficheiro → Run.
--- O script corre numa única transação: se algo falhar, nada é alterado.
--- Seguro para correr mais do que uma vez.
+-- Corre numa única transação: se algo falhar, nada é alterado. Pode correr mais de uma vez.
 -- =============================================================================
 
 begin;
+
+-- 0. Colunas que o Painel de Gestão já usa e não existiam ------------------
+alter table public.ocorrencias add column if not exists updated_at timestamptz;
+alter table public.ocorrencias add column if not exists observacoes text;
 
 -- 1. Tabela de gestores ------------------------------------------------------
 create table if not exists public.gestores (
@@ -44,8 +48,8 @@ grant execute on function public.eh_gestor() to anon, authenticated;
 -- 3. Regras de acesso da tabela ocorrencias ---------------------------------
 alter table public.ocorrencias enable row level security;
 
--- Remove TODAS as políticas antigas desta tabela: as regras do Postgres somam-se,
--- por isso uma política antiga que deixe 'anon' alterar ou apagar manteria a falha aberta.
+-- Remove TODAS as políticas antigas desta tabela: as regras do Postgres somam-se, por isso
+-- uma política antiga que deixe qualquer pessoa alterar ou apagar manteria a falha aberta.
 do $$
 declare
   politica record;
@@ -79,35 +83,56 @@ create policy "gestor apaga ocorrencias"
   to authenticated
   using (public.eh_gestor());
 
--- 4. Consulta de protocolo no servidor --------------------------------------
--- Devolve só a ocorrência pedida (antes o app descarregava até 1000 linhas).
+-- TRUNCATE ignora o RLS; ninguém do lado do cliente precisa dele.
+revoke truncate on public.ocorrencias from anon, authenticated;
+
+-- 4. Vista usada pelo mapa e pela lista ------------------------------------
+-- Mantém as colunas existentes pela mesma ordem e acrescenta as que o Painel usa.
+-- foto_resolucao_url é exposta como foto_resolucao, o nome que o app lê.
+create or replace view public.ocorrencias_georreferenciadas as
+select
+  id,
+  created_at,
+  categoria,
+  descricao,
+  foto_url,
+  status,
+  st_y((localizacao)::geometry) as latitude,
+  st_x((localizacao)::geometry) as longitude,
+  observacoes,
+  updated_at,
+  foto_resolucao_url as foto_resolucao,
+  total_apoios
+from public.ocorrencias;
+
+-- A vista corria com as permissões do dono (ignorando o RLS) e aceitava UPDATE/DELETE de 'anon':
+-- passa a respeitar o RLS de quem consulta e fica só de leitura.
+alter view public.ocorrencias_georreferenciadas set (security_invoker = on);
+revoke insert, update, delete, truncate, references, trigger
+  on public.ocorrencias_georreferenciadas from anon, authenticated;
+grant select on public.ocorrencias_georreferenciadas to anon, authenticated;
+
+-- 5. Consulta de protocolo no servidor --------------------------------------
+-- Devolve só a ocorrência pedida (antes o app descarregava a tabela inteira).
 create index if not exists ocorrencias_protocolo_idx
   on public.ocorrencias (upper(left(id::text, 6)));
 
-create or replace function public.consultar_protocolo(codigo text)
-returns setof public.ocorrencias
+drop function if exists public.consultar_protocolo(text);
+create function public.consultar_protocolo(codigo text)
+returns setof public.ocorrencias_georreferenciadas
 language sql
 stable
 set search_path = public
 as $$
-  select *
-  from public.ocorrencias
-  where upper(left(id::text, 6)) =
+  select v.*
+  from public.ocorrencias_georreferenciadas v
+  where upper(left(v.id::text, 6)) =
         upper(left(regexp_replace(trim(codigo), '^(protocolo\s+)?zd-', '', 'i'), 6))
-  order by created_at desc
+  order by v.created_at desc
   limit 5;
 $$;
 
 grant execute on function public.consultar_protocolo(text) to anon, authenticated;
-
--- 5. Storage: gestores com sessão iniciada enviam fotos de resolução --------
--- Com login, os pedidos do gestor deixam de ser 'anon' e passam a 'authenticated'.
--- Esta política só acrescenta permissão de envio para gestores; não altera as existentes.
-drop policy if exists "gestor envia fotos" on storage.objects;
-create policy "gestor envia fotos"
-  on storage.objects for insert
-  to authenticated
-  with check (bucket_id = 'ocorrencias' and public.eh_gestor());
 
 commit;
 
@@ -119,19 +144,13 @@ commit;
 -- 2. Correr, trocando os emails e nomes:
 --
 -- insert into public.gestores (user_id, nome)
--- select id, 'Nome do Gestor 1' from auth.users where email = 'gestor1@exemplo.com'
--- on conflict (user_id) do nothing;
---
--- insert into public.gestores (user_id, nome)
--- select id, 'Nome do Gestor 2' from auth.users where email = 'gestor2@exemplo.com'
+-- select id, 'Nome do Gestor' from auth.users where email = 'gestor@exemplo.com'
 -- on conflict (user_id) do nothing;
 --
 -- =============================================================================
 -- VERIFICAÇÃO
 -- =============================================================================
--- Políticas ativas (deve listar só as 4 criadas acima):
---   select policyname, cmd, roles from pg_policies where tablename = 'ocorrencias';
--- Gestores registados:
+--   select policyname, cmd, roles from pg_policies where tablename = 'ocorrencias';  -- 4 políticas
 --   select g.nome, u.email from public.gestores g join auth.users u on u.id = g.user_id;
--- Políticas do Storage (rever: 'anon' não deve poder UPDATE nem DELETE):
---   select policyname, cmd, roles from pg_policies where schemaname = 'storage' and tablename = 'objects';
+-- O Storage já tem upload público para o bucket 'ocorrencias' (anon e authenticated) e não
+-- tem políticas de UPDATE/DELETE, por isso não precisa de alterações.
