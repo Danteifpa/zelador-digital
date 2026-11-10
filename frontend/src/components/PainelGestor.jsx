@@ -1,8 +1,11 @@
 import { useEffect, useMemo, useState } from 'react'
+import { CircleMarker, MapContainer, Popup, TileLayer, useMap } from 'react-leaflet'
+import 'leaflet/dist/leaflet.css'
 import { supabase } from '../lib/supabase'
 
 const STATUS_RESOLVIDOS = ['resolvido', 'concluido']
 const RAIO_RECURRENCIA_METROS = 500
+const CENTRO_ANANINDEUA = [-1.365, -48.375]
 
 function eResolvida(item) {
   return STATUS_RESOLVIDOS.includes(item.status)
@@ -30,6 +33,62 @@ function escapeCsv(valor) {
   return `"${String(valor ?? '').replaceAll('"', '""')}"`
 }
 
+function categoriaGravidade(categoria = '') {
+  const normalizada = categoria.toLowerCase()
+  if (normalizada.includes('esgoto') || normalizada.includes('saneamento') || normalizada.includes('hospitalar') || normalizada.includes('acumulado')) return 5
+  if (normalizada.includes('buraco') || normalizada.includes('via')) return 4
+  if (normalizada.includes('ilumin')) return 3
+  return 2
+}
+
+function urgenciaPorData(createdAt, status, agora = new Date()) {
+  if (status !== 'pendente' || !createdAt) return 3
+  const idadeDias = Math.max(0, agora.getTime() - new Date(createdAt).getTime()) / 86400000
+  if (idadeDias > 7) return 5
+  if (idadeDias >= 3) return 4
+  return 3
+}
+
+function tendenciaPorContexto(item, recorrente, dataAtual = new Date()) {
+  const mes = dataAtual.getMonth() + 1
+  const periodoChuvoso = mes >= 12 || mes <= 5
+  return recorrente || periodoChuvoso ? 4 : 3
+}
+
+function calcularPontuacaoGUT(item, ocorrencias = [], agora = new Date()) {
+  const recorrente = ocorrencias.some((outro) => outro.id !== item.id && distanciaMetros(item, outro) <= RAIO_RECURRENCIA_METROS)
+  const gravidade = categoriaGravidade(item.categoria)
+  const urgencia = urgenciaPorData(item.created_at, item.status, agora)
+  const tendencia = tendenciaPorContexto(item, recorrente, agora)
+  return {
+    gravidade,
+    urgencia,
+    tendencia,
+    pontuacao: gravidade * urgencia * tendencia,
+    recorrente
+  }
+}
+
+function corCriticidade(pontuacao) {
+  if (pontuacao >= 60) return '#ef4444'
+  if (pontuacao >= 30) return '#f59e0b'
+  return '#22c55e'
+}
+
+function rotuloCriticidade(pontuacao) {
+  if (pontuacao >= 60) return 'Crítica (GUT Alta)'
+  if (pontuacao >= 30) return 'Atenção (GUT Média)'
+  return 'Rotina (GUT Baixa)'
+}
+
+function AjustarMapa({ centro, zoom }) {
+  const mapa = useMap()
+  useEffect(() => {
+    mapa.setView(centro, zoom)
+  }, [centro, mapa, zoom])
+  return null
+}
+
 export default function PainelGestor({ ocorrencias = [], onAtualizarDados }) {
   const [autenticado, setAutenticado] = useState(() => sessionStorage.getItem('gestao_autenticada') === 'true')
   const [pinEntrada, setPinEntrada] = useState('')
@@ -44,6 +103,8 @@ export default function PainelGestor({ ocorrencias = [], onAtualizarDados }) {
   const [mostrarOficio, setMostrarOficio] = useState(false)
   const [selecionadasOficio, setSelecionadasOficio] = useState([])
   const [carregandoAcao, setCarregandoAcao] = useState(false)
+  const [abaPainel, setAbaPainel] = useState('lista')
+  const [ordenarPorGut, setOrdenarPorGut] = useState(false)
 
   // PIN de acesso para o gestor comunitário
   const PIN_MESTRE = '2026'
@@ -148,15 +209,24 @@ export default function PainelGestor({ ocorrencias = [], onAtualizarDados }) {
     }
   }
 
-  const ocorrenciasFiltradas = ocorrencias.filter((item) => {
-    const bateuStatus = filtroStatus === 'todos' || item.status === filtroStatus
-    const busca = termoBusca.toLowerCase()
-    const bateuTexto =
-      (item.descricao || '').toLowerCase().includes(busca) ||
-      (item.categoria || '').toLowerCase().includes(busca) ||
-      (item.id || '').toString().includes(busca)
-    return bateuStatus && bateuTexto
-  })
+  const ocorrenciasComGut = useMemo(() => ocorrencias.map((item) => ({
+    ...item,
+    gut: calcularPontuacaoGUT(item, ocorrencias, new Date())
+  })), [ocorrencias])
+
+  const ocorrenciasFiltradasComGut = useMemo(() => {
+    const filtradas = ocorrenciasComGut.filter((item) => {
+      const bateuStatus = filtroStatus === 'todos' || item.status === filtroStatus
+      const busca = termoBusca.toLowerCase()
+      const bateuTexto =
+        (item.descricao || '').toLowerCase().includes(busca) ||
+        (item.categoria || '').toLowerCase().includes(busca) ||
+        (item.id || '').toString().includes(busca)
+      return bateuStatus && bateuTexto
+    })
+    if (!ordenarPorGut) return filtradas
+    return [...filtradas].sort((a, b) => b.gut.pontuacao - a.gut.pontuacao)
+  }, [ocorrenciasComGut, filtroStatus, termoBusca, ordenarPorGut])
 
   const metricas = useMemo(() => {
     const resolvidas = ocorrencias.filter(eResolvida).length
@@ -299,6 +369,24 @@ export default function PainelGestor({ ocorrencias = [], onAtualizarDados }) {
         </button>
       </div>
 
+      <div className="grid grid-cols-2 gap-1 rounded-2xl bg-slate-200 p-1">
+        {[
+          ['lista', '📋 Lista Priorizada'],
+          ['mapa', '🗺️ Mapa de Focos Críticos']
+        ].map(([aba, rotulo]) => (
+          <button
+            key={aba}
+            type="button"
+            onClick={() => setAbaPainel(aba)}
+            className={`rounded-xl px-3 py-2.5 text-[11px] font-black transition-colors cursor-pointer ${
+              abaPainel === aba ? 'bg-slate-900 text-white shadow-sm' : 'text-slate-600 hover:bg-white'
+            }`}
+          >
+            {rotulo}
+          </button>
+        ))}
+      </div>
+
       {/* Métricas */}
       <section className="bg-slate-900 rounded-3xl p-3.5 text-white shadow-sm">
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
@@ -439,6 +527,8 @@ export default function PainelGestor({ ocorrencias = [], onAtualizarDados }) {
         </section>
       )}
 
+      {abaPainel === 'lista' && (
+      <>
       {/* Busca e Filtros */}
       <div className="space-y-2">
         <input
@@ -469,6 +559,15 @@ export default function PainelGestor({ ocorrencias = [], onAtualizarDados }) {
               {label}
             </button>
           ))}
+          <button
+            type="button"
+            onClick={() => setOrdenarPorGut((atual) => !atual)}
+            className={`px-3 py-1.5 rounded-xl text-[11px] font-bold transition-all shrink-0 cursor-pointer ${
+              ordenarPorGut ? 'bg-rose-600 text-white shadow-2xs' : 'bg-white border border-slate-200 text-slate-600 hover:bg-slate-50'
+            }`}
+          >
+            {ordenarPorGut ? 'GUT: maior primeiro' : 'Ordenar por GUT'}
+          </button>
         </div>
       </div>
 
@@ -538,12 +637,12 @@ export default function PainelGestor({ ocorrencias = [], onAtualizarDados }) {
 
       {/* Lista de Ocorrências com Ações Diretas */}
       <div className="space-y-3">
-        {ocorrenciasFiltradas.length === 0 ? (
+        {ocorrenciasFiltradasComGut.length === 0 ? (
           <div className="bg-white rounded-3xl p-8 border border-slate-200 text-center text-xs text-slate-400">
             Nenhum registo encontrado para este filtro.
           </div>
         ) : (
-          ocorrenciasFiltradas.map((item) => (
+          ocorrenciasFiltradasComGut.map((item) => (
             <div
               key={item.id}
               className="bg-white rounded-2xl p-4 border border-slate-200 shadow-2xs space-y-3"
@@ -561,6 +660,13 @@ export default function PainelGestor({ ocorrencias = [], onAtualizarDados }) {
                       : 'bg-amber-100 text-amber-800'
                   }`}>
                     {item.status || 'Pendente'}
+                  </span>
+                  <span
+                    className="text-[10px] font-black px-2 py-0.5 rounded-full text-white"
+                    style={{ backgroundColor: corCriticidade(item.gut.pontuacao) }}
+                    title={`GUT ${item.gut.pontuacao}: G${item.gut.gravidade} × U${item.gut.urgencia} × T${item.gut.tendencia}`}
+                  >
+                    {rotuloCriticidade(item.gut.pontuacao)}
                   </span>
                 </div>
                 <span className="text-[10px] text-slate-400 font-mono">
@@ -627,6 +733,56 @@ export default function PainelGestor({ ocorrencias = [], onAtualizarDados }) {
           ))
         )}
       </div>
+      </>
+      )}
+
+      {abaPainel === 'mapa' && (
+        <section className="space-y-3">
+          <div className="flex items-center justify-between rounded-2xl bg-slate-900 px-4 py-3 text-white">
+            <div>
+              <h3 className="text-xs font-black">Mapa de Focos Críticos</h3>
+              <p className="text-[10px] text-slate-400 mt-1">Raio do marcador proporcional à pontuação GUT.</p>
+            </div>
+            <div className="flex gap-2 text-[9px] font-bold">
+              <span className="text-rose-300">● Crítica</span>
+              <span className="text-amber-300">● Atenção</span>
+              <span className="text-emerald-300">● Rotina</span>
+            </div>
+          </div>
+          <div className="h-[65vh] min-h-[420px] max-h-[600px] overflow-hidden rounded-3xl border border-slate-200 shadow-sm">
+            <MapContainer center={CENTRO_ANANINDEUA} zoom={11} scrollWheelZoom style={{ width: '100%', height: '100%' }}>
+              <AjustarMapa centro={CENTRO_ANANINDEUA} zoom={11} />
+              <TileLayer
+                attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
+                url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+              />
+              {ocorrenciasComGut
+                .filter((item) => Number.isFinite(Number(item.latitude)) && Number.isFinite(Number(item.longitude)))
+                .map((item) => {
+                  const cor = corCriticidade(item.gut.pontuacao)
+                  return (
+                    <CircleMarker
+                      key={item.id}
+                      center={[Number(item.latitude), Number(item.longitude)]}
+                      radius={6 + (item.gut.pontuacao / 125) * 14}
+                      pathOptions={{ color: cor, fillColor: cor, fillOpacity: 0.65, weight: 2 }}
+                    >
+                      <Popup>
+                        <div className="min-w-36 text-xs">
+                          <strong className="block capitalize">{item.categoria || 'Não classificado'}</strong>
+                          <span className="block mt-1">GUT: {item.gut.pontuacao} — {rotuloCriticidade(item.gut.pontuacao)}</span>
+                          <span className="block">Data: {formatarData(item.created_at)}</span>
+                          <span className="block">Bairro: {item.bairro || item.endereco || item.morada || 'Não informado'}</span>
+                          <span className="block">Status: {item.status || 'Pendente'}</span>
+                        </div>
+                      </Popup>
+                    </CircleMarker>
+                  )
+                })}
+            </MapContainer>
+          </div>
+        </section>
+      )}
 
       {itemExclusao && (
         <div className="fixed inset-0 z-50 bg-slate-950/70 px-4 flex items-center justify-center" role="dialog" aria-modal="true" aria-labelledby="confirmar-exclusao-titulo">
