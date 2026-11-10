@@ -1593,7 +1593,7 @@ export default function App() {
 
         {/* 1. INÍCIO */}
         {abaAtiva === 'inicio' && (
-          <div className="flex flex-col justify-between h-[calc(100dvh-5.5rem)] px-4 py-2 overflow-hidden">
+          <div className="flex flex-col gap-3 px-4 py-2 max-w-lg mx-auto w-full">
             {!pwaInstalado && !bannerPwaIgnorado && (
               <div className="bg-gradient-to-r from-slate-900 to-blue-950 text-white rounded-3xl p-4 shadow-sm border border-slate-800 relative overflow-hidden">
                 <button
@@ -1628,7 +1628,7 @@ export default function App() {
               </div>
             )}
 
-            <div className="rounded-3xl bg-gradient-to-br from-blue-600 via-sky-600 to-emerald-500 p-3 text-white shadow-md relative overflow-hidden">
+            <div className="rounded-3xl bg-gradient-to-br from-blue-600 via-sky-600 to-emerald-500 p-3.5 text-white shadow-md relative overflow-hidden">
               <div className="flex items-center justify-between mb-3">
                 <div>
                   <span className="text-[11px] uppercase tracking-wider text-sky-100 font-bold">Monitoramento Cívico</span>
@@ -1655,8 +1655,8 @@ export default function App() {
               </div>
             </div>
 
-            <div className="space-y-2">
-              <h2 className="text-xs font-black text-slate-500 uppercase tracking-wider px-1">Ações Rápidas</h2>
+            <div>
+              <h2 className="mb-1.5 text-xs font-bold text-slate-500 uppercase tracking-wider px-1">Ações Rápidas</h2>
 
               <button
                 onClick={() => {
@@ -1677,18 +1677,18 @@ export default function App() {
                 <span className="text-xl">📸</span>
               </button>
 
-              <div className="grid grid-cols-3 gap-2">
+              <div className="grid grid-cols-3 gap-2.5 mt-2.5">
                 <button
                   onClick={() => {
                     feedbackSensorial.toqueSuave()
                     setAbaAtiva('registos')
                   }}
-                  className="bg-white hover:bg-slate-50 border border-slate-200/90 rounded-2xl p-3 shadow-2xs flex flex-col items-start transition-all cursor-pointer text-left"
+                  className="bg-white hover:bg-slate-50 border border-slate-200/90 rounded-2xl p-2.5 shadow-2xs flex flex-col items-start transition-all cursor-pointer text-left"
                 >
                   <div className="w-6 h-6 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center text-sm mb-2 border border-emerald-100">
                     📋
                   </div>
-                  <span className="text-[11px] font-black text-slate-800">Registos</span>
+                  <span className="text-xs font-black text-slate-800">Registos</span>
                   <span className="text-[10px] text-slate-400 mt-0.5">Histórico</span>
                 </button>
 
@@ -1697,12 +1697,12 @@ export default function App() {
                     feedbackSensorial.toqueSuave()
                     setAbaAtiva('mapa')
                   }}
-                  className="bg-white hover:bg-slate-50 border border-slate-200/90 rounded-2xl p-3 shadow-2xs flex flex-col items-start transition-all cursor-pointer text-left"
+                  className="bg-white hover:bg-slate-50 border border-slate-200/90 rounded-2xl p-2.5 shadow-2xs flex flex-col items-start transition-all cursor-pointer text-left"
                 >
                   <div className="w-6 h-6 rounded-xl bg-sky-50 text-sky-600 flex items-center justify-center text-sm mb-2 border border-sky-100">
                     🗺️
                   </div>
-                  <span className="text-[11px] font-black text-slate-800">Ver Mapa</span>
+                  <span className="text-xs font-black text-slate-800">Ver Mapa</span>
                   <span className="text-[10px] text-slate-400 mt-0.5">Pontos e calor</span>
                 </button>
 
@@ -1715,12 +1715,12 @@ export default function App() {
                     setProtocoloConsulta('')
                     setMostrarConsultaProtocolo(true)
                   }}
-                  className="bg-white hover:bg-slate-50 border border-slate-200/90 rounded-2xl p-3 shadow-2xs flex flex-col items-start transition-all cursor-pointer text-left"
+                  className="bg-white hover:bg-slate-50 border border-slate-200/90 rounded-2xl p-2.5 shadow-2xs flex flex-col items-start transition-all cursor-pointer text-left"
                 >
                   <div className="w-6 h-6 rounded-xl bg-indigo-50 text-indigo-600 flex items-center justify-center mb-2 border border-indigo-100">
                     <Search size={14} strokeWidth={2.25} />
                   </div>
-                  <span className="text-[11px] font-black text-slate-800">Consultar</span>
+                  <span className="text-xs font-black text-slate-800">Consultar</span>
                   <span className="text-[10px] text-slate-400 mt-0.5">Protocolo</span>
                 </button>
               </div>
@@ -1733,7 +1733,7 @@ export default function App() {
                 </div>
                 <div>
                   <h2 className="text-sm font-semibold text-slate-800">Divulgação Comunitária &amp; Fiscalização</h2>
-                  <p className="mt-0.5 line-clamp-1 text-[10px] leading-relaxed text-slate-600">
+                  <p className="mt-0.5 line-clamp-1 text-xs leading-relaxed text-slate-600">
                     Ajude a fortalecer a fiscalização cívica em Ananindeua. Compartilhe o acesso direto ou gere o cartaz oficial para impressão.
                   </p>
                 </div>
@@ -1745,7 +1745,7 @@ export default function App() {
                     feedbackSensorial.toqueSuave()
                     setMostrarQrCode(true)
                   }}
-                  className="flex flex-1 items-center justify-center gap-1 rounded-xl bg-blue-600 py-1.5 px-3 text-xs font-black text-white transition-colors hover:bg-blue-700 cursor-pointer"
+                  className="flex flex-1 items-center justify-center gap-1 rounded-xl bg-blue-600 py-2 px-3 text-xs font-black text-white transition-colors hover:bg-blue-700 cursor-pointer"
                 >
                   <QrCode size={14} strokeWidth={2.25} />
                   Abrir QR Code
@@ -1753,7 +1753,7 @@ export default function App() {
                 <button
                   type="button"
                   onClick={imprimirCartazA4}
-                  className="flex flex-1 items-center justify-center gap-1 rounded-xl border border-slate-200 bg-slate-50 py-1.5 px-3 text-xs font-black text-slate-700 transition-colors hover:bg-slate-100 cursor-pointer"
+                  className="flex flex-1 items-center justify-center gap-1 rounded-xl border border-slate-200 bg-slate-50 py-2 px-3 text-xs font-black text-slate-700 transition-colors hover:bg-slate-100 cursor-pointer"
                 >
                   🖨️ Imprimir Cartaz A4
                 </button>
