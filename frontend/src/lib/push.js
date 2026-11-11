@@ -7,7 +7,7 @@ import { supabase } from './supabase'
 import { ehUuid } from './protocolo'
 
 export const VAPID_PUBLIC_KEY =
-  import.meta.env.VITE_VAPID_PUBLIC_KEY || 'BBglfSQbYydYwqquV0eqA9_G_PMGuaKsgS0BzcVhyqjoNJiBpQ1T5nZKtcHlahnlPrsinOdanaOsyYCnQRoxypw'
+  import.meta.env.VITE_VAPID_PUBLIC_KEY || 'BG-hfZT9xDRBMovOj_6JJHHDIAuGBSW36IsG_yH0C9mtEuz8lBp3tpPuVC0MpF5usU2w4_j3xNU0B9E92nmYkqs'
 
 const CHAVE_INSCRITOS = 'zelador_avisos_protocolos'
 const CHAVE_PENDENTES = 'zelador_avisos_pendentes'
