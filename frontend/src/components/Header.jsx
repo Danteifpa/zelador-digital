@@ -10,6 +10,7 @@ export default function Header({
   filaPendente,
   sincronizandoFila,
   onSincronizar,
+  dadosGuardadosEm,
   notificacoesNaoLidas,
   onIrParaInicio,
   onAbrirNotificacoes,
@@ -22,6 +23,13 @@ export default function Header({
         <div className="bg-amber-500 text-white text-[11px] font-black py-1.5 px-4 text-center tracking-wide sticky top-0 z-50 flex items-center justify-center gap-1.5 shadow-xs">
           <span>⚠️</span>
           <span>Modo Offline Ativo: Registos serão sincronizados quando recuperar rede</span>
+        </div>
+      )}
+
+      {dadosGuardadosEm && (
+        <div role="status" className="bg-slate-800 text-slate-100 text-[11px] font-bold py-1.5 px-4 text-center">
+          A mostrar dados guardados no telemóvel de{' '}
+          {new Date(dadosGuardadosEm).toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' })}
         </div>
       )}
 

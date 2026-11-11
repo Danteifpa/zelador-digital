@@ -4,16 +4,28 @@
   "description": "Mapeamento urbano e zeladoria comunitária independente para o Residencial Novo Cristo e Icuí.",
   "icons": [
     {
-      "src": "/favicon.svg",
-      "type": "image/svg+xml",
-      "sizes": "any",
-      "purpose": "any maskable"
+      "src": "/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
     },
     {
-      "src": "/icons.svg",
+      "src": "/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/icon-maskable-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    },
+    {
+      "src": "/favicon.svg",
+      "sizes": "any",
       "type": "image/svg+xml",
-      "sizes": "192x192 512x512",
-      "purpose": "any maskable"
+      "purpose": "any"
     }
   ],
   "start_url": "/",
@@ -22,21 +34,39 @@
   "display": "standalone",
   "orientation": "portrait-primary",
   "scope": "/",
-  "categories": ["utilities", "social", "productivity"],
+  "categories": [
+    "utilities",
+    "social",
+    "productivity"
+  ],
   "shortcuts": [
     {
       "name": "Registar Ocorrência",
       "short_name": "Registar",
       "description": "Abrir ecrã para registar ocorrência comunitária",
       "url": "/?aba=reportar",
-      "icons": [{ "src": "/favicon.svg", "sizes": "any" }]
+      "icons": [
+        {
+          "src": "/icon-192.png",
+          "sizes": "192x192",
+          "type": "image/png"
+        }
+      ]
     },
     {
       "name": "Ver Mapa",
       "short_name": "Mapa",
       "description": "Visualizar mapa térmico e ocorrências",
       "url": "/?aba=mapa",
-      "icons": [{ "src": "/favicon.svg", "sizes": "any" }]
+      "icons": [
+        {
+          "src": "/icon-192.png",
+          "sizes": "192x192",
+          "type": "image/png"
+        }
+      ]
     }
-  ]
+  ],
+  "id": "/",
+  "lang": "pt-BR"
 }

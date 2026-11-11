@@ -11,7 +11,9 @@ import StatsOverview from './components/StatsOverview'
 import CommunityAlert from './components/CommunityAlert'
 import ReportModal from './components/ReportModal'
 import ErrorBoundary from './components/ErrorBoundary'
+import AvisoAtualizacao from './components/AvisoAtualizacao'
 import { lerFila, adicionarAFila, atualizarItemNaFila, removerDaFila, FilaCheiaError } from './lib/filaOffline'
+import { lerCache, gravarCache, pedirArmazenamentoPersistente } from './lib/armazenamento'
 import { gerarIdOcorrencia, ehUuid, protocoloCivico } from './lib/protocolo'
 
 // Módulos pesados (Leaflet, Painel de Gestão, gerador de QR Code) só são descarregados quando
@@ -274,9 +276,15 @@ function lerRacionaisGps(view, offset, isLittleEndian) {
   return [dNum / (dDen || 1), mNum / (mDen || 1), sNum / (sDen || 1)]
 }
 
+// Atalhos do ícone instalado (manifest.json → shortcuts): /?aba=reportar, /?aba=mapa, ...
+function abaDoEndereco() {
+  if (typeof window === 'undefined') return null
+  return new URLSearchParams(window.location.search).get('aba')
+}
+
 export default function App() {
   const [modo, setModo] = useState('normal')
-  const [abaAtiva, setAbaAtiva] = useState('inicio')
+  const [abaAtiva, setAbaAtiva] = useState(() => (['mapa', 'registos', 'gestao'].includes(abaDoEndereco()) ? abaDoEndereco() : 'inicio'))
   const [mostrarOnboarding, setMostrarOnboarding] = useState(false)
   const [etapaOnboarding, setEtapaOnboarding] = useState(0)
 
@@ -295,7 +303,9 @@ export default function App() {
 
   // Conectividade
   const estaOnline = useNetworkStatus()
-  const [filaOffline, setFilaOffline] = useState(() => lerFila())
+  const [filaOffline, setFilaOffline] = useState([])
+  // Data dos dados mostrados quando vieram da cópia guardada no telemóvel (sem rede).
+  const [dadosGuardadosEm, setDadosGuardadosEm] = useState(null)
   const [sincronizandoFila, setSincronizandoFila] = useState(false)
   // Trinco síncrono: impede duas sincronizações em paralelo (evento online + botão).
   const sincronizandoRef = useRef(false)
@@ -333,7 +343,7 @@ export default function App() {
   const [erroProtocolo, setErroProtocolo] = useState('')
   const [notificacoesAtivadas, setNotificacoesAtivadas] = useState(false)
   const [duplicataEncontrada, setDuplicataEncontrada] = useState(null)
-  const [mostrarReportModal, setMostrarReportModal] = useState(false)
+  const [mostrarReportModal, setMostrarReportModal] = useState(() => abaDoEndereco() === 'reportar')
   const [erroGps, setErroGps] = useState(null)
 
   const imprimirCartazA4 = () => {
@@ -412,11 +422,28 @@ export default function App() {
     // Os handlers usam refs/setters estáveis; registar uma única vez.
   }, [])
 
-  // Se o app abrir já com rede e com registos pendentes, sincroniza sem esperar por um evento "online".
+  // Arranque: lê a fila guardada (IndexedDB) e, se houver rede e registos pendentes, sincroniza
+  // sem esperar por um evento "online". Também sincroniza quando o utilizador volta ao app.
   useEffect(() => {
-    if (!navigator.onLine || lerFila().length === 0) return undefined
-    const temporizador = window.setTimeout(() => sincronizarRef.current?.(), 2000)
-    return () => window.clearTimeout(temporizador)
+    let temporizador
+    pedirArmazenamentoPersistente()
+    lerFila()
+      .then((fila) => {
+        setFilaOffline(fila)
+        if (navigator.onLine && fila.length > 0) {
+          temporizador = window.setTimeout(() => sincronizarRef.current?.(), 2000)
+        }
+      })
+      .catch((erro) => console.error('Não foi possível ler a fila offline:', erro))
+
+    const aoVoltar = () => {
+      if (document.visibilityState === 'visible' && navigator.onLine) sincronizarRef.current?.()
+    }
+    document.addEventListener('visibilitychange', aoVoltar)
+    return () => {
+      window.clearTimeout(temporizador)
+      document.removeEventListener('visibilitychange', aoVoltar)
+    }
   }, [])
 
   useEffect(() => {
@@ -594,8 +621,20 @@ export default function App() {
 
       if (error) throw error
       setRegistos(data || [])
+      setDadosGuardadosEm(null)
+      // Guarda uma cópia para a lista e o mapa funcionarem sem internet.
+      gravarCache('registos', { dados: data || [], em: new Date().toISOString() }).catch(() => {})
     } catch (err) {
       console.error('Erro ao buscar registos:', err.message)
+      try {
+        const copia = await lerCache('registos')
+        if (copia?.dados) {
+          setRegistos(copia.dados)
+          setDadosGuardadosEm(copia.em)
+        }
+      } catch {
+        /* sem cópia guardada */
+      }
     } finally {
       setCarregandoRegistos(false)
     }
@@ -650,20 +689,6 @@ export default function App() {
       },
       { enableHighAccuracy: true, timeout: 15000, maximumAge: 0 }
     )
-  }
-
-  const arquivoParaBase64 = (file) => {
-    return new Promise((resolve, reject) => {
-      const reader = new FileReader()
-      reader.readAsDataURL(file)
-      reader.onload = () => resolve(reader.result)
-      reader.onerror = (error) => reject(error)
-    })
-  }
-
-  const base64ParaBlob = async (base64) => {
-    const res = await fetch(base64)
-    return await res.blob()
   }
 
   const handleFotoChange = async (e) => {
@@ -759,7 +784,13 @@ export default function App() {
 
   const sincronizarFilaOffline = async () => {
     if (sincronizandoRef.current) return
-    const pendentes = lerFila()
+    let pendentes
+    try {
+      pendentes = await lerFila()
+    } catch (erro) {
+      console.error('Não foi possível ler a fila offline:', erro)
+      return
+    }
     if (pendentes.length === 0) {
       setFilaOffline([])
       return
@@ -775,8 +806,8 @@ export default function App() {
           let urlFotoPublica = item.fotoUrl || null
 
           // Envia a foto uma única vez. Se o upload falhar, o item fica na fila (nunca segue sem foto).
-          if (!urlFotoPublica && item.fotoBase64) {
-            const blob = await base64ParaBlob(item.fotoBase64)
+          if (!urlFotoPublica && item.foto) {
+            const blob = item.foto
             const extensao = blob.type === 'image/webp' ? 'webp' : 'jpg'
             const filePath = `ocorrencias/${Date.now()}_offline_${Math.random().toString(36).substring(2, 7)}.${extensao}`
 
@@ -787,8 +818,8 @@ export default function App() {
 
             const { data: publicData } = supabase.storage.from('ocorrencias').getPublicUrl(filePath)
             urlFotoPublica = publicData?.publicUrl || null
-            // Guarda o URL e liberta o base64: uma nova tentativa já não repete o upload.
-            atualizarItemNaFila(item.id, { fotoUrl: urlFotoPublica, fotoBase64: null })
+            // Guarda o URL e liberta a foto: uma nova tentativa já não repete o upload.
+            await atualizarItemNaFila(item.id, { fotoUrl: urlFotoPublica, foto: null })
           }
 
           const pontoWKT = `POINT(${item.longitude} ${item.latitude})`
@@ -811,13 +842,11 @@ export default function App() {
       }
     } finally {
       // Remove só o que foi enviado, relendo a fila: registos guardados entretanto não se perdem.
-      let filaRestante = lerFila()
       try {
-        filaRestante = removerDaFila(sincronizados)
+        setFilaOffline(await removerDaFila(sincronizados))
       } catch (e) {
         console.error('Falha ao atualizar a fila offline:', e)
       }
-      setFilaOffline(filaRestante)
       sincronizandoRef.current = false
       setSincronizandoFila(false)
     }
@@ -901,22 +930,17 @@ export default function App() {
       const fotoOtimizada = foto
 
       if (!navigator.onLine) {
-        let base64Foto = null
-        if (fotoOtimizada) {
-          base64Foto = await arquivoParaBase64(fotoOtimizada)
-        }
-
         const itemOffline = {
           id: idOcorrencia,
           categoria,
           descricao: pontoReferencia.trim() || 'Ocorrência registada offline',
           latitude: localizacao.latitude,
           longitude: localizacao.longitude,
-          fotoBase64: base64Foto,
+          foto: fotoOtimizada || null,
           criadoEm: new Date().toISOString()
         }
 
-        setFilaOffline(adicionarAFila(itemOffline))
+        setFilaOffline(await adicionarAFila(itemOffline))
 
         feedbackSensorial.envioSucesso()
         const mensagemOffline = 'Sem ligação à internet. A sua ocorrência foi guardada e será enviada automaticamente assim que a rede voltar.'
@@ -992,17 +1016,16 @@ export default function App() {
       if (!navigator.onLine || /network|fetch|failed to fetch|offline/i.test(err.message || '')) {
         try {
           const fotoOtimizada = foto
-          const fotoBase64 = fotoOtimizada ? await arquivoParaBase64(fotoOtimizada) : null
           const itemOffline = {
             id: idOcorrencia,
             categoria,
             descricao: pontoReferencia.trim() || 'Ocorrência registada pela comunidade',
             latitude: localizacao.latitude,
             longitude: localizacao.longitude,
-            fotoBase64,
+            foto: fotoOtimizada || null,
             criadoEm: new Date().toISOString()
           }
-          setFilaOffline(adicionarAFila(itemOffline))
+          setFilaOffline(await adicionarAFila(itemOffline))
           const mensagemOffline = 'Sem ligação à internet. A sua ocorrência foi guardada e será enviada automaticamente assim que a rede voltar.'
           mostrarAlertaToast(mensagemOffline)
           if (modo === 'facil') falarTexto(mensagemOffline)
@@ -1089,6 +1112,7 @@ export default function App() {
         filaPendente={filaOffline.length}
         sincronizandoFila={sincronizandoFila}
         onSincronizar={sincronizarFilaOffline}
+        dadosGuardadosEm={dadosGuardadosEm}
         notificacoesNaoLidas={notificacoesNaoLidas}
         onIrParaInicio={() => {
           feedbackSensorial.toqueSuave()
@@ -1122,6 +1146,8 @@ export default function App() {
           </div>
         </div>
       )}
+
+      <AvisoAtualizacao />
 
       {mostrarQrCode && (
         <Suspense fallback={null}>
