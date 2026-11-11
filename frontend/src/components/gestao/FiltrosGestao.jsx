@@ -8,7 +8,7 @@ export default function FiltrosGestao({ filtroStatus, ordenarPorGut, setFiltroSt
     <div className="space-y-2">
       <input
         type="text"
-        placeholder="Filtrar por descrição ou categoria..."
+        placeholder="Buscar por protocolo, descrição ou tipo..."
         value={termoBusca}
         onChange={(e) => setTermoBusca(e.target.value)}
         className="w-full bg-white border border-slate-200 rounded-2xl px-4 py-2.5 text-xs font-medium focus:outline-none focus:border-blue-500 shadow-2xs"
@@ -20,7 +20,7 @@ export default function FiltrosGestao({ filtroStatus, ordenarPorGut, setFiltroSt
             key={status}
             type="button"
             onClick={() => setFiltroStatus(status)}
-            className={`px-3 py-1.5 rounded-xl text-[11px] font-bold capitalize transition-all shrink-0 cursor-pointer ${
+            className={`px-3 py-1.5 rounded-xl text-[11px] font-bold transition-all shrink-0 cursor-pointer ${
               filtroStatus === status
                 ? 'bg-blue-600 text-white shadow-2xs'
                 : 'bg-white border border-slate-200 text-slate-600 hover:bg-slate-50'
@@ -36,7 +36,7 @@ export default function FiltrosGestao({ filtroStatus, ordenarPorGut, setFiltroSt
             ordenarPorGut ? 'bg-rose-600 text-white shadow-2xs' : 'bg-white border border-slate-200 text-slate-600 hover:bg-slate-50'
           }`}
         >
-          {ordenarPorGut ? 'GUT: maior primeiro' : 'Ordenar por GUT'}
+          {ordenarPorGut ? '🔥 Mais urgentes primeiro' : '↕ Ordenar por urgência'}
         </button>
       </div>
     </div>
