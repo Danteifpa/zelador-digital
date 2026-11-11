@@ -2,6 +2,14 @@
 
 Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/). Datas no fuso de Brasília.
 
+## [Não lançado]
+
+### Adicionado
+- "Também vi este problema": vizinhos confirmam um chamado já aberto em vez de registrar outro igual. Aparece no aviso de chamado semelhante, no detalhe e na lista; no Painel, chamados com 3 ou mais confirmações sobem na prioridade GUT.
+
+### Segurança
+- A função antiga `incrementar_apoio` (que deixava qualquer pessoa somar apoios sem limite) foi trocada por `apoiar_ocorrencia`: 1 apoio por aparelho e limite por hora por origem.
+
 ## [1.0.0] — 2026-11-10
 
 Primeira versão organizada do Zelador Digital, publicada em [zeladordigital.vercel.app](https://zeladordigital.vercel.app).

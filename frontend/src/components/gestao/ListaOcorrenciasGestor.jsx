@@ -2,6 +2,7 @@ import { corCriticidade, eResolvida, etapaStatus, formatarData, protocoloCivico,
 import { ESTADOS, normalizarEstado, rotuloDoEstado } from '../../lib/status'
 import Spinner from './Spinner'
 import { rotuloDaCategoria } from '../../lib/categorias'
+import { textoConfirmacoes } from '../../lib/apoios'
 
 /** Lista priorizada com tramitação, despacho e ações de estado. */
 export default function ListaOcorrenciasGestor({ acaoEmAndamento, alterarStatusOcorrencia, carregandoAcao, confirmarResolucao, despachoPorId, fotoResolucaoPorId, itemResolucao, ocorrenciasFiltradasComGut, salvarDespacho, setDespachoPorId, setFotoResolucaoPorId, setItemEdicao, setItemExclusao, setItemResolucao, setTramitacaoAberta, tramitacaoAberta }) {
@@ -36,6 +37,11 @@ export default function ListaOcorrenciasGestor({ acaoEmAndamento, alterarStatusO
                 >
                   {rotuloCriticidade(item.gut.pontuacao)}
                 </span>
+                {textoConfirmacoes(item.total_apoios) && (
+                  <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-blue-50 text-blue-700 border border-blue-200">
+                    👥 {textoConfirmacoes(item.total_apoios)}
+                  </span>
+                )}
                 </div>
               </div>
               <span className="text-[10px] text-slate-400 font-mono">

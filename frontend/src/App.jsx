@@ -13,6 +13,8 @@ import ReportModal from './components/ReportModal'
 import ErrorBoundary from './components/ErrorBoundary'
 import AvisoAtualizacao from './components/AvisoAtualizacao'
 import BotaoAvisos from './components/BotaoAvisos'
+import BotaoApoio from './components/BotaoApoio'
+import { textoConfirmacoes, MENSAGENS_APOIO } from './lib/apoios'
 import { lerFila, adicionarAFila, atualizarItemNaFila, removerDaFila, FilaCheiaError } from './lib/filaOffline'
 import { lerCache, gravarCache, pedirArmazenamentoPersistente } from './lib/armazenamento'
 import { gerarIdOcorrencia, ehUuid, protocoloCivico } from './lib/protocolo'
@@ -546,6 +548,16 @@ export default function App() {
     mostrarAlertaToast(MENSAGENS_AVISOS[estado] || 'Não foi possível ativar os avisos agora. Tente novamente.')
   }
 
+  // Depois de "Também vi este problema": atualiza o total na lista, no detalhe e na consulta.
+  const registrarApoio = (id, total, mensagem) => {
+    const comTotal = (item) => (item && item.id === id ? { ...item, total_apoios: total } : item)
+    setRegistos((atuais) => atuais.map(comTotal))
+    setOcorrenciaSelecionada(comTotal)
+    setResultadoProtocolo(comTotal)
+    if (mensagem) mostrarAlertaToast(mensagem)
+    return mensagem === MENSAGENS_APOIO.apoiado || mensagem === MENSAGENS_APOIO.repetido
+  }
+
   const estadoAvisos = (id) => avisos[id] || (id && avisosAtivosPara(id) ? 'ativado' : null)
 
   const concluirOnboarding = () => {
@@ -900,7 +912,7 @@ export default function App() {
   const encontrarDuplicata = async () => {
     const { data, error } = await supabase
       .from('ocorrencias_georreferenciadas')
-      .select('id,categoria,status,latitude,longitude')
+      .select('id,categoria,status,latitude,longitude,descricao,total_apoios,created_at')
       .eq('categoria', categoria)
       .in('status', VALORES_EM_ABERTO)
       .limit(500)
@@ -1309,17 +1321,30 @@ export default function App() {
         <div className="fixed inset-0 z-[70] bg-slate-950/75 backdrop-blur-sm flex items-center justify-center p-4">
           <div className="w-full max-w-sm rounded-3xl bg-white p-6 shadow-2xl border border-slate-200">
             <div className="w-12 h-12 rounded-2xl bg-amber-100 text-amber-700 flex items-center justify-center text-xl mb-4">⚠️</div>
-            <h2 className="text-base font-black text-slate-900">Chamado semelhante encontrado</h2>
-            <p className="mt-2 text-xs leading-relaxed text-slate-600">
-              Já existe um chamado em aberto neste local (Protocolo {protocoloCivico(duplicataEncontrada.id)}). Deseja registrar mesmo assim ou retornar?
+            <h2 className="text-base font-black text-slate-900">Alguém já registrou este problema aqui</h2>
+            <p className="mt-2 text-sm leading-relaxed text-slate-600">
+              Existe um chamado em aberto a menos de 50 m (Protocolo {protocoloCivico(duplicataEncontrada.id)}
+              {duplicataEncontrada.descricao ? `: “${duplicataEncontrada.descricao}”` : ''}). Confirmar o registro existente ajuda mais do que criar outro igual.
             </p>
-            <div className="mt-5 grid grid-cols-2 gap-2">
+            <div className="mt-4">
+              <BotaoApoio
+                destaque
+                ocorrencia={duplicataEncontrada}
+                onApoiado={(total, mensagem) => {
+                  if (registrarApoio(duplicataEncontrada.id, total, mensagem)) {
+                    setDuplicataEncontrada(null)
+                    setMostrarReportModal(false)
+                  }
+                }}
+              />
+            </div>
+            <div className="mt-2 grid grid-cols-2 gap-2">
               <button
                 type="button"
                 onClick={() => setDuplicataEncontrada(null)}
                 className="rounded-xl border border-slate-200 px-3 py-2.5 text-xs font-bold text-slate-700 hover:bg-slate-50 cursor-pointer"
               >
-                Retornar
+                Voltar
               </button>
               <button
                 type="button"
@@ -1681,6 +1706,14 @@ export default function App() {
                   {ocorrenciaSelecionada.descricao || 'Sem descrição detalhada fornecida.'}
                 </p>
               </div>
+
+              {!estaResolvido(ocorrenciaSelecionada.status) && (
+                <BotaoApoio
+                  key={ocorrenciaSelecionada.id}
+                  ocorrencia={ocorrenciaSelecionada}
+                  onApoiado={(total, mensagem) => registrarApoio(ocorrenciaSelecionada.id, total, mensagem)}
+                />
+              )}
 
               {ocorrenciaSelecionada.latitude && ocorrenciaSelecionada.longitude && (
                 <a
@@ -2176,6 +2209,9 @@ export default function App() {
                             <span className="text-[10px] text-slate-500 font-mono">
                               • {distPonto.toFixed(1)} km do centro
                             </span>
+                          )}
+                          {textoConfirmacoes(reg.total_apoios) && (
+                            <span className="text-[10px] font-bold text-blue-700">👥 {textoConfirmacoes(reg.total_apoios)}</span>
                           )}
                         </div>
                       </div>
