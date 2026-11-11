@@ -47,6 +47,8 @@ export function urgenciaPorData(createdAt, status, agora = new Date()) {
 }
 
 export function tendenciaPorContexto(item, recorrente, dataAtual = new Date()) {
+  // 3 ou mais vizinhos confirmaram o problema ("Também vi"): tendência máxima.
+  if ((Number(item?.total_apoios) || 0) >= 3) return 5
   const mes = dataAtual.getMonth() + 1
   const periodoChuvoso = mes >= 12 || mes <= 5
   return recorrente || periodoChuvoso ? 4 : 3

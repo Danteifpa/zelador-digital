@@ -10,6 +10,7 @@ Tudo o que roda no Supabase do Zelador Digital está versionado nesta pasta.
 | [`20261111_estados_unificados.sql`](migrations/20261111_estados_unificados.sql) | Estados `pendente` / `em_analise` / `resolvido` com restrição `CHECK` |
 | [`20261111_notificacoes_push.sql`](migrations/20261111_notificacoes_push.sql) | Tabela `inscricoes_push` e gatilho que chama a função de avisos |
 | [`20261111_textos_pt_br.sql`](migrations/20261111_textos_pt_br.sql) | Troca a descrição padrão antiga ("registada") por "registrada" |
+| [`20261111_apoios.sql`](migrations/20261111_apoios.sql) | "Também vi este problema": tabela `apoios`, função `apoiar_ocorrencia` (1 por aparelho, limite por hora) e remove `incrementar_apoio` |
 
 Cada arquivo roda numa transação e pode ser aplicado mais de uma vez. Para aplicar: **SQL Editor → New query → colar → Run**.
 
