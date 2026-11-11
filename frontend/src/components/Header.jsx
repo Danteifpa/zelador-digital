@@ -39,7 +39,7 @@ export default function Header({
       )}
 
       {/* TOPO / NAVBAR MINIMALISTA */}
-      <header className="bg-white/90 backdrop-blur-md border-b border-slate-200 sticky top-0 z-40 shadow-xs">
+      <header className="bg-white/90 backdrop-blur-md border-b border-slate-200 sticky top-0 z-40 shadow-xs pt-[env(safe-area-inset-top)]">
         <div className="max-w-md mx-auto px-4 h-16 flex items-center justify-between">
           <button
             onClick={onIrParaInicio}

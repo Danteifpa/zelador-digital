@@ -11,4 +11,6 @@ html, body {
 
 #root {
   min-height: 100vh;
+  /* Altura visível real em telemóveis (sem a área por trás da barra de endereço). */
+  min-height: 100dvh;
 }
