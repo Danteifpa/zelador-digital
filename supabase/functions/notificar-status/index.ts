@@ -24,7 +24,7 @@ const MENSAGENS: Record<string, string> = {
   resolvido: 'Problema resolvido! Toque para ver o andamento e a foto da solução.'
 }
 
-const CHAVE_PUBLICA_VAPID = 'BK9zRIzxn1oGnoiyJnVyr76ZWFndu9hhJMUZGQo3cj5IHUXKnTXDxIcVFEDnFlb_rXpKb9BNZNVqUg8ZqSMjfGc'
+const CHAVE_PUBLICA_VAPID = 'BBglfSQbYydYwqquV0eqA9_G_PMGuaKsgS0BzcVhyqjoNJiBpQ1T5nZKtcHlahnlPrsinOdanaOsyYCnQRoxypw'
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
 
