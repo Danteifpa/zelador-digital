@@ -15,7 +15,7 @@ const CHAVE_BACKUP = 'fila_ocorrencias_offline_corrompida'
 
 export class FilaCheiaError extends Error {
   constructor() {
-    super('O espaço do telemóvel para registos offline está cheio. Ligue-se à internet e sincronize os registos pendentes antes de guardar mais.')
+    super('O espaço do celular para registros offline está cheio. Conecte-se à internet e sincronize os registros pendentes antes de salvar mais.')
     this.name = 'FilaCheiaError'
   }
 }
@@ -72,7 +72,7 @@ function migrarDoLocalStorage() {
     } catch (erro) {
       if (erro instanceof SyntaxError) {
         // Conteúdo ilegível: guarda uma cópia para recuperação manual e segue sem ele.
-        console.warn('Fila offline antiga ilegível; cópia guardada em', CHAVE_BACKUP, erro)
+        console.warn('Fila offline antiga ilegível; cópia salva em', CHAVE_BACKUP, erro)
         try {
           localStorage.setItem(CHAVE_BACKUP, bruto)
           localStorage.removeItem(FILA_OFFLINE_KEY)

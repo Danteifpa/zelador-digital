@@ -25,7 +25,7 @@ const ModalQRCode = lazyComRecarga(() => import('./components/ModalQRCode'))
 
 const TAMANHO_PAGINA_LISTA = 20
 
-function CarregandoSecao({ texto = 'A carregar...' }) {
+function CarregandoSecao({ texto = 'Carregando...' }) {
   return (
     <div role="status" className="rounded-3xl border border-slate-200 bg-white p-8 text-center text-sm font-bold text-slate-500 animate-pulse">
       {texto}
@@ -69,14 +69,14 @@ const ETAPAS_ONBOARDING = [
     gradiente: 'from-blue-600 to-indigo-600'
   },
   {
-    titulo: 'Registo Rápido & Georreferenciado',
+    titulo: 'Registro Rápido & Georreferenciado',
     descricao: 'Tire uma fotografia em campo e deixe que o satélite GPS marque com precisão o ponto exato da ocorrência territorial.',
     icone: '📸',
     gradiente: 'from-sky-600 to-blue-600'
   },
   {
     titulo: 'Transparência & Acompanhamento',
-    descricao: 'Consulte os dados no mapa térmico e siga a linha do tempo desde a submissão até à intervenção concluída.',
+    descricao: 'Consulte os dados no mapa térmico e siga a linha do tempo desde o envio até a intervenção concluída.',
     icone: '🗺️',
     gradiente: 'from-emerald-600 to-teal-600'
   }
@@ -86,7 +86,7 @@ const NOTIFICACOES_PADRAO = [
   {
     id: 1,
     titulo: 'Ação de Limpeza Comunitária',
-    mensagem: 'Próximo sábado haverá mutirão voluntário de recolha de entulho nos pontos críticos identificados no mapa.',
+    mensagem: 'Próximo sábado haverá mutirão voluntário de coleta de entulho nos pontos críticos identificados no mapa.',
     tipo: 'comunidade',
     icone: '🧹',
     data: 'Hoje, 09:30'
@@ -94,7 +94,7 @@ const NOTIFICACOES_PADRAO = [
   {
     id: 2,
     titulo: 'Manutenção de Iluminação Pública',
-    mensagem: 'Registos de postes apagados no setor leste foram compilados para vistoria e troca das lâmpadas.',
+    mensagem: 'Registros de postes apagados no setor leste foram compilados para vistoria e troca das lâmpadas.',
     tipo: 'servicos',
     icone: '💡',
     data: 'Ontem, 16:45'
@@ -102,7 +102,7 @@ const NOTIFICACOES_PADRAO = [
   {
     id: 3,
     titulo: 'Modo Offline Ativado',
-    mensagem: 'Agora pode registar ocorrências mesmo sem sinal 4G/5G. O envio acontece assim que restabelecer a ligação.',
+    mensagem: 'Agora você pode registrar ocorrências mesmo sem sinal 4G/5G. O envio acontece assim que a conexão voltar.',
     tipo: 'sistema',
     icone: '📱',
     data: 'Há 2 dias'
@@ -355,7 +355,7 @@ export default function App() {
     const appInstalada = () => {
       setPwaInstalado(true)
       setPromptInstalacao(null)
-      mostrarAlertaToast('Aplicação instalada com sucesso no telemóvel!')
+      mostrarAlertaToast('Aplicativo instalado com sucesso no celular!')
     }
 
     window.addEventListener('beforeinstallprompt', capturarPrompt)
@@ -370,7 +370,7 @@ export default function App() {
   const instalarAplicacaoPWA = async () => {
     feedbackSensorial.toqueSuave()
     if (!promptInstalacao) {
-      mostrarAlertaToast('Use a opção "Adicionar ao ecrã principal" no menu do navegador.')
+      mostrarAlertaToast('Use a opção "Adicionar à tela inicial" no menu do navegador.')
       return
     }
 
@@ -396,11 +396,11 @@ export default function App() {
 
   useEffect(() => {
     const handleOnline = () => {
-      mostrarAlertaToast('Ligação restabelecida! A sincronizar dados...')
+      mostrarAlertaToast('Conexão restabelecida! Sincronizando dados...')
       sincronizarRef.current?.()
     }
     const handleOffline = () => {
-      mostrarAlertaToast('Sem ligação à internet. A sua ocorrência será guardada e enviada automaticamente.')
+      mostrarAlertaToast('Sem conexão à internet. Sua ocorrência será salva e enviada automaticamente.')
     }
 
     window.addEventListener('online', handleOnline)
@@ -616,7 +616,7 @@ export default function App() {
       // Guarda uma cópia para a lista e o mapa funcionarem sem internet.
       gravarCache('registos', { dados: data || [], em: new Date().toISOString() }).catch(() => {})
     } catch (err) {
-      console.error('Erro ao buscar registos:', err.message)
+      console.error('Erro ao buscar registros:', err.message)
       try {
         const copia = await lerCache('registos')
         if (copia?.dados) {
@@ -673,7 +673,7 @@ export default function App() {
         setCapturandoGps(false)
         const mensagens = {
           1: 'Permissão de localização negada. Ative a localização para este site nas definições do navegador.',
-          2: 'Não foi possível determinar a localização. Vá para um local aberto e tente de novo.',
+          2: 'Não foi possível determinar a localização. Vá para um local aberto e tente novamente.',
           3: 'O GPS demorou demasiado a responder. Tente de novo.'
         }
         setErroGps(mensagens[err.code] || 'Não foi possível obter a localização.')
@@ -760,7 +760,7 @@ export default function App() {
         })
       } catch (err) {
         if (err.name !== 'AbortError') {
-          console.warn('Falha na partilha nativa:', err)
+          console.warn('Falha no compartilhamento nativo:', err)
         }
       }
     } else {
@@ -847,11 +847,11 @@ export default function App() {
     const falhados = pendentes.length - sincronizados.length
     if (falhados === 0) {
       feedbackSensorial.envioSucesso()
-      mostrarAlertaToast('Todos os registos offline foram sincronizados com sucesso!')
+      mostrarAlertaToast('Todos os registros offline foram sincronizados com sucesso!')
     } else if (sincronizados.length > 0) {
-      mostrarAlertaToast(`${sincronizados.length} registo(s) enviado(s). ${falhados} ficam no telemóvel para nova tentativa.`)
+      mostrarAlertaToast(`${sincronizados.length} registro(s) enviado(s). ${falhados} ficam no celular para nova tentativa.`)
     } else {
-      mostrarAlertaToast('Não foi possível enviar os registos pendentes agora. Ficam guardados no telemóvel para nova tentativa.')
+      mostrarAlertaToast('Não foi possível enviar os registros pendentes agora. Ficam salvos no celular para nova tentativa.')
     }
   }
 
@@ -924,7 +924,7 @@ export default function App() {
         const itemOffline = {
           id: idOcorrencia,
           categoria,
-          descricao: pontoReferencia.trim() || 'Ocorrência registada offline',
+          descricao: pontoReferencia.trim() || 'Ocorrência registrada offline',
           latitude: localizacao.latitude,
           longitude: localizacao.longitude,
           foto: fotoOtimizada || null,
@@ -934,7 +934,7 @@ export default function App() {
         setFilaOffline(await adicionarAFila(itemOffline))
 
         feedbackSensorial.envioSucesso()
-        const mensagemOffline = 'Sem ligação à internet. A sua ocorrência foi guardada e será enviada automaticamente assim que a rede voltar.'
+        const mensagemOffline = 'Sem conexão à internet. Sua ocorrência foi salva e será enviada automaticamente assim que a rede voltar.'
         mostrarAlertaToast(mensagemOffline)
         if (modo === 'facil') falarTexto(mensagemOffline)
 
@@ -942,7 +942,7 @@ export default function App() {
           id: itemOffline.id,
           categoria,
           foto_url: fotoPreview,
-          descricao: `${pontoReferencia.trim() || 'Ocorrência comunitária'} (Guardado Offline)`,
+          descricao: `${pontoReferencia.trim() || 'Ocorrência comunitária'} (Salvo Offline)`,
           latitude: localizacao.latitude,
           longitude: localizacao.longitude,
           status: 'pendente'
@@ -978,7 +978,7 @@ export default function App() {
       const ocorrenciaCriada = await inserirOcorrencia({
         id: idOcorrencia,
         categoria: categoria,
-        descricao: pontoReferencia.trim() || 'Ocorrência registada pela comunidade',
+        descricao: pontoReferencia.trim() || 'Ocorrência registrada pela comunidade',
         foto_url: urlFotoPublica,
         localizacao: pontoWKT,
         status: 'pendente'
@@ -986,14 +986,14 @@ export default function App() {
 
       feedbackSensorial.envioSucesso()
       if (modo === 'facil') {
-        falarTexto('Registo territorial enviado com sucesso! Muito obrigado.')
+        falarTexto('Registro territorial enviado com sucesso! Muito obrigado.')
       }
 
       setSucessoEnvio({
         id: ocorrenciaCriada?.id,
         categoria,
         foto_url: urlFotoPublica,
-        descricao: pontoReferencia.trim() || 'Ocorrência registada pela comunidade',
+        descricao: pontoReferencia.trim() || 'Ocorrência registrada pela comunidade',
         latitude: localizacao.latitude,
         longitude: localizacao.longitude,
         status: 'pendente'
@@ -1010,21 +1010,21 @@ export default function App() {
           const itemOffline = {
             id: idOcorrencia,
             categoria,
-            descricao: pontoReferencia.trim() || 'Ocorrência registada pela comunidade',
+            descricao: pontoReferencia.trim() || 'Ocorrência registrada pela comunidade',
             latitude: localizacao.latitude,
             longitude: localizacao.longitude,
             foto: fotoOtimizada || null,
             criadoEm: new Date().toISOString()
           }
           setFilaOffline(await adicionarAFila(itemOffline))
-          const mensagemOffline = 'Sem ligação à internet. A sua ocorrência foi guardada e será enviada automaticamente assim que a rede voltar.'
+          const mensagemOffline = 'Sem conexão à internet. Sua ocorrência foi salva e será enviada automaticamente assim que a rede voltar.'
           mostrarAlertaToast(mensagemOffline)
           if (modo === 'facil') falarTexto(mensagemOffline)
           setSucessoEnvio({
             id: itemOffline.id,
             categoria,
             foto_url: fotoPreview,
-            descricao: `${itemOffline.descricao} (Guardado Offline)`,
+            descricao: `${itemOffline.descricao} (Salvo Offline)`,
             latitude: localizacao.latitude,
             longitude: localizacao.longitude,
             status: 'pendente'
@@ -1034,7 +1034,7 @@ export default function App() {
           setFotoPreview(null)
           return
         } catch (queueError) {
-          console.error('Falha ao guardar ocorrência offline:', queueError)
+          console.error('Falha ao salvar ocorrência offline:', queueError)
           if (queueError instanceof FilaCheiaError) {
             feedbackSensorial.alertaErro()
             mostrarAlertaToast(queueError.message)
@@ -1048,7 +1048,7 @@ export default function App() {
         return
       }
       console.error('Erro de envio:', err)
-      mostrarAlertaToast(`Falha no registo: ${err.message || 'Erro de comunicação'}`)
+      mostrarAlertaToast(`Falha no registro: ${err.message || 'Erro de comunicação'}`)
     } finally {
       setEnviando(false)
     }
@@ -1152,11 +1152,11 @@ export default function App() {
           fallback={({ tentarDeNovo }) => (
             <div className="fixed inset-0 z-[60] bg-slate-950/75 flex items-center justify-center p-4">
               <div role="alertdialog" aria-modal="true" aria-labelledby="erro-registo-titulo" className="w-full max-w-sm rounded-3xl bg-white p-6 text-center shadow-2xl">
-                <h2 id="erro-registo-titulo" className="text-base font-black text-slate-800">O registo encontrou um erro</h2>
-                <p className="mt-2 text-sm text-slate-600">Os dados que já preencheu continuam guardados.</p>
+                <h2 id="erro-registo-titulo" className="text-base font-black text-slate-800">O registro encontrou um erro</h2>
+                <p className="mt-2 text-sm text-slate-600">Os dados que você já preencheu continuam salvos.</p>
                 <div className="mt-5 grid grid-cols-2 gap-2">
                   <button type="button" onClick={() => setMostrarReportModal(false)} className="min-h-12 rounded-2xl border border-slate-200 text-sm font-bold text-slate-700 hover:bg-slate-50 cursor-pointer">Fechar</button>
-                  <button type="button" onClick={tentarDeNovo} className="min-h-12 rounded-2xl bg-blue-600 text-sm font-black text-white hover:bg-blue-700 cursor-pointer">Tentar de novo</button>
+                  <button type="button" onClick={tentarDeNovo} className="min-h-12 rounded-2xl bg-blue-600 text-sm font-black text-white hover:bg-blue-700 cursor-pointer">Tentar novamente</button>
                 </div>
               </div>
             </div>
@@ -1328,7 +1328,7 @@ export default function App() {
                 className="min-w-0 flex-1 rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-xs font-bold uppercase tracking-wider focus:border-blue-500 focus:outline-none"
               />
               <button type="submit" disabled={consultandoProtocolo} className="rounded-xl bg-blue-600 px-4 py-2.5 text-xs font-black text-white hover:bg-blue-700 disabled:opacity-60 cursor-pointer">
-                {consultandoProtocolo ? 'A buscar...' : 'Buscar'}
+                {consultandoProtocolo ? 'Buscando...' : 'Buscar'}
               </button>
             </form>
             {erroProtocolo && <p className="mt-2 text-xs font-bold text-rose-600">{erroProtocolo}</p>}
@@ -1343,7 +1343,7 @@ export default function App() {
                 </div>
                 <div className="rounded-2xl border border-slate-200 bg-slate-50 p-3">
                   <div className="flex items-start">
-                    {['Registada', 'Em Análise / Oficiada', 'Resolvida'].map((titulo, index) => {
+                    {['Registrada', 'Em análise', 'Resolvida'].map((titulo, index) => {
                       const atual = etapaDoEstado(resultadoProtocolo.status)
                       const concluida = index + 1 <= atual
                       return (
@@ -1389,11 +1389,11 @@ export default function App() {
             </div>
 
             <div>
-              <h3 className="text-lg font-black text-slate-900">Registo Confirmado!</h3>
+              <h3 className="text-lg font-black text-slate-900">Registro Confirmado!</h3>
               <p className="text-xs text-slate-500 mt-1 leading-relaxed">
                 {estaOnline
-                  ? 'A sua ocorrência foi georreferenciada e guardada no banco comunitário.'
-                  : 'Registo salvo no telemóvel! Será enviado para a rede assim que restabelecer o sinal.'}
+                  ? 'Sua ocorrência foi georreferenciada e salva no banco comunitário.'
+                  : 'Registro salvo no celular! Será enviado assim que o sinal voltar.'}
               </p>
             </div>
 
@@ -1401,7 +1401,7 @@ export default function App() {
               {sucessoEnvio.foto_url ? (
                 <img
                   src={sucessoEnvio.foto_url}
-                  alt="Comprovativo"
+                  alt="Comprovante"
                   className="w-12 h-12 rounded-xl object-cover shrink-0 border border-slate-200"
                 />
               ) : (
@@ -1444,7 +1444,7 @@ export default function App() {
                 className="w-full py-3 bg-emerald-50 hover:bg-emerald-100 border border-emerald-200 text-emerald-800 rounded-2xl font-black text-xs uppercase tracking-wider flex items-center justify-center gap-1.5 transition-all cursor-pointer"
               >
                 <span>📢</span>
-                <span>Partilhar no WhatsApp / Redes</span>
+                <span>Compartilhar no WhatsApp / Redes</span>
               </button>
 
               <button
@@ -1456,7 +1456,7 @@ export default function App() {
                 }}
                 className="w-full py-3.5 bg-blue-600 hover:bg-blue-700 text-white rounded-2xl font-black text-xs uppercase tracking-wider shadow-md transition-all active:scale-[0.99] cursor-pointer"
               >
-                Acompanhar na Lista de Registos 📋
+                Acompanhar na Lista de Registros 📋
               </button>
               <button
                 type="button"
@@ -1467,7 +1467,7 @@ export default function App() {
                 }}
                 className="w-full py-3 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-2xl font-bold text-xs transition-all cursor-pointer"
               >
-                Fazer Outro Registo ➕
+                Fazer Outro Registro ➕
               </button>
             </div>
           </div>
@@ -1483,7 +1483,7 @@ export default function App() {
                 onClick={concluirOnboarding}
                 className="text-xs font-bold text-slate-400 hover:text-slate-600 transition-colors cursor-pointer"
               >
-                Saltar Apresentação ✕
+                Pular apresentação ✕
               </button>
             </div>
 
@@ -1531,7 +1531,7 @@ export default function App() {
                   onClick={concluirOnboarding}
                   className="w-full py-3.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-2xl font-black text-xs uppercase tracking-wider shadow-md transition-all active:scale-[0.99] cursor-pointer"
                 >
-                  Começar a Utilizar 🚀
+                  Começar a usar 🚀
                 </button>
               )}
             </div>
@@ -1590,10 +1590,10 @@ export default function App() {
                   <button
                     onClick={() => partilharOcorrencia(ocorrenciaSelecionada)}
                     className="p-2 rounded-xl bg-blue-50 text-blue-600 hover:bg-blue-100 border border-blue-200 text-xs font-bold flex items-center gap-1 cursor-pointer"
-                    title="Partilhar Ocorrência"
+                    title="Compartilhar Ocorrência"
                   >
                     <span>📢</span>
-                    <span>Partilhar</span>
+                    <span>Compartilhar</span>
                   </button>
                   <button
                     onClick={() => {
@@ -1611,7 +1611,7 @@ export default function App() {
                 <div className="rounded-2xl overflow-hidden border border-slate-200 bg-slate-100">
                   <img
                     src={ocorrenciaSelecionada.foto_url}
-                    alt="Comprovativo"
+                    alt="Comprovante"
                     className="w-full h-48 object-cover"
                   />
                 </div>
@@ -1625,7 +1625,7 @@ export default function App() {
                     <span className="absolute -left-2 top-0.5 w-4 h-4 rounded-full bg-blue-600 border-2 border-white flex items-center justify-center text-[8px] text-white">✓</span>
                     <p className="text-xs font-bold text-slate-800">1. Ocorrência Submetida</p>
                     <p className="text-[10px] text-slate-400">
-                      {ocorrenciaSelecionada.created_at ? new Date(ocorrenciaSelecionada.created_at).toLocaleString('pt-BR') : 'Data registada'}
+                      {ocorrenciaSelecionada.created_at ? new Date(ocorrenciaSelecionada.created_at).toLocaleString('pt-BR') : 'Data registrada'}
                     </p>
                   </div>
 
@@ -1696,9 +1696,9 @@ export default function App() {
                     📲
                   </div>
                   <div>
-                    <h3 className="text-xs font-black uppercase tracking-wider text-blue-300">Instalar Aplicação</h3>
+                    <h3 className="text-xs font-black uppercase tracking-wider text-blue-300">Instalar aplicativo</h3>
                     <p className="text-[11px] text-slate-300 mt-0.5 leading-snug">
-                      Aceda ao Zelador Digital diretamente no ecrã do seu telemóvel sem gastar memória.
+                      Acesse o Zelador Digital diretamente na tela do seu celular sem gastar memória.
                     </p>
                   </div>
                 </div>
@@ -1738,7 +1738,7 @@ export default function App() {
                   <div className="w-6 h-6 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center text-sm mb-2 border border-emerald-100">
                     📋
                   </div>
-                  <span className="text-xs font-black text-slate-800">Registos</span>
+                  <span className="text-xs font-black text-slate-800">Registros</span>
                   <span className="text-[10px] text-slate-400 mt-0.5">Histórico</span>
                 </button>
 
@@ -1790,7 +1790,7 @@ export default function App() {
         {abaAtiva === 'reportar' && (
           <form onSubmit={handleSubmit} className="bg-white rounded-3xl p-5 border border-slate-200 shadow-xs space-y-5">
             <div className="flex items-center justify-between border-b border-slate-100 pb-3">
-              <h2 className="text-base font-black text-slate-800">Novo Registo Territorial</h2>
+              <h2 className="text-base font-black text-slate-800">Novo Registro Territorial</h2>
               <span className={`text-[11px] font-bold px-2 py-0.5 rounded-full ${estaOnline ? 'bg-emerald-50 text-emerald-700' : 'bg-amber-50 text-amber-700'}`}>
                 {estaOnline ? 'Online' : 'Armazenamento Local'}
               </span>
@@ -1847,7 +1847,7 @@ export default function App() {
 
               {processandoFoto ? (
                 <div className="rounded-2xl border border-slate-200 bg-slate-50 p-8 text-center text-xs text-blue-600 font-bold animate-pulse">
-                  A otimizar e extrair metadados da fotografia... ⚡
+                  Otimizando a foto e lendo a localização... ⚡
                 </div>
               ) : fotoPreview ? (
                 <div className="relative rounded-2xl overflow-hidden border border-slate-200 bg-slate-100">
@@ -1889,7 +1889,7 @@ export default function App() {
                             ? 'GPS extraído da fotografia!'
                             : 'Localização GPS capturada!'
                           : capturandoGps
-                          ? 'A obter GPS...'
+                          ? 'Obtendo GPS...'
                           : 'GPS pendente'}
                       </p>
                       {origemLocalizacao === 'exif' && (
@@ -1913,7 +1913,7 @@ export default function App() {
                   className="px-3 py-2 text-xs font-bold bg-white border border-slate-200 text-slate-700 hover:bg-slate-100 rounded-xl transition-all shadow-2xs cursor-pointer"
                   title="Recapturar GPS atual"
                 >
-                  {capturandoGps ? 'A obter...' : '🔄'}
+                  {capturandoGps ? 'Obtendo...' : '🔄'}
                 </button>
               </div>
 
@@ -1953,13 +1953,13 @@ export default function App() {
                   }`}
                 >
                   <span>🎤</span>
-                  <span>{gravandoVoz ? 'A ouvir...' : 'Por voz'}</span>
+                  <span>{gravandoVoz ? 'Ouvindo...' : 'Por voz'}</span>
                 </button>
               </div>
 
               <input
                 type="text"
-                placeholder="Ex.: Em frente à mercearia, perto da praça..."
+                placeholder="Ex.: Em frente à padaria, perto da praça..."
                 value={pontoReferencia}
                 onChange={(e) => setPontoReferencia(e.target.value)}
                 className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 bg-slate-50 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 text-xs text-slate-800 transition-all"
@@ -1975,7 +1975,7 @@ export default function App() {
                 enviando || processandoFoto ? 'bg-blue-400 cursor-not-allowed' : 'bg-blue-600 hover:bg-blue-700 active:scale-[0.99] cursor-pointer'
               }`}
             >
-              {enviando ? 'A processar... 🚀' : estaOnline ? 'Enviar Registo 🚀' : 'Guardar no Telemóvel 💾'}
+              {enviando ? 'Processando... 🚀' : estaOnline ? 'Enviar Registro 🚀' : 'Salvar no Celular 💾'}
             </button>
           </form>
         )}
@@ -1984,7 +1984,7 @@ export default function App() {
         {abaAtiva === 'mapa' && (
           <div className="bg-white rounded-3xl p-4 border border-slate-200 shadow-xs">
             <ErrorBoundary nome="Mapa" chaveReset={abaAtiva}>
-              <Suspense fallback={<CarregandoSecao texto="A carregar o mapa..." />}>
+              <Suspense fallback={<CarregandoSecao texto="Carregando o mapa..." />}>
                 <MapaOcorrencias ocorrencias={registos} />
               </Suspense>
             </ErrorBoundary>
@@ -2110,10 +2110,10 @@ export default function App() {
             </div>
 
             {carregandoRegistos ? (
-              <div className="py-16 text-center text-xs text-slate-400">A carregar ocorrências...</div>
+              <div className="py-16 text-center text-xs text-slate-400">Carregando ocorrências...</div>
             ) : registosFiltrados.length === 0 ? (
               <div className="py-12 text-center text-xs text-slate-400 space-y-1">
-                <p className="font-bold">Nenhum registo encontrado com estes filtros.</p>
+                <p className="font-bold">Nenhum registro encontrado com estes filtros.</p>
                 <p className="text-[11px]">Tente limpar a pesquisa ou selecionar outro filtro.</p>
               </div>
             ) : (
@@ -2161,7 +2161,7 @@ export default function App() {
                       </div>
 
                       {reg.foto_url && (
-                        <img src={reg.foto_url} alt="Comprovativo" loading="lazy" decoding="async" width="56" height="56" className="w-14 h-14 rounded-xl object-cover shrink-0 border border-slate-200" />
+                        <img src={reg.foto_url} alt="Comprovante" loading="lazy" decoding="async" width="56" height="56" className="w-14 h-14 rounded-xl object-cover shrink-0 border border-slate-200" />
                       )}
                     </div>
                   )
@@ -2183,7 +2183,7 @@ export default function App() {
         {/* 5. GESTÃO */}
         {abaAtiva === 'gestao' && (
           <ErrorBoundary nome="Gestão" chaveReset={abaAtiva}>
-            <Suspense fallback={<CarregandoSecao texto="A carregar o Painel de Gestão..." />}>
+            <Suspense fallback={<CarregandoSecao texto="Carregando o Painel de Gestão..." />}>
               <PainelGestor ocorrencias={registos} onAtualizarDados={carregarRegistos} />
             </Suspense>
           </ErrorBoundary>
@@ -2244,7 +2244,7 @@ export default function App() {
             }`}
           >
             <span className="text-lg">📋</span>
-            <span className="text-[9px] font-bold">Registos</span>
+            <span className="text-[9px] font-bold">Registros</span>
           </button>
 
           <button

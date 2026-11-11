@@ -26,7 +26,7 @@ export default function useSessaoGestor() {
       if (!ativo) return
       if (error) {
         console.error('Falha ao verificar permissão de gestor:', error)
-        setErroVerificacao('Não foi possível confirmar a permissão de gestor. Verifique a ligação e tente de novo.')
+        setErroVerificacao('Não foi possível confirmar a permissão de gestor. Verifique a conexão e tente novamente.')
         setEhGestor(false)
       } else {
         setEhGestor(data === true)
@@ -53,7 +53,7 @@ export default function useSessaoGestor() {
     const { error } = await supabase.auth.signInWithPassword({ email: email.trim(), password: senha })
     if (!error) return null
     if (error.status === 400 || /invalid login/i.test(error.message)) return 'Email ou senha incorretos.'
-    if (error.status === 429) return 'Muitas tentativas seguidas. Aguarde alguns minutos e tente de novo.'
+    if (error.status === 429) return 'Muitas tentativas seguidas. Aguarde alguns minutos e tente novamente.'
     return `Não foi possível entrar: ${error.message}`
   }, [])
 

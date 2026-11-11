@@ -47,7 +47,7 @@ export default class ErrorBoundary extends Component {
           <div className="w-full max-w-sm rounded-3xl bg-white p-6 text-center shadow-xl border border-slate-200">
             <h1 className="text-lg font-black text-slate-800">O Zelador Digital encontrou um erro</h1>
             <p className="mt-2 text-sm text-slate-600 leading-relaxed">
-              Os registos guardados no telemóvel não se perderam. Recarregue a aplicação para continuar.
+              Os registros salvos no celular não se perderam. Recarregue o aplicativo para continuar.
             </p>
             <button
               type="button"
@@ -64,13 +64,13 @@ export default class ErrorBoundary extends Component {
     return (
       <div role="alert" className="rounded-3xl border border-amber-200 bg-amber-50 p-5 text-center">
         <p className="text-sm font-black text-amber-900">Não foi possível mostrar esta secção.</p>
-        <p className="mt-1 text-xs text-amber-800">O resto da aplicação continua a funcionar.</p>
+        <p className="mt-1 text-xs text-amber-800">O resto do aplicativo continua funcionando.</p>
         <button
           type="button"
           onClick={this.tentarDeNovo}
           className="mt-3 min-h-11 rounded-xl bg-amber-600 hover:bg-amber-700 px-4 text-sm font-black text-white cursor-pointer"
         >
-          Tentar de novo
+          Tentar novamente
         </button>
       </div>
     )
