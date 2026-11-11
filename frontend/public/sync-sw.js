@@ -14,6 +14,8 @@ const VERSAO_BD = 1
 const LOJA_FILA = 'fila'
 const LOJA_CACHE = 'cache'
 const CHAVE_CONFIG = 'config-envio' // { url, chave } gravada pelo app (src/lib/envioSegundoPlano.js)
+// Mesma trava usada pelo app (src/App.jsx): só um dos dois envia a fila de cada vez.
+const TRAVA_FILA = 'zelador-fila-offline'
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
 
 function abrirBD() {
@@ -79,13 +81,6 @@ async function inserirRegistro(config, item, fotoUrl) {
 }
 
 async function enviarFila() {
-  // App aberto na tela: ele mesmo envia a fila (e mostra o progresso). Evita envio em dobro.
-  const janelas = await self.clients.matchAll({ type: 'window', includeUncontrolled: true })
-  if (janelas.some((janela) => janela.visibilityState === 'visible')) {
-    janelas.forEach((janela) => janela.postMessage({ tipo: 'enviar-fila' }))
-    return
-  }
-
   const bd = await abrirBD()
   try {
     const config = await naLoja(bd, LOJA_CACHE, 'readonly', (loja) => loja.get(CHAVE_CONFIG))
@@ -141,5 +136,7 @@ async function avisarEnvio(ids) {
 }
 
 self.addEventListener('sync', (evento) => {
-  if (evento.tag === ETIQUETA_SYNC) evento.waitUntil(enviarFila())
+  if (evento.tag !== ETIQUETA_SYNC) return
+  const locks = self.navigator?.locks
+  evento.waitUntil(locks ? locks.request(TRAVA_FILA, enviarFila) : enviarFila())
 })

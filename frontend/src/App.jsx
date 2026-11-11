@@ -809,7 +809,12 @@ export default function App() {
     }
   }
 
-  const sincronizarFilaOffline = async () => {
+  // Trava compartilhada com o envio em segundo plano (public/sync-sw.js): um envia, o outro espera
+  // e depois encontra a fila já vazia. Sem suporte a Web Locks, segue sem trava.
+  const sincronizarFilaOffline = () =>
+    navigator.locks ? navigator.locks.request('zelador-fila-offline', enviarFilaOffline) : enviarFilaOffline()
+
+  const enviarFilaOffline = async () => {
     if (sincronizandoRef.current) return
     let pendentes
     try {
@@ -909,15 +914,7 @@ export default function App() {
 
   // Mensagens do envio em segundo plano (public/sync-sw.js).
   useEffect(() => {
-    const pararDeOuvir = aoEnviarEmSegundoPlano((ids) => aoFilaEnviadaRef.current?.(ids))
-    const ouvirPedido = (evento) => {
-      if (evento.data?.tipo === 'enviar-fila') sincronizarRef.current?.()
-    }
-    navigator.serviceWorker?.addEventListener('message', ouvirPedido)
-    return () => {
-      pararDeOuvir()
-      navigator.serviceWorker?.removeEventListener('message', ouvirPedido)
-    }
+    return aoEnviarEmSegundoPlano((ids) => aoFilaEnviadaRef.current?.(ids))
   }, [])
 
   // Insere com o UUID gerado no telemóvel. Se o esquema não aceitar um id vindo do cliente
