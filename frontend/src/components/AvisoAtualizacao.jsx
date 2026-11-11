@@ -25,7 +25,7 @@ export default function AvisoAtualizacao() {
     <div
       role="status"
       aria-live="polite"
-      className="fixed left-4 right-4 bottom-[calc(5.5rem+env(safe-area-inset-bottom))] z-[75] max-w-md mx-auto rounded-2xl bg-slate-900 text-white shadow-xl border border-slate-700 p-3.5 flex items-center justify-between gap-3"
+      className="fixed left-4 right-4 bottom-[calc(5.5rem+env(safe-area-inset-bottom))] z-[55] max-w-md mx-auto rounded-2xl bg-slate-900 text-white shadow-xl border border-slate-700 p-3.5 flex items-center justify-between gap-3"
     >
       <p className="text-sm font-bold leading-snug">
         {haVersaoNova ? 'Há uma versão nova do Zelador Digital.' : 'O app já funciona sem internet.'}

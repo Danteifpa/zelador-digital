@@ -69,10 +69,10 @@ export default function LoginGestor({ onEntrar }) {
           disabled={aEntrar || !email.trim() || !senha}
           className="w-full min-h-12 bg-blue-600 hover:bg-blue-700 disabled:bg-blue-300 disabled:cursor-not-allowed text-white font-black rounded-xl text-sm transition-all shadow-sm cursor-pointer"
         >
-          {aEntrar ? 'A entrar...' : 'Entrar'}
+          {aEntrar ? 'Entrando...' : 'Entrar'}
         </button>
         <p className="text-xs text-slate-500 text-center">
-          A sessão fica guardada neste aparelho. Esqueceu a senha? Peça ao administrador para a redefinir no Supabase.
+          A sessão fica salva neste aparelho. Esqueceu a senha? Peça ao administrador para redefini-la no Supabase.
         </p>
       </form>
     </div>

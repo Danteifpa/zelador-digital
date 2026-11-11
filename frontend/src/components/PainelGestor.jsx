@@ -84,7 +84,7 @@ function rotuloCriticidade(pontuacao) {
 }
 
 function Spinner() {
-  return <span className="inline-block h-3 w-3 animate-spin rounded-full border-2 border-current border-t-transparent" aria-label="A carregar" />
+  return <span className="inline-block h-3 w-3 animate-spin rounded-full border-2 border-current border-t-transparent" aria-label="Carregando" />
 }
 
 function protocoloCivico(id) {
@@ -237,7 +237,7 @@ export default function PainelGestor({ ocorrencias = [], onAtualizarDados }) {
       setItemExclusao(null)
       if (onAtualizarDados) await onAtualizarDados()
     } catch (err) {
-      alert('Erro ao eliminar ocorrência: ' + err.message)
+      alert('Erro ao excluir ocorrência: ' + err.message)
     } finally {
       setCarregandoAcao(false)
     }
@@ -262,7 +262,7 @@ export default function PainelGestor({ ocorrencias = [], onAtualizarDados }) {
       setItemEdicao(null)
       if (onAtualizarDados) await onAtualizarDados()
     } catch (err) {
-      alert('Erro ao guardar alterações: ' + err.message)
+      alert('Erro ao salvar alterações: ' + err.message)
     } finally {
       setCarregandoAcao(false)
     }
@@ -446,7 +446,7 @@ export default function PainelGestor({ ocorrencias = [], onAtualizarDados }) {
   if (aVerificarSessao) {
     return (
       <div role="status" className="bg-white rounded-3xl p-6 border border-slate-200 shadow-sm max-w-sm mx-auto my-6 text-center text-sm font-bold text-slate-500">
-        A verificar o acesso...
+        Verificando o acesso...
       </div>
     )
   }
@@ -460,7 +460,7 @@ export default function PainelGestor({ ocorrencias = [], onAtualizarDados }) {
       <div role="alert" className="bg-white rounded-3xl p-6 border border-amber-200 shadow-sm max-w-sm mx-auto my-6 text-center">
         <h2 className="text-lg font-black text-slate-800">Sem acesso de gestor</h2>
         <p className="text-sm text-slate-600 mt-2">
-          {erroVerificacao || `A conta ${sessao.user?.email || ''} entrou, mas não está registada como gestora.`}
+          {erroVerificacao || `A conta ${sessao.user?.email || ''} entrou, mas não está registrada como gestora.`}
         </p>
         <button
           type="button"
@@ -709,7 +709,7 @@ export default function PainelGestor({ ocorrencias = [], onAtualizarDados }) {
       {itemEdicao && (
         <div className="bg-amber-50/80 border border-amber-200 rounded-3xl p-4 space-y-3">
           <div className="flex items-center justify-between">
-            <span className="text-xs font-black text-amber-900">Editar Registo #{itemEdicao.id}</span>
+            <span className="text-xs font-black text-amber-900">Editar registro #{itemEdicao.id}</span>
             <button
               type="button"
               onClick={() => setItemEdicao(null)}
@@ -763,7 +763,7 @@ export default function PainelGestor({ ocorrencias = [], onAtualizarDados }) {
               disabled={carregandoAcao}
               className="w-full bg-amber-600 hover:bg-amber-700 text-white font-black py-2.5 rounded-xl text-xs transition-colors shadow-2xs cursor-pointer"
             >
-              {carregandoAcao ? 'A guardar...' : 'Guardar Alterações'}
+              {carregandoAcao ? 'Salvando...' : 'Salvar Alterações'}
             </button>
           </form>
         </div>
@@ -773,7 +773,7 @@ export default function PainelGestor({ ocorrencias = [], onAtualizarDados }) {
       <div className="space-y-3">
         {ocorrenciasFiltradasComGut.length === 0 ? (
           <div className="bg-white rounded-3xl p-8 border border-slate-200 text-center text-xs text-slate-400">
-            Nenhum registo encontrado para este filtro.
+            Nenhum registro encontrado para este filtro.
           </div>
         ) : (
           ocorrenciasFiltradasComGut.map((item) => (
@@ -808,7 +808,7 @@ export default function PainelGestor({ ocorrencias = [], onAtualizarDados }) {
               {item.foto_url && (
                 <img
                   src={item.foto_url}
-                  alt="Registo"
+                  alt="Registro"
                   className="w-full h-32 object-cover rounded-xl border border-slate-100"
                 />
               )}
@@ -869,7 +869,7 @@ export default function PainelGestor({ ocorrencias = [], onAtualizarDados }) {
               )}
 
               <p className="text-xs text-slate-600 leading-relaxed">
-                {item.descricao || 'Sem descrição registada.'}
+                {item.descricao || 'Sem descrição registrada.'}
               </p>
 
               <div className="rounded-2xl border border-slate-200 bg-slate-50 p-3">
@@ -879,7 +879,7 @@ export default function PainelGestor({ ocorrencias = [], onAtualizarDados }) {
                 </div>
                 <div className="mt-3 flex items-start">
                   {[
-                    ['Registada', item.created_at ? formatarData(item.created_at) : 'Data não informada'],
+                    ['Registrada', item.created_at ? formatarData(item.created_at) : 'Data não informada'],
                     ['Em Análise / Oficiada', item.updated_at ? formatarData(item.updated_at) : 'Aguardando tramitação'],
                     ['Resolvida', eResolvida(item) ? formatarData(item.updated_at || item.created_at) : 'Pendente']
                   ].map(([titulo, data], index) => {
@@ -932,7 +932,7 @@ export default function PainelGestor({ ocorrencias = [], onAtualizarDados }) {
                       className="inline-flex items-center gap-2 rounded-xl bg-indigo-600 px-3 py-2 text-[10px] font-black text-white hover:bg-indigo-700 disabled:opacity-60 cursor-pointer"
                     >
                       {acaoEmAndamento === `despacho-${item.id}` && <Spinner />}
-                      {acaoEmAndamento === `despacho-${item.id}` ? 'A salvar...' : 'Salvar Despacho'}
+                      {acaoEmAndamento === `despacho-${item.id}` ? 'Salvando...' : 'Salvar Despacho'}
                     </button>
                   </div>
                 )}
@@ -1076,7 +1076,7 @@ export default function PainelGestor({ ocorrencias = [], onAtualizarDados }) {
           <div className="w-full max-w-sm rounded-3xl bg-slate-900 border border-slate-700 p-5 text-white shadow-2xl">
             <h2 id="confirmar-exclusao-titulo" className="text-base font-black">Excluir ocorrência?</h2>
             <p className="text-xs text-slate-300 mt-2 leading-relaxed">
-              Esta ação removerá permanentemente este registo do Supabase e não pode ser desfeita.
+              Esta ação removerá permanentemente este registro do Supabase e não pode ser desfeita.
             </p>
             <div className="flex gap-2 mt-5">
               <button

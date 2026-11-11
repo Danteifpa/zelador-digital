@@ -129,7 +129,7 @@ export default function ReportModal({ onFechar, modo, falarTexto, estaOnline, ca
         <div className="flex items-start justify-between gap-3 px-5 pt-5 pb-3 border-b border-slate-100">
           <div className="min-w-0">
             <p id={idDescricao} className="text-[11px] font-black uppercase tracking-wider text-blue-600">
-              {resultado ? 'Registo concluído' : `Nova ocorrência · Passo ${passo + 1} de ${PASSOS.length}`}
+              {resultado ? 'Registro concluído' : `Nova ocorrência · Passo ${passo + 1} de ${PASSOS.length}`}
             </p>
             <h2 id={idTitulo} ref={tituloRef} tabIndex={-1} className="text-lg font-black text-slate-800 mt-0.5 focus:outline-none">
               {resultado ? 'Protocolo gerado' : PASSOS[passo].titulo}
@@ -140,7 +140,7 @@ export default function ReportModal({ onFechar, modo, falarTexto, estaOnline, ca
             onClick={fechar}
             disabled={form.enviando}
             className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-slate-100 text-slate-600 hover:bg-slate-200 disabled:opacity-50 cursor-pointer"
-            aria-label="Fechar registo"
+            aria-label="Fechar registro"
           >
             <X size={20} strokeWidth={2.25} />
           </button>
@@ -148,7 +148,7 @@ export default function ReportModal({ onFechar, modo, falarTexto, estaOnline, ca
 
         {/* Indicador de passos */}
         {!resultado && (
-          <ol className="flex items-center gap-1.5 px-5 pt-3" aria-label="Progresso do registo">
+          <ol className="flex items-center gap-1.5 px-5 pt-3" aria-label="Progresso do registro">
             {PASSOS.map((p, i) => {
               const estado = i < passo ? 'concluido' : i === passo ? 'atual' : 'futuro'
               return (
@@ -204,7 +204,7 @@ export default function ReportModal({ onFechar, modo, falarTexto, estaOnline, ca
             <div className="space-y-3">
               {form.processandoFoto ? (
                 <div role="status" className="rounded-2xl border border-slate-200 bg-slate-50 p-10 text-center text-sm text-blue-600 font-bold animate-pulse">
-                  A otimizar a fotografia e a ler o GPS...
+                  Otimizando a foto e lendo o GPS...
                 </div>
               ) : form.fotoPreview ? (
                 <div className="relative rounded-2xl overflow-hidden border border-slate-200 bg-slate-100">
@@ -224,7 +224,7 @@ export default function ReportModal({ onFechar, modo, falarTexto, estaOnline, ca
                   className="w-full rounded-2xl border-2 border-dashed border-blue-300 bg-blue-50/60 hover:bg-blue-50 p-8 flex flex-col items-center justify-center gap-2 text-blue-700 cursor-pointer"
                 >
                   <Camera size={facil ? 44 : 36} strokeWidth={2} aria-hidden="true" />
-                  <span className={`font-black ${facil ? 'text-lg' : 'text-base'}`}>Abrir câmara</span>
+                  <span className={`font-black ${facil ? 'text-lg' : 'text-base'}`}>Abrir câmera</span>
                   <span className="text-xs text-slate-500">A localização da foto é lida automaticamente</span>
                 </button>
               )}
@@ -250,7 +250,7 @@ export default function ReportModal({ onFechar, modo, falarTexto, estaOnline, ca
               <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4" role="status" aria-live="polite">
                 <p className={`font-bold text-slate-800 ${facil ? 'text-base' : 'text-sm'}`}>
                   {form.capturandoGps
-                    ? 'A obter a sua localização...'
+                    ? 'Obtendo sua localização...'
                     : form.localizacao
                     ? form.origemLocalizacao === 'exif'
                       ? 'Localização lida da fotografia'
@@ -295,7 +295,7 @@ export default function ReportModal({ onFechar, modo, falarTexto, estaOnline, ca
                     }`}
                   >
                     <Mic size={14} strokeWidth={2.25} aria-hidden="true" />
-                    {form.gravandoVoz ? 'A ouvir...' : 'Ditar'}
+                    {form.gravandoVoz ? 'Ouvindo...' : 'Ditar'}
                   </button>
                 </div>
                 <input
@@ -303,7 +303,7 @@ export default function ReportModal({ onFechar, modo, falarTexto, estaOnline, ca
                   type="text"
                   value={form.pontoReferencia}
                   onChange={(e) => acoes.pontoReferenciaChange(e.target.value)}
-                  placeholder="Ex.: em frente à mercearia, perto da praça"
+                  placeholder="Ex.: em frente à padaria, perto da praça"
                   className="w-full min-h-12 px-3.5 rounded-xl border border-slate-200 bg-slate-50 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 text-base text-slate-800"
                 />
               </div>
@@ -330,7 +330,7 @@ export default function ReportModal({ onFechar, modo, falarTexto, estaOnline, ca
               </dl>
               {!estaOnline && (
                 <p className="rounded-2xl bg-amber-50 border border-amber-200 p-3 text-xs font-bold text-amber-800">
-                  Está sem internet. O registo fica guardado no telemóvel e é enviado sozinho quando a rede voltar.
+                  Está sem internet. O registro fica salvo no celular e é enviado sozinho quando a rede voltar.
                 </p>
               )}
             </div>
@@ -346,7 +346,7 @@ export default function ReportModal({ onFechar, modo, falarTexto, estaOnline, ca
                 onClick={() => acoes.partilhar(resultado)}
                 className={`flex-1 rounded-2xl border border-emerald-200 bg-emerald-50 hover:bg-emerald-100 text-emerald-800 font-black cursor-pointer ${tamanhoBotao}`}
               >
-                Partilhar
+                Compartilhar
               </button>
               <button
                 type="button"
@@ -378,7 +378,7 @@ export default function ReportModal({ onFechar, modo, falarTexto, estaOnline, ca
                     form.enviando || !form.localizacao ? 'bg-blue-400 cursor-not-allowed' : 'bg-blue-600 hover:bg-blue-700 active:scale-[0.99] cursor-pointer'
                   }`}
                 >
-                  {form.enviando ? 'A enviar...' : estaOnline ? 'Enviar registo' : 'Guardar no telemóvel'}
+                  {form.enviando ? 'Enviando...' : estaOnline ? 'Enviar registro' : 'Salvar no celular'}
                 </button>
               ) : (
                 <button
@@ -439,8 +439,8 @@ function PassoProtocolo({ resultado, estaOnline, categoria, copiado, onCopiar })
       </div>
       <p className="text-sm text-slate-600 leading-relaxed">
         {estaOnline
-          ? 'A ocorrência foi registada. Guarde o protocolo para acompanhar o andamento em "Consultar".'
-          : 'Registo guardado no telemóvel. O protocolo já é válido e a ocorrência será enviada quando a rede voltar.'}
+          ? 'A ocorrência foi registrada. Anote o protocolo para acompanhar o andamento em "Consultar".'
+          : 'Registro salvo no celular. O protocolo já é válido e a ocorrência será enviada quando a rede voltar.'}
       </p>
       {categoria && (
         <p className="text-xs font-bold text-slate-500">

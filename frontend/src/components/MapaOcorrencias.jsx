@@ -100,7 +100,7 @@ export default function MapaOcorrencias({ ocorrencias = [] }) {
   if (!montado) {
     return (
       <div className="h-[400px] rounded-3xl bg-slate-100 flex items-center justify-center text-xs text-slate-400 font-bold">
-        A carregar mapa... 🗺️
+        Carregando mapa... 🗺️
       </div>
     )
   }
@@ -233,7 +233,7 @@ export default function MapaOcorrencias({ ocorrencias = [] }) {
                       {item.foto_url && (
                         <img
                           src={item.foto_url}
-                          alt="Registo"
+                          alt="Registro"
                           className="w-full h-20 object-cover rounded-xl border border-slate-200"
                         />
                       )}

@@ -13,7 +13,7 @@ export default function RegisterButton({ onClick }) {
           ➕
         </div>
         <div className="text-left">
-          <span className="text-xl font-bold text-white tracking-tight block">Registar Nova Ocorrência</span>
+          <span className="text-xl font-bold text-white tracking-tight block">Registrar Nova Ocorrência</span>
           <span className="text-sm text-blue-50 mt-1 font-medium block">Buraco, poste apagado, lixo ou esgoto</span>
         </div>
       </div>

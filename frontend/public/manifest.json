@@ -41,9 +41,9 @@
   ],
   "shortcuts": [
     {
-      "name": "Registar Ocorrência",
-      "short_name": "Registar",
-      "description": "Abrir ecrã para registar ocorrência comunitária",
+      "name": "Registrar ocorrência",
+      "short_name": "Registrar",
+      "description": "Abrir a tela para registrar uma ocorrência comunitária",
       "url": "/?aba=reportar",
       "icons": [
         {
@@ -56,7 +56,7 @@
     {
       "name": "Ver Mapa",
       "short_name": "Mapa",
-      "description": "Visualizar mapa térmico e ocorrências",
+      "description": "Ver o mapa de calor e as ocorrências",
       "url": "/?aba=mapa",
       "icons": [
         {

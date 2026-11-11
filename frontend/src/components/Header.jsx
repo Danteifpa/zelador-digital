@@ -22,26 +22,26 @@ export default function Header({
       {!estaOnline && (
         <div className="bg-amber-500 text-white text-[11px] font-black py-1.5 px-4 text-center tracking-wide sticky top-0 z-50 flex items-center justify-center gap-1.5 shadow-xs">
           <span>⚠️</span>
-          <span>Modo Offline Ativo: Registos serão sincronizados quando recuperar rede</span>
+          <span>Modo offline: os registros serão sincronizados quando a internet voltar</span>
         </div>
       )}
 
       {dadosGuardadosEm && (
         <div role="status" className="bg-slate-800 text-slate-100 text-[11px] font-bold py-1.5 px-4 text-center">
-          A mostrar dados guardados no telemóvel de{' '}
+          Mostrando dados salvos no celular em{' '}
           {new Date(dadosGuardadosEm).toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' })}
         </div>
       )}
 
       {filaPendente > 0 && estaOnline && (
         <div className="bg-blue-600 text-white text-[11px] font-bold py-1.5 px-4 text-center sticky top-0 z-50 flex items-center justify-between">
-          <span>{filaPendente} registo(s) pendente(s) para sincronização</span>
+          <span>{filaPendente} registro(s) pendente(s) para sincronização</span>
           <button
             onClick={onSincronizar}
             disabled={sincronizandoFila}
             className="bg-white text-blue-700 px-2 py-0.5 rounded-lg text-[10px] font-black uppercase cursor-pointer"
           >
-            {sincronizandoFila ? 'A sincronizar...' : 'Sincronizar Agora 🔄'}
+            {sincronizandoFila ? 'Sincronizando...' : 'Sincronizar Agora 🔄'}
           </button>
         </div>
       )}
