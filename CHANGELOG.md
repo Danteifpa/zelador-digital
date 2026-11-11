@@ -13,6 +13,7 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/). 
 - A função antiga `incrementar_apoio` (que deixava qualquer pessoa somar apoios sem limite) foi trocada por `apoiar_ocorrencia`: 1 apoio por aparelho e limite por hora por origem.
 
 ### Corrigido
+- Zerados os 13 problemas do verificador de código (ESLint); o CI agora bloqueia PRs com avisos novos.
 - Aviso de erro de seção com grafia do Brasil ("seção").
 
 ## [1.0.0] — 2026-11-10

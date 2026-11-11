@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import { MapContainer, TileLayer, Marker, Popup, Circle, useMap } from 'react-leaflet'
 import L from 'leaflet'
 import 'leaflet/dist/leaflet.css'
@@ -61,20 +61,13 @@ function AjustarVisualizacao({ centro, zoom }) {
 }
 
 export default function MapaOcorrencias({ ocorrencias = [] }) {
-  const [montado, setMontado] = useState(false)
   const [filtroTipo, setFiltroTipo] = useState('todas')
   const [modoVisualizacao, setModoVisualizacao] = useState('pontos')
   const [posicaoGps, setPosicaoGps] = useState(null)
-  const [obtendoGps, setObtendoGps] = useState(false)
+  // Ao abrir o mapa já procura a posição do morador (se o navegador tiver GPS).
+  const [obtendoGps, setObtendoGps] = useState(() => Boolean(navigator.geolocation))
 
-  useEffect(() => {
-    setMontado(true)
-    obterGpsUsuario()
-  }, [])
-
-  const obterGpsUsuario = () => {
-    if (typeof window === 'undefined' || !navigator.geolocation) return
-    setObtendoGps(true)
+  const pedirPosicao = () => {
     navigator.geolocation.getCurrentPosition(
       (pos) => {
         setPosicaoGps([pos.coords.latitude, pos.coords.longitude])
@@ -83,6 +76,16 @@ export default function MapaOcorrencias({ ocorrencias = [] }) {
       () => setObtendoGps(false),
       { enableHighAccuracy: true, timeout: 8000 }
     )
+  }
+
+  useEffect(() => {
+    if (navigator.geolocation) pedirPosicao()
+  }, [])
+
+  const obterGpsUsuario = () => {
+    if (!navigator.geolocation) return
+    setObtendoGps(true)
+    pedirPosicao()
   }
 
   const pontosValidos = useMemo(() => {
@@ -97,14 +100,6 @@ export default function MapaOcorrencias({ ocorrencias = [] }) {
   }, [ocorrencias, filtroTipo])
 
   const centro = [CENTRO_COMUNITARIO.latitude, CENTRO_COMUNITARIO.longitude]
-
-  if (!montado) {
-    return (
-      <div className="h-[400px] rounded-3xl bg-slate-100 flex items-center justify-center text-xs text-slate-400 font-bold">
-        Carregando mapa... 🗺️
-      </div>
-    )
-  }
 
   return (
     <div className="space-y-3">

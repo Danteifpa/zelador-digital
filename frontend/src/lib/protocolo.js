@@ -24,6 +24,12 @@ export function ehUuid(valor) {
   return PADRAO_UUID.test(String(valor))
 }
 
+// Caminho único para a foto no bucket "ocorrencias" (ex.: ocorrencias/1794405384602_k3x9za.jpg).
+export function caminhoDaFoto(extensao = 'jpg', sufixo = '') {
+  const aleatorio = Math.random().toString(36).slice(2, 8)
+  return `ocorrencias/${Date.now()}${sufixo}_${aleatorio}.${extensao || 'jpg'}`
+}
+
 // Mantém o formato já usado na consulta de protocolo: ZD- + 6 primeiros caracteres do id.
 export function protocoloCivico(id) {
   return `ZD-${String(id).slice(0, 6).toUpperCase()}`

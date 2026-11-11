@@ -18,7 +18,7 @@ import BotaoApoio from './components/BotaoApoio'
 import { textoConfirmacoes, MENSAGENS_APOIO } from './lib/apoios'
 import { lerFila, adicionarAFila, atualizarItemNaFila, removerDaFila, FilaCheiaError } from './lib/filaOffline'
 import { lerCache, gravarCache, pedirArmazenamentoPersistente } from './lib/armazenamento'
-import { gerarIdOcorrencia, ehUuid, protocoloCivico } from './lib/protocolo'
+import { gerarIdOcorrencia, ehUuid, protocoloCivico, caminhoDaFoto } from './lib/protocolo'
 import { estaResolvido, etapaDoEstado, rotuloDoEstado, classeEtiquetaDoEstado, VALORES_EM_ABERTO } from './lib/status'
 import { CATEGORIAS, rotuloDaCategoria } from './lib/categorias'
 
@@ -280,7 +280,7 @@ function abaDoEndereco() {
 export default function App() {
   const [modo, setModo] = useState(() => (localStorage.getItem('zelador_modo_interface') === 'facil' ? 'facil' : 'normal'))
   const [abaAtiva, setAbaAtiva] = useState(() => (['mapa', 'registos', 'gestao'].includes(abaDoEndereco()) ? abaDoEndereco() : 'inicio'))
-  const [mostrarOnboarding, setMostrarOnboarding] = useState(false)
+  const [mostrarOnboarding, setMostrarOnboarding] = useState(() => !localStorage.getItem('zelador_onboarding_concluido'))
   const [etapaOnboarding, setEtapaOnboarding] = useState(0)
 
   // Modal QR Code
@@ -288,12 +288,22 @@ export default function App() {
 
   // PWA
   const [promptInstalacao, setPromptInstalacao] = useState(null)
-  const [pwaInstalado, setPwaInstalado] = useState(false)
+  const [pwaInstalado, setPwaInstalado] = useState(
+    () => window.matchMedia?.('(display-mode: standalone)').matches || Boolean(window.navigator.standalone)
+  )
   const [bannerPwaIgnorado, setBannerPwaIgnorado] = useState(false)
 
   // Notificações
   const [mostrarNotificacoes, setMostrarNotificacoes] = useState(false)
-  const [notificacoesLidas, setNotificacoesLidas] = useState([])
+  const [notificacoesLidas, setNotificacoesLidas] = useState(() => {
+    try {
+      const lidas = JSON.parse(localStorage.getItem('zelador_notificacoes_lidas') || '[]')
+      return Array.isArray(lidas) ? lidas : []
+    } catch (erro) {
+      console.warn('Erro ao carregar notificações lidas:', erro)
+      return []
+    }
+  })
   const [modalSobreAberto, setModalSobreAberto] = useState(false)
 
   // Conectividade
@@ -322,6 +332,12 @@ export default function App() {
 
   const [sucessoEnvio, setSucessoEnvio] = useState(null)
   const [mensagemToast, setMensagemToast] = useState(null)
+  const mostrarAlertaToast = (texto) => {
+    setMensagemToast(texto)
+    setTimeout(() => {
+      setMensagemToast(null)
+    }, 4500)
+  }
 
   // Filtros
   const [filtroCategoria, setFiltroCategoria] = useState('todas')
@@ -350,9 +366,6 @@ export default function App() {
   }
 
   useEffect(() => {
-    const isStandalone = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone
-    if (isStandalone) setPwaInstalado(true)
-
     const capturarPrompt = (e) => {
       e.preventDefault()
       setPromptInstalacao(e)
@@ -388,17 +401,6 @@ export default function App() {
       setPromptInstalacao(null)
     }
   }
-
-  useEffect(() => {
-    const lidasSalvas = localStorage.getItem('zelador_notificacoes_lidas')
-    if (lidasSalvas) {
-      try {
-        setNotificacoesLidas(JSON.parse(lidasSalvas))
-      } catch (e) {
-        console.warn('Erro ao carregar notificações lidas:', e)
-      }
-    }
-  }, [])
 
   useEffect(() => {
     const handleOnline = () => {
@@ -446,17 +448,6 @@ export default function App() {
     }
   }, [])
 
-  useEffect(() => {
-    const onboardingVisto = localStorage.getItem('zelador_onboarding_concluido')
-    if (!onboardingVisto) {
-      setMostrarOnboarding(true)
-    }
-
-    // O GPS deixa de ser pedido no arranque (pedido de permissão sem contexto e gasto de bateria):
-    // é pedido ao abrir o registo (assistente ou aba "Registar").
-    carregarRegistos()
-  }, [])
-
   const marcarNotificacaoComoLida = (id) => {
     feedbackSensorial.toqueSuave()
     if (!notificacoesLidas.includes(id)) {
@@ -475,12 +466,6 @@ export default function App() {
 
   const notificacoesNaoLidas = NOTIFICACOES_PADRAO.filter((n) => !notificacoesLidas.includes(n.id)).length
 
-  const mostrarAlertaToast = (texto) => {
-    setMensagemToast(texto)
-    setTimeout(() => {
-      setMensagemToast(null)
-    }, 4500)
-  }
 
   const consultarProtocolo = async (e, codigoDireto) => {
     e?.preventDefault()
@@ -667,6 +652,13 @@ export default function App() {
     }
   }
 
+  // Arranque: carrega os registros. O GPS só é pedido ao abrir o registro (assistente ou aba "Registrar"),
+  // para não pedir permissão sem contexto nem gastar bateria.
+  useEffect(() => {
+    const temporizador = window.setTimeout(carregarRegistos, 0)
+    return () => window.clearTimeout(temporizador)
+  }, [])
+
   const obterLocalizacaoAtual = () => {
     feedbackSensorial.toqueSuave()
     if (!navigator.geolocation) {
@@ -803,7 +795,7 @@ export default function App() {
       try {
         await navigator.clipboard.writeText(textoPartilha)
         mostrarAlertaToast('Texto da ocorrência copiado para a área de transferência!')
-      } catch (e) {
+      } catch {
         mostrarAlertaToast('Não foi possível copiar o texto.')
       }
     }
@@ -1016,9 +1008,7 @@ export default function App() {
       let urlFotoPublica = null
 
       if (fotoOtimizada) {
-        const fileExt = fotoOtimizada.name.split('.').pop()
-        const fileName = `${Date.now()}_${Math.random().toString(36).substring(2, 8)}.${fileExt}`
-        const filePath = `ocorrencias/${fileName}`
+        const filePath = caminhoDaFoto(fotoOtimizada.name.split('.').pop())
 
         const uploadResult = await supabase.storage.from('ocorrencias').upload(filePath, fotoOtimizada, {
           contentType: fotoOtimizada.type,
@@ -1154,7 +1144,6 @@ export default function App() {
   const totalRegistos = registos.length
   const totalResolvidos = registos.filter((r) => estaResolvido(r.status)).length
   const totalPendentes = registos.length - totalResolvidos
-  const taxaResolucao = totalRegistos > 0 ? Math.round((totalResolvidos / totalRegistos) * 100) : 0
 
   const urlApp = typeof window !== 'undefined' ? window.location.origin : 'https://zeladordigital.vercel.app'
   return (
