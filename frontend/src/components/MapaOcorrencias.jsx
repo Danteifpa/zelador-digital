@@ -128,7 +128,7 @@ export default function MapaOcorrencias({ ocorrencias = [] }) {
           </div>
         </div>
 
-        <div className="flex items-center gap-2 overflow-x-auto pb-1 text-xs">
+        <div className="flex items-center gap-2 overflow-x-auto sem-barra-rolagem pb-1 text-xs">
           <button
             type="button"
             onClick={() => setFiltroTipo('todas')}
@@ -178,7 +178,7 @@ export default function MapaOcorrencias({ ocorrencias = [] }) {
       </div>
 
       {/* Caixa do Mapa Leaflet */}
-      <div className="mapa-ocorrencias relative rounded-3xl overflow-hidden border border-slate-200 shadow-sm h-[65vh] min-h-[420px] max-h-[600px] bg-slate-100">
+      <div className="mapa-ocorrencias relative isolate rounded-3xl overflow-hidden border border-slate-200 shadow-sm h-[65vh] min-h-[420px] max-h-[600px] bg-slate-100">
         <MapContainer
           center={centro}
           zoom={11}
@@ -234,7 +234,7 @@ export default function MapaOcorrencias({ ocorrencias = [] }) {
                         />
                       )}
                       <div>
-                        <span className="text-xs font-black capitalize text-slate-800 block">
+                        <span className="text-xs font-black text-slate-800 block">
                           {rotuloDaCategoria(item.categoria)}
                         </span>
                         <p className="text-[11px] text-slate-600 mt-0.5 leading-tight">

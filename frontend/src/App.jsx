@@ -20,7 +20,8 @@ import { lerFila, adicionarAFila, atualizarItemNaFila, removerDaFila, FilaCheiaE
 import { lerCache, gravarCache, pedirArmazenamentoPersistente } from './lib/armazenamento'
 import { gerarIdOcorrencia, ehUuid, protocoloCivico, caminhoDaFoto } from './lib/protocolo'
 import { estaResolvido, etapaDoEstado, rotuloDoEstado, classeEtiquetaDoEstado, VALORES_EM_ABERTO } from './lib/status'
-import { CATEGORIAS, rotuloDaCategoria } from './lib/categorias'
+import { CATEGORIAS, rotuloDaCategoria, iconeDaCategoria } from './lib/categorias'
+import { formatarKm } from './lib/gestao'
 
 // Módulos pesados (Leaflet, Painel de Gestão, gerador de QR Code) só são descarregados quando
 // o utilizador os abre: quem só regista ocorrências não paga esse peso no 3G/4G.
@@ -80,30 +81,32 @@ const ETAPAS_ONBOARDING = [
   }
 ]
 
+// Novidades do app (reais e datadas). Avisos da gestão para o bairro ainda não existem:
+// quando existirem, devem vir do banco, não deste arquivo.
 const NOTIFICACOES_PADRAO = [
   {
-    id: 1,
-    titulo: 'Ação de Limpeza Comunitária',
-    mensagem: 'Próximo sábado haverá mutirão voluntário de coleta de entulho nos pontos críticos identificados no mapa.',
-    tipo: 'comunidade',
-    icone: '🧹',
-    data: 'Hoje, 09:30'
+    id: 'v1.1-tambem-vi',
+    titulo: 'Novo: "Também vi este problema"',
+    mensagem: 'Viu um problema que alguém já registrou? Abra o chamado e confirme. Problemas com mais confirmações sobem na prioridade da gestão.',
+    tipo: 'novidade',
+    icone: '👥',
+    data: '11/11/2026'
   },
   {
-    id: 2,
-    titulo: 'Manutenção de Iluminação Pública',
-    mensagem: 'Registros de postes apagados no setor leste foram compilados para vistoria e troca das lâmpadas.',
-    tipo: 'servicos',
-    icone: '💡',
-    data: 'Ontem, 16:45'
+    id: 'v1.1-segundo-plano',
+    titulo: 'Registros sem internet chegam sozinhos',
+    mensagem: 'No Android, o que você registrar sem sinal é enviado quando a internet voltar, mesmo com o app fechado.',
+    tipo: 'novidade',
+    icone: '📶',
+    data: '11/11/2026'
   },
   {
-    id: 3,
-    titulo: 'Modo Offline Ativado',
-    mensagem: 'Agora você pode registrar ocorrências mesmo sem sinal 4G/5G. O envio acontece assim que a conexão voltar.',
-    tipo: 'sistema',
-    icone: '📱',
-    data: 'Há 2 dias'
+    id: 'v1.0-avisos',
+    titulo: 'Acompanhe seu protocolo',
+    mensagem: 'Depois de registrar, toque em "Ativar avisos" para receber uma notificação quando o status do seu chamado mudar.',
+    tipo: 'novidade',
+    icone: '🔔',
+    data: '10/11/2026'
   }
 ]
 
@@ -1268,7 +1271,7 @@ export default function App() {
             <div className="flex items-center justify-between border-b border-slate-100 pb-3">
               <div className="flex items-center space-x-2">
                 <span className="text-xl">🔔</span>
-                <h3 className="font-black text-slate-800 text-sm">Avisos & Comunicados</h3>
+                <h3 className="font-black text-slate-800 text-sm">Novidades do app</h3>
               </div>
               <div className="flex items-center space-x-2">
                 {notificacoesNaoLidas > 0 && (
@@ -1480,7 +1483,7 @@ export default function App() {
                 </div>
               )}
               <div className="overflow-hidden">
-                <span className="text-xs font-black text-slate-800 capitalize block truncate">
+                <span className="text-xs font-black text-slate-800 block truncate">
                   {rotuloDaCategoria(sucessoEnvio.categoria)}
                 </span>
                 <p className="text-[11px] text-slate-500 truncate mt-0.5">
@@ -1639,11 +1642,16 @@ export default function App() {
           <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs flex items-end sm:items-center justify-center p-0 sm:p-4 animate-in fade-in duration-200">
             <div className="bg-white w-full max-w-md rounded-t-3xl sm:rounded-3xl p-6 border border-slate-200 shadow-xl max-h-[90vh] overflow-y-auto space-y-5">
               <div className="flex items-center justify-between border-b border-slate-100 pb-3">
-                <div className="flex items-center space-x-2">
-                  <span className="text-xl">📍</span>
-                  <h3 className="font-black text-slate-800 text-sm capitalize">
-                    {rotuloDaCategoria(ocorrenciaSelecionada.categoria)}
-                  </h3>
+                <div className="flex items-center space-x-2 min-w-0">
+                  <span className="text-xl" aria-hidden="true">{iconeDaCategoria(ocorrenciaSelecionada.categoria)}</span>
+                  <div className="min-w-0">
+                    <h3 className="font-black text-slate-800 text-sm">
+                      {rotuloDaCategoria(ocorrenciaSelecionada.categoria)}
+                    </h3>
+                    <p className="text-[11px] font-bold text-slate-500">
+                      Protocolo <span className="font-black text-slate-700 select-all">{protocoloCivico(ocorrenciaSelecionada.id)}</span>
+                    </p>
+                  </div>
                 </div>
                 <div className="flex items-center space-x-1.5">
                   <button
@@ -1682,7 +1690,7 @@ export default function App() {
                 <div className="relative border-l-2 border-slate-200 ml-3 space-y-4 py-1">
                   <div className="relative pl-6">
                     <span className="absolute -left-2 top-0.5 w-4 h-4 rounded-full bg-blue-600 border-2 border-white flex items-center justify-center text-[8px] text-white">✓</span>
-                    <p className="text-xs font-bold text-slate-800">1. Ocorrência Submetida</p>
+                    <p className="text-xs font-bold text-slate-800">1. Registrado</p>
                     <p className="text-[10px] text-slate-400">
                       {ocorrenciaSelecionada.created_at ? new Date(ocorrenciaSelecionada.created_at).toLocaleString('pt-BR') : 'Data registrada'}
                     </p>
@@ -1696,8 +1704,8 @@ export default function App() {
                     }`}>
                       {etapaDoEstado(ocorrenciaSelecionada.status) >= 2 ? '✓' : '•'}
                     </span>
-                    <p className="text-xs font-bold text-slate-800">2. Em Análise Territorial</p>
-                    <p className="text-[10px] text-slate-400">Demandas em triagem comunitária</p>
+                    <p className="text-xs font-bold text-slate-800">2. Em análise</p>
+                    <p className="text-[10px] text-slate-400">A gestão comunitária está avaliando</p>
                   </div>
 
                   <div className="relative pl-6">
@@ -1708,14 +1716,14 @@ export default function App() {
                     }`}>
                       {estaResolvido(ocorrenciaSelecionada.status) ? '✓' : '•'}
                     </span>
-                    <p className="text-xs font-bold text-slate-800">3. Solução Concluída</p>
-                    <p className="text-[10px] text-slate-400">Zeladoria executada</p>
+                    <p className="text-xs font-bold text-slate-800">3. Resolvido</p>
+                    <p className="text-[10px] text-slate-400">O problema foi resolvido</p>
                   </div>
                 </div>
               </div>
 
               <div>
-                <span className="text-[10px] font-bold uppercase text-slate-400 block mb-0.5">Descrição / Referência</span>
+                <span className="text-[10px] font-bold uppercase text-slate-400 block mb-0.5">Descrição / ponto de referência</span>
                 <p className="text-xs text-slate-700 bg-slate-50 p-3 rounded-xl border border-slate-200">
                   {ocorrenciaSelecionada.descricao || 'Sem descrição detalhada fornecida.'}
                 </p>
@@ -1737,7 +1745,7 @@ export default function App() {
                   onClick={() => feedbackSensorial.toqueSuave()}
                   className="w-full py-3 bg-slate-900 text-white rounded-xl text-xs font-bold text-center block shadow-sm hover:bg-slate-800"
                 >
-                  Abrir Coordenadas no Google Maps ↗
+                  Ver no Google Maps ↗
                 </a>
               )}
             </div>
@@ -1992,7 +2000,7 @@ export default function App() {
                     </span>
                     <span className="text-slate-600 font-medium">
                       {distanciaAtualKm <= CENTRO_COMUNITARIO.raioMaximoKm
-                        ? `Área Comunitária (${distanciaAtualKm.toFixed(1)} km do centro)`
+                        ? `Área comunitária (${formatarKm(distanciaAtualKm)} do centro)`
                         : `Ponto Externo (${distanciaAtualKm.toFixed(1)} km do bairro)`}
                     </span>
                   </div>
@@ -2101,7 +2109,7 @@ export default function App() {
               )}
             </div>
 
-            <div className="flex space-x-1.5 overflow-x-auto pb-1 text-xs">
+            <div className="flex space-x-1.5 overflow-x-auto sem-barra-rolagem pb-1 text-xs">
               <button
                 onClick={() => {
                   feedbackSensorial.toqueSuave()
@@ -2143,7 +2151,7 @@ export default function App() {
               </button>
             </div>
 
-            <div className="flex space-x-1.5 overflow-x-auto pb-1 text-xs">
+            <div className="flex space-x-1.5 overflow-x-auto sem-barra-rolagem pb-1 text-xs">
               <button
                 onClick={() => {
                   feedbackSensorial.toqueSuave()
@@ -2155,7 +2163,7 @@ export default function App() {
                     : 'bg-slate-100 text-slate-500 hover:bg-slate-200'
                 }`}
               >
-                Todas Tipologias
+                Todos os tipos
               </button>
               {CATEGORIAS.map((cat) => (
                 <button
@@ -2207,7 +2215,7 @@ export default function App() {
                     >
                       <div>
                         <div className="flex items-center space-x-2">
-                          <span className="font-bold text-xs capitalize text-slate-800 group-hover:text-blue-600 transition-colors">
+                          <span className="font-bold text-xs text-slate-800 group-hover:text-blue-600 transition-colors">
                             {rotuloDaCategoria(reg.categoria)}
                           </span>
                           <span className={`text-[10px] px-2 py-0.5 rounded-full font-semibold border ${classeEtiquetaDoEstado(reg.status)}`}>
@@ -2220,8 +2228,8 @@ export default function App() {
                             {reg.created_at ? new Date(reg.created_at).toLocaleDateString('pt-BR') : ''}
                           </span>
                           {distPonto !== null && (
-                            <span className="text-[10px] text-slate-500 font-mono">
-                              • {distPonto.toFixed(1)} km do centro
+                            <span className="text-[10px] text-slate-500">
+                              • {formatarKm(distPonto)} do centro
                             </span>
                           )}
                           {textoConfirmacoes(reg.total_apoios) && (

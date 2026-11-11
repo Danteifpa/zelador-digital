@@ -4,6 +4,13 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/). 
 
 ## [Não lançado]
 
+### Corrigido
+- O mapa e o botão de localização não ficam mais por cima do cabeçalho e da barra de navegação.
+- O detalhe do chamado mostra o protocolo `ZD-…` e o ícone da categoria.
+- Os "Avisos & Comunicados" de exemplo foram trocados por "Novidades do app" reais.
+- Textos mais simples e no padrão do Brasil: "Buraco na Rua", "Todos os tipos", "Registrado / Em análise / Resolvido", "Ver no Google Maps", "E-mail" e distâncias como "3,7 km".
+- Filtros sem barra de rolagem cinza no computador.
+
 ## [1.1.0] — 2026-11-11
 
 Vizinhos confirmam problemas, registros offline chegam sozinhos e o código passa a ser testado automaticamente.

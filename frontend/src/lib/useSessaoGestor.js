@@ -52,7 +52,7 @@ export default function useSessaoGestor() {
   const entrar = useCallback(async (email, senha) => {
     const { error } = await supabase.auth.signInWithPassword({ email: email.trim(), password: senha })
     if (!error) return null
-    if (error.status === 400 || /invalid login/i.test(error.message)) return 'Email ou senha incorretos.'
+    if (error.status === 400 || /invalid login/i.test(error.message)) return 'E-mail ou senha incorretos.'
     if (error.status === 429) return 'Muitas tentativas seguidas. Aguarde alguns minutos e tente novamente.'
     return `Não foi possível entrar: ${error.message}`
   }, [])

@@ -9,6 +9,20 @@ html, body {
   background-color: #f8fafc;
 }
 
+/* O Leaflet usa z-index 400+ nas camadas do mapa. Isolando o contêiner, o mapa fica
+   sempre abaixo da barra de navegação e dos modais do app. */
+.leaflet-container {
+  isolation: isolate;
+}
+
+/* Linhas de filtros com arraste lateral: sem a barra de rolagem cinza no computador. */
+.sem-barra-rolagem {
+  scrollbar-width: none;
+}
+.sem-barra-rolagem::-webkit-scrollbar {
+  display: none;
+}
+
 #root {
   min-height: 100vh;
   /* Altura visível real em telemóveis (sem a área por trás da barra de endereço). */
