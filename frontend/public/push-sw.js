@@ -2,7 +2,7 @@
 // Carregado dentro do service worker gerado pelo Workbox (vite.config.js → workbox.importScripts).
 
 self.addEventListener('push', (evento) => {
-  let dados = {}
+  let dados
   try {
     dados = evento.data ? evento.data.json() : {}
   } catch {

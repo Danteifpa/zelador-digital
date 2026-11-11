@@ -34,8 +34,5 @@ jobs:
       - name: Build de produção
         run: npm run build
 
-      # O código antigo ainda tem avisos de lint conhecidos (ver issue "Zerar os problemas de lint").
-      # Enquanto não forem resolvidos, o lint é informativo e não bloqueia o PR.
       - name: Lint
-        run: npm run lint
-        continue-on-error: true
+        run: npm run lint -- --max-warnings=0
