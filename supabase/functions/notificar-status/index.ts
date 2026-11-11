@@ -6,7 +6,7 @@
 // ou externas não geram avisos falsos nem duplicados.
 //
 // Segredos (Supabase → Edge Functions → Secrets):
-//   VAPID_PUBLIC_KEY, VAPID_PRIVATE_KEY  (gerados com `npx web-push generate-vapid-keys`)
+//   VAPID_PRIVATE_KEY  (gerada com `npx web-push generate-vapid-keys`; a pública está no código)
 //   VAPID_SUBJECT (opcional, ex.: mailto:contato@exemplo.com)
 
 import webpush from 'npm:web-push@3.6.7'
@@ -24,6 +24,8 @@ const MENSAGENS: Record<string, string> = {
   resolvido: 'Problema resolvido! Toque para ver o andamento e a foto da solução.'
 }
 
+const CHAVE_PUBLICA_VAPID = 'BK9zRIzxn1oGnoiyJnVyr76ZWFndu9hhJMUZGQo3cj5IHUXKnTXDxIcVFEDnFlb_rXpKb9BNZNVqUg8ZqSMjfGc'
+
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
 
 const resposta = (corpo: unknown, status = 200) =>
@@ -40,7 +42,8 @@ Deno.serve(async (req) => {
   }
   if (!ocorrenciaId || !UUID.test(ocorrenciaId)) return resposta({ erro: 'ocorrencia_id inválido' }, 400)
 
-  const chavePublica = Deno.env.get('VAPID_PUBLIC_KEY')
+  // A chave pública não é secreta (também está no app, em lib/push.js).
+  const chavePublica = Deno.env.get('VAPID_PUBLIC_KEY') ?? CHAVE_PUBLICA_VAPID
   const chavePrivada = Deno.env.get('VAPID_PRIVATE_KEY')
   if (!chavePublica || !chavePrivada) return resposta({ erro: 'Chaves VAPID não configuradas' }, 503)
   webpush.setVapidDetails(Deno.env.get('VAPID_SUBJECT') ?? 'mailto:avisos@zeladordigital.vercel.app', chavePublica, chavePrivada)
