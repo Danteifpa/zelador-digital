@@ -6,10 +6,13 @@ export default defineConfig({
   plugins: [
     react(),
     VitePWA({
-      registerType: 'autoUpdate',
-      includeAssets: ['favicon.svg', 'icons.svg'],
+      // 'prompt': o app avisa "Há uma versão nova" e o utilizador escolhe quando atualizar
+      // (src/components/AvisoAtualizacao.jsx), em vez de trocar de versão a meio de um registo.
+      registerType: 'prompt',
+      includeAssets: ['favicon.svg', 'apple-touch-icon.png', 'icon-192.png', 'icon-512.png', 'icon-maskable-512.png'],
       manifest: false, // Utiliza o ficheiro public/manifest.json já configurado
       workbox: {
+        cleanupOutdatedCaches: true,
         globPatterns: ['**/*.{js,css,html,ico,png,svg,json}'],
         runtimeCaching: [
           {
