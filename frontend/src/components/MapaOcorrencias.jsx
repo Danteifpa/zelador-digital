@@ -178,7 +178,7 @@ export default function MapaOcorrencias({ ocorrencias = [] }) {
       </div>
 
       {/* Caixa do Mapa Leaflet */}
-      <div className="mapa-ocorrencias relative rounded-3xl overflow-hidden border border-slate-200 shadow-sm h-[65vh] min-h-[420px] max-h-[600px] bg-slate-100">
+      <div className="mapa-ocorrencias relative isolate rounded-3xl overflow-hidden border border-slate-200 shadow-sm h-[65vh] min-h-[420px] max-h-[600px] bg-slate-100">
         <MapContainer
           center={centro}
           zoom={11}
