@@ -4,6 +4,10 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/). 
 
 ## [Não lançado]
 
+### Alterado
+- Tela inicial: o convite "Instalar aplicativo" saiu do topo e virou uma linha discreta depois das ações principais.
+- Modo Fácil mais forte: texto 25% maior (inclusive os textos pequenos), mais contraste e barra de navegação mais alta, com ícones e nomes maiores.
+
 ### Corrigido
 - O mapa e o botão de localização não ficam mais por cima do cabeçalho e da barra de navegação.
 - O detalhe do chamado mostra o protocolo `ZD-…` e o ícone da categoria.
