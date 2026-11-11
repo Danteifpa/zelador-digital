@@ -559,9 +559,12 @@ export default function App() {
     setMostrarOnboarding(false)
   }
 
-  // Modo Fácil: todo o texto e os botões ficam 12,5% maiores (as medidas do Tailwind são em rem).
+  // Modo Fácil: todo o texto e os botões ficam 25% maiores (as medidas do Tailwind são em rem)
+  // e a classe "modo-facil" ajusta o que usa px fixo, os contrastes e a barra de baixo (index.css).
   useEffect(() => {
-    document.documentElement.style.fontSize = modo === 'facil' ? '112.5%' : ''
+    const raiz = document.documentElement
+    raiz.style.fontSize = modo === 'facil' ? '125%' : ''
+    raiz.classList.toggle('modo-facil', modo === 'facil')
   }, [modo])
 
   const alternarModo = (novoModo) => {
@@ -1755,40 +1758,6 @@ export default function App() {
         {/* 1. INÍCIO */}
         {abaAtiva === 'inicio' && (
           <div className="flex flex-col gap-3 px-2.5 py-2 max-w-lg mx-auto w-full">
-            {!pwaInstalado && !bannerPwaIgnorado && (
-              <div className="bg-gradient-to-r from-slate-900 to-blue-950 text-white rounded-3xl p-4 shadow-sm border border-slate-800 relative overflow-hidden">
-                <button
-                  onClick={() => {
-                    feedbackSensorial.toqueSuave()
-                    setBannerPwaIgnorado(true)
-                  }}
-                  className="absolute top-3 right-3 text-slate-400 hover:text-white text-xs font-bold w-6 h-6 flex items-center justify-center rounded-full bg-white/10"
-                >
-                  ✕
-                </button>
-                <div className="flex items-center space-x-3.5 pr-6">
-                  <div className="w-11 h-11 rounded-2xl bg-blue-600 flex items-center justify-center text-xl shrink-0 shadow-md">
-                    📲
-                  </div>
-                  <div>
-                    <h3 className="text-xs font-black uppercase tracking-wider text-blue-300">Instalar aplicativo</h3>
-                    <p className="text-[11px] text-slate-300 mt-0.5 leading-snug">
-                      Acesse o Zelador Digital diretamente na tela do seu celular sem gastar memória.
-                    </p>
-                  </div>
-                </div>
-
-                <div className="mt-3 pt-3 border-t border-white/10 flex items-center justify-end space-x-2">
-                  <button
-                    onClick={instalarAplicacaoPWA}
-                    className="px-4 py-2 bg-blue-600 hover:bg-blue-500 text-white text-xs font-black uppercase rounded-xl transition-all shadow-2xs cursor-pointer"
-                  >
-                    Instalar Agora 📲
-                  </button>
-                </div>
-              </div>
-            )}
-
             <StatsOverview total={totalRegistos} resolvidos={totalResolvidos} pendentes={totalPendentes} />
 
             <div>
@@ -1850,6 +1819,34 @@ export default function App() {
                 </button>
               </div>
             </div>
+
+            {/* Convite para instalar: discreto, depois das ações principais. */}
+            {!pwaInstalado && !bannerPwaIgnorado && (
+              <div className="flex items-center gap-3 rounded-2xl border border-slate-200 bg-white p-3 shadow-2xs">
+                <span className="w-9 h-9 rounded-xl bg-blue-50 border border-blue-100 flex items-center justify-center text-lg shrink-0" aria-hidden="true">
+                  📲
+                </span>
+                <p className="flex-1 text-xs font-bold text-slate-700 leading-snug">Instale o app na tela inicial</p>
+                <button
+                  type="button"
+                  onClick={instalarAplicacaoPWA}
+                  className="min-h-9 px-3 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-xs font-black cursor-pointer"
+                >
+                  Instalar
+                </button>
+                <button
+                  type="button"
+                  aria-label="Dispensar convite para instalar"
+                  onClick={() => {
+                    feedbackSensorial.toqueSuave()
+                    setBannerPwaIgnorado(true)
+                  }}
+                  className="w-8 h-8 rounded-full text-slate-400 hover:bg-slate-100 hover:text-slate-600 flex items-center justify-center text-xs font-bold cursor-pointer"
+                >
+                  ✕
+                </button>
+              </div>
+            )}
 
             <CommunityAlert
               onAbrirQrCode={() => {
@@ -2269,7 +2266,7 @@ export default function App() {
       </main>
 
       {/* BARRA DE NAVEGAÇÃO INFERIOR */}
-      <nav className="fixed bottom-0 left-0 right-0 z-40 bg-white/90 backdrop-blur-md border-t border-slate-200 shadow-lg pb-[env(safe-area-inset-bottom)]">
+      <nav className="barra-navegacao fixed bottom-0 left-0 right-0 z-40 bg-white/90 backdrop-blur-md border-t border-slate-200 shadow-lg pb-[env(safe-area-inset-bottom)]">
         <div className="max-w-md mx-auto px-4 h-16 flex items-center justify-between">
           <button
             onClick={() => {
@@ -2306,7 +2303,8 @@ export default function App() {
               setOcorrenciaSelecionada(null)
             }}
             className="w-12 h-12 rounded-full bg-blue-600 text-white flex items-center justify-center text-xl shadow-md -mt-5 hover:bg-blue-700 active:scale-95 transition-all cursor-pointer border-4 border-white"
-            title="Criar Ocorrência"
+            title="Registrar ocorrência"
+            aria-label="Registrar ocorrência"
           >
             ➕
           </button>

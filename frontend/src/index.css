@@ -23,6 +23,26 @@ html, body {
   display: none;
 }
 
+/* ---------- Modo Fácil (classe colocada no <html> pelo App) ---------- */
+/* Tamanhos em px fixo não crescem com a fonte base: aqui viram rem e acompanham os 125%. */
+html.modo-facil .text-\[8px\] { font-size: 0.6875rem; }
+html.modo-facil .text-\[9px\],
+html.modo-facil .text-\[10px\] { font-size: 0.75rem; }
+html.modo-facil .text-\[11px\] { font-size: 0.8125rem; }
+
+/* Mais contraste: textos cinza-claro mais escuros e contornos mais fortes. */
+html.modo-facil .text-slate-400 { color: #475569; }
+html.modo-facil .text-slate-500 { color: #334155; }
+html.modo-facil .border-slate-100,
+html.modo-facil .border-slate-200,
+html.modo-facil .border-slate-200\/80,
+html.modo-facil .border-slate-200\/90 { border-color: #94a3b8; }
+
+/* Barra de baixo mais alta, com ícones e nomes maiores. */
+html.modo-facil .barra-navegacao > div { height: 4.25rem; }
+html.modo-facil .barra-navegacao button > span:first-child { font-size: 1.5rem; line-height: 1; }
+html.modo-facil .barra-navegacao button > span:last-child { font-size: 0.8125rem; }
+
 #root {
   min-height: 100vh;
   /* Altura visível real em telemóveis (sem a área por trás da barra de endereço). */
