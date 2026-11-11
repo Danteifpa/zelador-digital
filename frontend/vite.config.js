@@ -13,8 +13,8 @@ export default defineConfig({
       manifest: false, // Utiliza o ficheiro public/manifest.json já configurado
       workbox: {
         cleanupOutdatedCaches: true,
-        // Avisos push (push + notificationclick) — public/push-sw.js
-        importScripts: ['push-sw.js'],
+        // Avisos push (public/push-sw.js) e envio da fila offline em segundo plano (public/sync-sw.js)
+        importScripts: ['push-sw.js', 'sync-sw.js'],
         globPatterns: ['**/*.{js,css,html,ico,png,svg,json}'],
         runtimeCaching: [
           {

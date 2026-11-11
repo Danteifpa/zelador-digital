@@ -2,7 +2,8 @@ import { useState, useEffect, useMemo, useRef, Suspense } from 'react'
 import { Search } from 'lucide-react'
 import { supabase } from './lib/supabase'
 import lazyComRecarga from './lib/lazyComRecarga'
-import { ativarAvisosDoProtocolo, concluirAvisosPendentes, avisosAtivosPara, MENSAGENS_AVISOS } from './lib/push'
+import { ativarAvisosDoProtocolo, concluirAvisosPendentes, concluirAvisosForaDaFila, avisosAtivosPara, MENSAGENS_AVISOS } from './lib/push'
+import { pedirEnvioEmSegundoPlano, aoEnviarEmSegundoPlano } from './lib/envioSegundoPlano'
 import useNetworkStatus from './lib/useNetworkStatus'
 import { otimizarImagem } from './lib/imageOptimizer'
 import Header from './components/Header'
@@ -304,6 +305,7 @@ export default function App() {
   // Trinco síncrono: impede duas sincronizações em paralelo (evento online + botão).
   const sincronizandoRef = useRef(false)
   const sincronizarRef = useRef(null)
+  const aoFilaEnviadaRef = useRef(null)
 
   // Formulário
   const [categoria, setCategoria] = useState('buraco')
@@ -425,6 +427,9 @@ export default function App() {
     lerFila()
       .then((fila) => {
         setFilaOffline(fila)
+        if (fila.length > 0) pedirEnvioEmSegundoPlano()
+        // Registros enviados em segundo plano com o app fechado: ativa os avisos pedidos sem rede.
+        if (navigator.onLine) concluirAvisosForaDaFila(fila.map((item) => item.id)).catch(() => {})
         if (navigator.onLine && fila.length > 0) {
           temporizador = window.setTimeout(() => sincronizarRef.current?.(), 2000)
         }
@@ -804,7 +809,12 @@ export default function App() {
     }
   }
 
-  const sincronizarFilaOffline = async () => {
+  // Trava compartilhada com o envio em segundo plano (public/sync-sw.js): um envia, o outro espera
+  // e depois encontra a fila já vazia. Sem suporte a Web Locks, segue sem trava.
+  const sincronizarFilaOffline = () =>
+    navigator.locks ? navigator.locks.request('zelador-fila-offline', enviarFilaOffline) : enviarFilaOffline()
+
+  const enviarFilaOffline = async () => {
     if (sincronizandoRef.current) return
     let pendentes
     try {
@@ -887,12 +897,25 @@ export default function App() {
     } else {
       mostrarAlertaToast('Não foi possível enviar os registros pendentes agora. Ficam salvos no celular para nova tentativa.')
     }
+    // O que falhou fica com o navegador para tentar de novo, mesmo se o app for fechado.
+    if (falhados > 0) pedirEnvioEmSegundoPlano()
   }
 
   // Mantém o ref apontado para a versão atual da função de sincronização.
   useEffect(() => {
     sincronizarRef.current = sincronizarFilaOffline
+    aoFilaEnviadaRef.current = (ids) => {
+      lerFila().then(setFilaOffline).catch(() => {})
+      carregarRegistos()
+      concluirAvisosPendentes(ids).catch((erro) => console.warn('Avisos pendentes:', erro))
+      mostrarAlertaToast('Registros feitos sem internet foram enviados.')
+    }
   })
+
+  // Mensagens do envio em segundo plano (public/sync-sw.js).
+  useEffect(() => {
+    return aoEnviarEmSegundoPlano((ids) => aoFilaEnviadaRef.current?.(ids))
+  }, [])
 
   // Insere com o UUID gerado no telemóvel. Se o esquema não aceitar um id vindo do cliente
   // (coluna não-UUID ou identity), repete sem id e usa o id devolvido pelo servidor.
@@ -966,6 +989,7 @@ export default function App() {
         }
 
         setFilaOffline(await adicionarAFila(itemOffline))
+        pedirEnvioEmSegundoPlano()
 
         feedbackSensorial.envioSucesso()
         const mensagemOffline = 'Sem conexão à internet. Sua ocorrência foi salva e será enviada automaticamente assim que a rede voltar.'
@@ -1052,6 +1076,7 @@ export default function App() {
             criadoEm: new Date().toISOString()
           }
           setFilaOffline(await adicionarAFila(itemOffline))
+          pedirEnvioEmSegundoPlano()
           const mensagemOffline = 'Sem conexão à internet. Sua ocorrência foi salva e será enviada automaticamente assim que a rede voltar.'
           mostrarAlertaToast(mensagemOffline)
           if (modo === 'facil') falarTexto(mensagemOffline)

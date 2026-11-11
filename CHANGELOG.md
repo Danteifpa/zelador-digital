@@ -5,6 +5,7 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/). 
 ## [Não lançado]
 
 ### Adicionado
+- Envio em segundo plano: no Android, registros feitos sem internet são enviados sozinhos quando a rede volta, mesmo com o app fechado ([#26](https://github.com/Danteifpa/zelador-digital/pull/26)).
 - "Também vi este problema": vizinhos confirmam um chamado já aberto em vez de registrar outro igual. Aparece no aviso de chamado semelhante, no detalhe e na lista; no Painel, chamados com 3 ou mais confirmações sobem na prioridade GUT.
 
 ### Segurança

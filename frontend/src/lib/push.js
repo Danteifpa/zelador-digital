@@ -107,6 +107,15 @@ export async function concluirAvisosPendentes(idsSincronizados) {
   gravarLista(CHAVE_PENDENTES, pendentes.filter((id) => !prontos.includes(id)))
 }
 
+/**
+ * Ativa os avisos pedidos sem rede para registros que já não estão na fila
+ * (enviados pelo service worker enquanto o app estava fechado).
+ */
+export async function concluirAvisosForaDaFila(idsNaFila) {
+  const enviados = lerLista(CHAVE_PENDENTES).filter((id) => !idsNaFila.includes(id))
+  if (enviados.length > 0) await concluirAvisosPendentes(enviados)
+}
+
 export const MENSAGENS_AVISOS = {
   ativado: 'Avisos ativados: você será notificado quando o status deste protocolo mudar.',
   pendente: 'Avisos salvos: serão ativados assim que o registro for enviado.',
