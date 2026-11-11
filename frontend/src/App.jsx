@@ -15,6 +15,7 @@ import AvisoAtualizacao from './components/AvisoAtualizacao'
 import { lerFila, adicionarAFila, atualizarItemNaFila, removerDaFila, FilaCheiaError } from './lib/filaOffline'
 import { lerCache, gravarCache, pedirArmazenamentoPersistente } from './lib/armazenamento'
 import { gerarIdOcorrencia, ehUuid, protocoloCivico } from './lib/protocolo'
+import { estaResolvido, etapaDoEstado, rotuloDoEstado, classeEtiquetaDoEstado, VALORES_EM_ABERTO } from './lib/status'
 
 // Módulos pesados (Leaflet, Painel de Gestão, gerador de QR Code) só são descarregados quando
 // o utilizador os abre: quem só regista ocorrências não paga esse peso no 3G/4G.
@@ -46,16 +47,6 @@ const CATEGORIAS = [
   { id: 'buraco', label: 'Buraco na Rua', icon: '🕳️', border: 'border-orange-500', activeBg: 'bg-orange-600 text-white', fala: 'Selecionado: Buraco na Rua e Vias' },
   { id: 'esgoto', label: 'Esgoto / Água', icon: '💧', border: 'border-sky-400', activeBg: 'bg-sky-600 text-white', fala: 'Selecionado: Vazamento de Água ou Esgoto' }
 ]
-
-function statusResolvido(status) {
-  return status === 'resolvido' || status === 'concluido'
-}
-
-function etapaProtocolo(status) {
-  if (statusResolvido(status)) return 3
-  if (status === 'em analise' || status === 'oficiada') return 2
-  return 1
-}
 
 function distanciaMetros(a, b) {
   if (![a.latitude, a.longitude, b.latitude, b.longitude].every((valor) => Number.isFinite(Number(valor)))) return Infinity
@@ -759,7 +750,7 @@ export default function App() {
   const partilharOcorrencia = async (item) => {
     feedbackSensorial.toqueSuave()
     const categoriaLabel = CATEGORIAS.find((c) => c.id === item.categoria)?.label || item.categoria
-    const textoPartilha = `📢 *Zelador Digital - Ocorrência Comunitária*\n📍 *Tipo:* ${categoriaLabel}\n📝 *Detalhe:* ${item.descricao || 'Sem descrição'}\n📌 *Status:* ${item.status || 'Pendente'}\n🗺️ *Ver no Mapa:* https://www.google.com/maps/search/?api=1&query=${item.latitude},${item.longitude}`
+    const textoPartilha = `📢 *Zelador Digital - Ocorrência Comunitária*\n📍 *Tipo:* ${categoriaLabel}\n📝 *Detalhe:* ${item.descricao || 'Sem descrição'}\n📌 *Status:* ${rotuloDoEstado(item.status)}\n🗺️ *Ver no Mapa:* https://www.google.com/maps/search/?api=1&query=${item.latitude},${item.longitude}`
 
     if (navigator.share) {
       try {
@@ -889,7 +880,7 @@ export default function App() {
       .from('ocorrencias_georreferenciadas')
       .select('id,categoria,status,latitude,longitude')
       .eq('categoria', categoria)
-      .in('status', ['pendente', 'em analise', 'em_analise'])
+      .in('status', VALORES_EM_ABERTO)
       .limit(500)
 
     if (error) throw error
@@ -1081,7 +1072,7 @@ export default function App() {
   const registosFiltrados = useMemo(() => {
     return registos.filter((item) => {
       const bateuCategoria = filtroCategoria === 'todas' || item.categoria === filtroCategoria
-      const isResolvido = item.status === 'resolvido' || item.status === 'concluido'
+      const isResolvido = estaResolvido(item.status)
       const bateuStatus =
         filtroStatus === 'todos' ||
         (filtroStatus === 'resolvido' && isResolvido) ||
@@ -1100,8 +1091,8 @@ export default function App() {
   const registosVisiveis = registosFiltrados.slice(0, limiteLista)
 
   const totalRegistos = registos.length
-  const totalResolvidos = registos.filter((r) => r.status === 'resolvido' || r.status === 'concluido').length
-  const totalPendentes = registos.filter((r) => r.status !== 'resolvido' && r.status !== 'concluido').length
+  const totalResolvidos = registos.filter((r) => estaResolvido(r.status)).length
+  const totalPendentes = registos.length - totalResolvidos
   const taxaResolucao = totalRegistos > 0 ? Math.round((totalResolvidos / totalRegistos) * 100) : 0
 
   const urlApp = typeof window !== 'undefined' ? window.location.origin : 'https://zeladordigital.vercel.app'
@@ -1353,7 +1344,7 @@ export default function App() {
                 <div className="rounded-2xl border border-slate-200 bg-slate-50 p-3">
                   <div className="flex items-start">
                     {['Registada', 'Em Análise / Oficiada', 'Resolvida'].map((titulo, index) => {
-                      const atual = etapaProtocolo(resultadoProtocolo.status)
+                      const atual = etapaDoEstado(resultadoProtocolo.status)
                       const concluida = index + 1 <= atual
                       return (
                         <div key={titulo} className="flex flex-1 items-start">
@@ -1366,7 +1357,7 @@ export default function App() {
                       )
                     })}
                   </div>
-                  <p className="mt-3 text-xs font-black text-slate-700">Status atual: <span className="capitalize text-blue-700">{resultadoProtocolo.status || 'Pendente'}</span></p>
+                  <p className="mt-3 text-xs font-black text-slate-700">Status atual: <span className="text-blue-700">{rotuloDoEstado(resultadoProtocolo.status)}</span></p>
                 </div>
                 {resultadoProtocolo.observacoes && (
                   <div className="rounded-2xl border border-indigo-200 bg-indigo-50 p-3 text-xs text-indigo-900">
@@ -1374,7 +1365,7 @@ export default function App() {
                     <p className="mt-1 leading-relaxed">{resultadoProtocolo.observacoes}</p>
                   </div>
                 )}
-                {statusResolvido(resultadoProtocolo.status) && resultadoProtocolo.foto_url && resultadoProtocolo.foto_resolucao && (
+                {estaResolvido(resultadoProtocolo.status) && resultadoProtocolo.foto_url && resultadoProtocolo.foto_resolucao && (
                   <div className="rounded-2xl border border-emerald-200 bg-emerald-50 p-3">
                     <span className="rounded-full bg-emerald-600 px-2 py-1 text-[9px] font-black text-white">Comprovado por Auditoria Visual</span>
                     <div className="mt-2 grid grid-cols-2 gap-2">
@@ -1640,11 +1631,11 @@ export default function App() {
 
                   <div className="relative pl-6">
                     <span className={`absolute -left-2 top-0.5 w-4 h-4 rounded-full border-2 border-white flex items-center justify-center text-[8px] text-white ${
-                      ocorrenciaSelecionada.status === 'em_andamento' || ocorrenciaSelecionada.status === 'resolvido' || ocorrenciaSelecionada.status === 'concluido'
+                      etapaDoEstado(ocorrenciaSelecionada.status) >= 2
                         ? 'bg-amber-500'
                         : 'bg-slate-300'
                     }`}>
-                      {ocorrenciaSelecionada.status === 'em_andamento' || ocorrenciaSelecionada.status === 'resolvido' || ocorrenciaSelecionada.status === 'concluido' ? '✓' : '•'}
+                      {etapaDoEstado(ocorrenciaSelecionada.status) >= 2 ? '✓' : '•'}
                     </span>
                     <p className="text-xs font-bold text-slate-800">2. Em Análise Territorial</p>
                     <p className="text-[10px] text-slate-400">Demandas em triagem comunitária</p>
@@ -1652,11 +1643,11 @@ export default function App() {
 
                   <div className="relative pl-6">
                     <span className={`absolute -left-2 top-0.5 w-4 h-4 rounded-full border-2 border-white flex items-center justify-center text-[8px] text-white ${
-                      ocorrenciaSelecionada.status === 'resolvido' || ocorrenciaSelecionada.status === 'concluido'
+                      estaResolvido(ocorrenciaSelecionada.status)
                         ? 'bg-emerald-600'
                         : 'bg-slate-300'
                     }`}>
-                      {ocorrenciaSelecionada.status === 'resolvido' || ocorrenciaSelecionada.status === 'concluido' ? '✓' : '•'}
+                      {estaResolvido(ocorrenciaSelecionada.status) ? '✓' : '•'}
                     </span>
                     <p className="text-xs font-bold text-slate-800">3. Solução Concluída</p>
                     <p className="text-[10px] text-slate-400">Zeladoria executada</p>
@@ -2152,12 +2143,8 @@ export default function App() {
                           <span className="font-bold text-xs capitalize text-slate-800 group-hover:text-blue-600 transition-colors">
                             {reg.categoria}
                           </span>
-                          <span className={`text-[10px] px-2 py-0.5 rounded-full font-semibold border ${
-                            reg.status === 'resolvido' || reg.status === 'concluido'
-                              ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
-                              : 'bg-amber-50 text-amber-700 border-amber-200'
-                          }`}>
-                            {reg.status || 'Pendente'}
+                          <span className={`text-[10px] px-2 py-0.5 rounded-full font-semibold border ${classeEtiquetaDoEstado(reg.status)}`}>
+                            {rotuloDoEstado(reg.status)}
                           </span>
                         </div>
                         <p className="text-xs text-slate-600 mt-1 line-clamp-1">{reg.descricao}</p>

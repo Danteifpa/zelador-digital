@@ -4,13 +4,13 @@ import 'leaflet/dist/leaflet.css'
 import { supabase } from '../lib/supabase'
 import useSessaoGestor from '../lib/useSessaoGestor'
 import LoginGestor from './LoginGestor'
+import { ORDEM_ESTADOS, ESTADOS, normalizarEstado, estaResolvido, etapaDoEstado, rotuloDoEstado } from '../lib/status'
 
-const STATUS_RESOLVIDOS = ['resolvido', 'concluido']
 const RAIO_RECURRENCIA_METROS = 500
 const CENTRO_ANANINDEUA = [-1.365, -48.375]
 
 function eResolvida(item) {
-  return STATUS_RESOLVIDOS.includes(item.status)
+  return estaResolvido(item.status)
 }
 
 function distanciaMetros(a, b) {
@@ -44,7 +44,7 @@ function categoriaGravidade(categoria = '') {
 }
 
 function urgenciaPorData(createdAt, status, agora = new Date()) {
-  if (status !== 'pendente' || !createdAt) return 3
+  if (normalizarEstado(status) !== 'pendente' || !createdAt) return 3
   const idadeDias = Math.max(0, agora.getTime() - new Date(createdAt).getTime()) / 86400000
   if (idadeDias > 7) return 5
   if (idadeDias >= 3) return 4
@@ -92,9 +92,7 @@ function protocoloCivico(id) {
 }
 
 function etapaStatus(item) {
-  if (eResolvida(item)) return 3
-  if (item.status === 'em analise' || item.status === 'oficiada') return 2
-  return 1
+  return etapaDoEstado(item.status)
 }
 
 function AjustarMapa({ centro, zoom }) {
@@ -277,7 +275,7 @@ export default function PainelGestor({ ocorrencias = [], onAtualizarDados }) {
 
   const ocorrenciasFiltradasComGut = useMemo(() => {
     const filtradas = ocorrenciasComGut.filter((item) => {
-      const bateuStatus = filtroStatus === 'todos' || item.status === filtroStatus
+      const bateuStatus = filtroStatus === 'todos' || normalizarEstado(item.status) === filtroStatus
       const busca = termoBusca.toLowerCase()
       const bateuTexto =
         (item.descricao || '').toLowerCase().includes(busca) ||
@@ -291,8 +289,8 @@ export default function PainelGestor({ ocorrencias = [], onAtualizarDados }) {
 
   const metricas = useMemo(() => {
     const resolvidas = ocorrencias.filter(eResolvida).length
-    const emAnalise = ocorrencias.filter((item) => item.status === 'em analise').length
-    const pendentes = ocorrencias.filter((item) => !item.status || item.status === 'pendente').length
+    const emAnalise = ocorrencias.filter((item) => normalizarEstado(item.status) === 'em_analise').length
+    const pendentes = ocorrencias.filter((item) => normalizarEstado(item.status) === 'pendente').length
     const resolvidasComData = ocorrencias.filter((item) => eResolvida(item) && item.created_at && (item.resolved_at || item.updated_at))
     const tempoMedioDias = resolvidasComData.length
       ? resolvidasComData.reduce((total, item) => {
@@ -376,7 +374,7 @@ export default function PainelGestor({ ocorrencias = [], onAtualizarDados }) {
         properties: {
           id: item.id,
           categoria: item.categoria || 'Não classificado',
-          status: item.status || 'pendente',
+          status: rotuloDoEstado(item.status),
           bairro: item.bairro || item.endereco || item.morada || null,
           data: item.created_at || null
         }
@@ -681,12 +679,7 @@ export default function PainelGestor({ ocorrencias = [], onAtualizarDados }) {
         />
 
         <div className="flex space-x-1.5 overflow-x-auto pb-1 text-xs">
-          {[
-            ['todos', 'Todos'],
-            ['pendente', 'Pendente'],
-            ['em analise', 'Em Análise'],
-            ['resolvido', 'Resolvido']
-          ].map(([status, label]) => (
+          {[['todos', 'Todos'], ...ORDEM_ESTADOS.map((estado) => [estado, ESTADOS[estado].rotulo])].map(([status, label]) => (
             <button
               key={status}
               type="button"
@@ -755,13 +748,13 @@ export default function PainelGestor({ ocorrencias = [], onAtualizarDados }) {
             <div>
               <label className="text-[11px] font-bold text-slate-700 block mb-1">Estado:</label>
               <select
-                value={itemEdicao.status || 'pendente'}
+                value={normalizarEstado(itemEdicao.status)}
                 onChange={(e) => setItemEdicao({ ...itemEdicao, status: e.target.value })}
                 className="w-full bg-white border border-slate-300 rounded-xl px-3 py-2 text-xs font-bold"
               >
-                <option value="pendente">Pendente</option>
-                <option value="em analise">Em Análise</option>
-                <option value="resolvido">Resolvido</option>
+                {ORDEM_ESTADOS.map((estado) => (
+                  <option key={estado} value={estado}>{ESTADOS[estado].rotulo}</option>
+                ))}
               </select>
             </div>
 
@@ -795,14 +788,8 @@ export default function PainelGestor({ ocorrencias = [], onAtualizarDados }) {
                     <span className="text-xs font-black capitalize text-slate-800">
                       {item.categoria}
                     </span>
-                  <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full capitalize ${
-                    item.status === 'resolvido'
-                      ? 'bg-emerald-100 text-emerald-800'
-                      : item.status === 'em analise'
-                      ? 'bg-sky-100 text-sky-800'
-                      : 'bg-amber-100 text-amber-800'
-                  }`}>
-                    {item.status || 'Pendente'}
+                  <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full border ${ESTADOS[normalizarEstado(item.status)].classeEtiqueta}`}>
+                    {rotuloDoEstado(item.status)}
                   </span>
                   <span
                     className="text-[10px] font-black px-2 py-0.5 rounded-full text-white"
@@ -964,7 +951,7 @@ export default function PainelGestor({ ocorrencias = [], onAtualizarDados }) {
                 <button
                   type="button"
                   disabled={carregandoAcao}
-                  onClick={() => alterarStatusOcorrencia(item.id, 'em analise')}
+                  onClick={() => alterarStatusOcorrencia(item.id, 'em_analise')}
                   className="text-[10px] font-bold px-2 py-1 rounded-lg bg-sky-50 text-sky-700 hover:bg-sky-100 border border-sky-200 transition-colors cursor-pointer"
                 >
                   {acaoEmAndamento === `status-${item.id}` && <Spinner />} Em Análise
@@ -982,7 +969,7 @@ export default function PainelGestor({ ocorrencias = [], onAtualizarDados }) {
                 </button>
                 <button
                   type="button"
-                  onClick={() => setItemEdicao({ ...item, status: item.status || 'pendente' })}
+                  onClick={() => setItemEdicao({ ...item, status: normalizarEstado(item.status) })}
                   className="text-[11px] font-bold text-blue-600 hover:text-blue-800 px-2 py-1 rounded-lg bg-blue-50 border border-blue-200 transition-colors cursor-pointer"
                 >
                   ✏️ Editar
@@ -1041,7 +1028,7 @@ export default function PainelGestor({ ocorrencias = [], onAtualizarDados }) {
                           <span className="block mt-1">GUT: {item.gut.pontuacao} — {rotuloCriticidade(item.gut.pontuacao)}</span>
                           <span className="block">Data: {formatarData(item.created_at)}</span>
                           <span className="block">Bairro: {item.bairro || item.endereco || item.morada || 'Não informado'}</span>
-                          <span className="block">Status: {item.status || 'Pendente'}</span>
+                          <span className="block">Status: {rotuloDoEstado(item.status)}</span>
                         </div>
                       </Popup>
                     </CircleMarker>
