@@ -1,4 +1,5 @@
 import { ESTADOS, ORDEM_ESTADOS, normalizarEstado } from '../../lib/status'
+import { CATEGORIAS, CATEGORIA_OUTRO } from '../../lib/categorias'
 
 /** Formulário para editar descrição, categoria e estado de uma ocorrência. */
 export default function FormEdicaoOcorrencia({ carregandoAcao, itemEdicao, salvarEdicao, setItemEdicao }) {
@@ -24,11 +25,11 @@ export default function FormEdicaoOcorrencia({ carregandoAcao, itemEdicao, salva
             onChange={(e) => setItemEdicao({ ...itemEdicao, categoria: e.target.value })}
             className="w-full bg-white border border-slate-300 rounded-xl px-3 py-2 text-xs font-bold"
           >
-            <option value="lixo">🗑️ Lixo Irregular</option>
-            <option value="iluminacao">💡 Iluminação Pública</option>
-            <option value="buraco">🕳️ Buraco / Pavimentação</option>
-            <option value="esgoto">💧 Esgoto / Drenagem</option>
-            <option value="outro">📍 Outro</option>
+            {[...CATEGORIAS, CATEGORIA_OUTRO].map((categoria) => (
+              <option key={categoria.id} value={categoria.id}>
+                {categoria.icon} {categoria.label}
+              </option>
+            ))}
           </select>
         </div>
 

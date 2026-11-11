@@ -1,4 +1,5 @@
 import { RAIO_RECURRENCIA_METROS } from '../../lib/gestao'
+import { rotuloDaCategoria } from '../../lib/categorias'
 
 /** Tempo médio de resolução, recorrência, categorias e evolução das últimas 4 semanas. */
 export default function IndicadoresGestao({ analiseCategorias, analiseTemporal, maxCategoria, maxTemporal, metricas }) {
@@ -39,7 +40,7 @@ export default function IndicadoresGestao({ analiseCategorias, analiseTemporal, 
           ) : analiseCategorias.map(([categoria, quantidade]) => (
             <div key={categoria}>
               <div className="flex justify-between text-[10px] font-bold mb-1">
-                <span className="capitalize text-slate-300">{categoria}</span>
+                <span className="text-slate-300">{rotuloDaCategoria(categoria)}</span>
                 <span className="text-slate-400">{quantidade}</span>
               </div>
               <div className="h-2 rounded-full bg-slate-700 overflow-hidden">

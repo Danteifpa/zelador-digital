@@ -1,4 +1,5 @@
 import { formatarData, protocoloCivico } from '../../lib/gestao'
+import { rotuloDaCategoria } from '../../lib/categorias'
 
 /** Ofício em formato A4 com as demandas selecionadas, pronto para imprimir. */
 export default function ModalOficio({ pendentesSelecionadas, resolvidasAuditadas, setMostrarOficio }) {
@@ -49,7 +50,7 @@ export default function ModalOficio({ pendentesSelecionadas, resolvidasAuditadas
                 ) : pendentesSelecionadas.map((item, index) => (
                   <tr key={item.id}>
                     <td className="border border-slate-400 px-2 py-1">{index + 1}</td>
-                    <td className="border border-slate-400 px-2 py-1 capitalize">{item.categoria || 'Não classificado'}</td>
+                    <td className="border border-slate-400 px-2 py-1">{rotuloDaCategoria(item.categoria)}</td>
                     <td className="border border-slate-400 px-2 py-1">{item.endereco || item.morada || item.bairro || 'Área georreferenciada da comunidade'}</td>
                     <td className="border border-slate-400 px-2 py-1 font-mono">{item.latitude != null && item.longitude != null ? `${Number(item.latitude).toFixed(6)}, ${Number(item.longitude).toFixed(6)}` : 'Não informado'}</td>
                     <td className="border border-slate-400 px-2 py-1">{formatarData(item.created_at)}</td>
@@ -70,7 +71,7 @@ export default function ModalOficio({ pendentesSelecionadas, resolvidasAuditadas
                       <img src={item.foto_resolucao} alt="Intervenção concluída" className="h-24 w-full object-cover border border-slate-300" />
                     </div>
                     <figcaption className="mt-1 text-[8px]">
-                      {protocoloCivico(item.id)} — Antes / Depois — {item.categoria || 'Não classificado'}
+                      {protocoloCivico(item.id)} — Antes / Depois — {rotuloDaCategoria(item.categoria)}
                     </figcaption>
                   </figure>
                 ))}

@@ -1,4 +1,4 @@
-import { Bell, Info } from 'lucide-react'
+import { Accessibility, Bell, Info } from 'lucide-react'
 
 /**
  * Topo da aplicação: faixas de estado (offline / fila pendente) + barra com título e ações.
@@ -14,7 +14,9 @@ export default function Header({
   notificacoesNaoLidas,
   onIrParaInicio,
   onAbrirNotificacoes,
-  onAbrirSobre
+  onAbrirSobre,
+  modoFacil,
+  onAlternarModoFacil
 }) {
   return (
     <>
@@ -60,9 +62,23 @@ export default function Header({
 
           <div className="flex items-center gap-2">
             <button
+              type="button"
+              role="switch"
+              aria-checked={modoFacil}
+              onClick={onAlternarModoFacil}
+              className={`flex h-10 w-10 items-center justify-center rounded-full border transition-colors cursor-pointer ${
+                modoFacil ? 'border-blue-600 bg-blue-600 text-white hover:bg-blue-700' : 'border-slate-200 bg-slate-100 text-slate-700 hover:bg-slate-200'
+              }`}
+              title={modoFacil ? 'Modo Fácil ligado (toque para desligar)' : 'Modo Fácil: letras maiores e leitura em voz alta'}
+              aria-label="Modo Fácil: letras maiores e leitura em voz alta"
+            >
+              <Accessibility size={20} strokeWidth={2.25} />
+            </button>
+            <button
               onClick={onAbrirNotificacoes}
               className="relative flex h-10 w-10 items-center justify-center rounded-full border border-slate-200 bg-slate-100 text-slate-700 transition-colors hover:bg-slate-200 cursor-pointer"
               title="Avisos e Notificações"
+              aria-label="Avisos e notificações"
             >
               <Bell size={18} strokeWidth={2.25} />
               {notificacoesNaoLidas > 0 && (
