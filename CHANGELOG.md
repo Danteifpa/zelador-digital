@@ -5,6 +5,7 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/). 
 ## [Não lançado]
 
 ### Alterado
+- Painel de Gestão reorganizado: abas Chamados, Mapa e Relatórios; lista logo abaixo dos números (que filtram ao tocar); um chamado por linha, que abre os detalhes; status atual sem botão e próximos passos claros; "Excluir chamado" separado, com confirmação que mostra o protocolo ([#32](https://github.com/Danteifpa/zelador-digital/pull/32)).
 - Tela inicial: o convite "Instalar aplicativo" saiu do topo e virou uma linha discreta depois das ações principais.
 - Modo Fácil mais forte: texto 25% maior (inclusive os textos pequenos), mais contraste e barra de navegação mais alta, com ícones e nomes maiores.
 
