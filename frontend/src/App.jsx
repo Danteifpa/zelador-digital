@@ -2,7 +2,7 @@ import { useState, useEffect, useMemo, useRef, Suspense } from 'react'
 import { Search } from 'lucide-react'
 import { supabase } from './lib/supabase'
 import lazyComRecarga from './lib/lazyComRecarga'
-import { solicitarPermissaoNotificacoes } from './lib/notifications'
+import { ativarAvisosDoProtocolo, concluirAvisosPendentes, avisosAtivosPara, MENSAGENS_AVISOS } from './lib/push'
 import useNetworkStatus from './lib/useNetworkStatus'
 import { otimizarImagem } from './lib/imageOptimizer'
 import Header from './components/Header'
@@ -12,6 +12,7 @@ import CommunityAlert from './components/CommunityAlert'
 import ReportModal from './components/ReportModal'
 import ErrorBoundary from './components/ErrorBoundary'
 import AvisoAtualizacao from './components/AvisoAtualizacao'
+import BotaoAvisos from './components/BotaoAvisos'
 import { lerFila, adicionarAFila, atualizarItemNaFila, removerDaFila, FilaCheiaError } from './lib/filaOffline'
 import { lerCache, gravarCache, pedirArmazenamentoPersistente } from './lib/armazenamento'
 import { gerarIdOcorrencia, ehUuid, protocoloCivico } from './lib/protocolo'
@@ -268,6 +269,12 @@ function lerRacionaisGps(view, offset, isLittleEndian) {
 }
 
 // Atalhos do ícone instalado (manifest.json → shortcuts): /?aba=reportar, /?aba=mapa, ...
+function protocoloDoEndereco() {
+  if (typeof window === 'undefined') return null
+  const codigo = new URLSearchParams(window.location.search).get('protocolo')
+  return codigo && /^ZD-[0-9A-F]{6}$/i.test(codigo) ? codigo.toUpperCase() : null
+}
+
 function abaDoEndereco() {
   if (typeof window === 'undefined') return null
   return new URLSearchParams(window.location.search).get('aba')
@@ -327,12 +334,13 @@ export default function App() {
   const [ocorrenciaSelecionada, setOcorrenciaSelecionada] = useState(null)
   const [registos, setRegistos] = useState([])
   const [carregandoRegistos, setCarregandoRegistos] = useState(false)
-  const [mostrarConsultaProtocolo, setMostrarConsultaProtocolo] = useState(false)
-  const [protocoloConsulta, setProtocoloConsulta] = useState('')
+  const [mostrarConsultaProtocolo, setMostrarConsultaProtocolo] = useState(() => Boolean(protocoloDoEndereco()))
+  const [protocoloConsulta, setProtocoloConsulta] = useState(() => protocoloDoEndereco() || '')
   const [resultadoProtocolo, setResultadoProtocolo] = useState(null)
   const [consultandoProtocolo, setConsultandoProtocolo] = useState(false)
   const [erroProtocolo, setErroProtocolo] = useState('')
-  const [notificacoesAtivadas, setNotificacoesAtivadas] = useState(false)
+  // Estado dos avisos push por ocorrência: 'ativando' | 'ativado' | 'pendente' | ...
+  const [avisos, setAvisos] = useState({})
   const [duplicataEncontrada, setDuplicataEncontrada] = useState(null)
   const [mostrarReportModal, setMostrarReportModal] = useState(() => abaDoEndereco() === 'reportar')
   const [erroGps, setErroGps] = useState(null)
@@ -476,9 +484,9 @@ export default function App() {
     }, 4500)
   }
 
-  const consultarProtocolo = async (e) => {
-    e.preventDefault()
-    const codigo = protocoloConsulta.trim().toUpperCase().replace(/^PROTOCOLO\s+/, '')
+  const consultarProtocolo = async (e, codigoDireto) => {
+    e?.preventDefault()
+    const codigo = (codigoDireto ?? protocoloConsulta).trim().toUpperCase().replace(/^PROTOCOLO\s+/, '')
     const prefixo = codigo.replace(/^ZD-/, '')
     if (!prefixo || prefixo.length < 6) {
       setErroProtocolo('Digite um protocolo no formato ZD-XXXXXX.')
@@ -522,17 +530,32 @@ export default function App() {
     }
   }
 
-  const ativarNotificacoes = async () => {
-    const permissao = await solicitarPermissaoNotificacoes()
-    if (permissao === 'granted') {
-      setNotificacoesAtivadas(true)
-      mostrarAlertaToast('Notificações ativadas para este dispositivo.')
-    } else if (permissao === 'denied') {
-      mostrarAlertaToast('Notificações bloqueadas. Altere a permissão nas configurações do navegador.')
-    } else {
-      mostrarAlertaToast('Este navegador não suporta notificações locais.')
+  // Aberto a partir de um aviso push (/?protocolo=ZD-XXXXXX): mostra logo o andamento.
+  useEffect(() => {
+    const codigo = protocoloDoEndereco()
+    if (!codigo) return undefined
+    const temporizador = window.setTimeout(() => consultarProtocolo(null, codigo), 0)
+    return () => window.clearTimeout(temporizador)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
+
+  // Inscreve este celular nos avisos push do protocolo (lib/push.js).
+  const ativarAvisos = async (ocorrencia) => {
+    if (!ocorrencia?.id) return
+    feedbackSensorial.toqueSuave()
+    setAvisos((atuais) => ({ ...atuais, [ocorrencia.id]: 'ativando' }))
+    let estado
+    try {
+      estado = await ativarAvisosDoProtocolo(ocorrencia.id, { jaNoServidor: !ocorrencia.pendenteDeEnvio })
+    } catch (erro) {
+      console.error('Falha ao ativar avisos:', erro)
+      estado = 'erro'
     }
+    setAvisos((atuais) => ({ ...atuais, [ocorrencia.id]: estado }))
+    mostrarAlertaToast(MENSAGENS_AVISOS[estado] || 'Não foi possível ativar os avisos agora. Tente novamente.')
   }
+
+  const estadoAvisos = (id) => avisos[id] || (id && avisosAtivosPara(id) ? 'ativado' : null)
 
   const concluirOnboarding = () => {
     feedbackSensorial.toqueSuave()
@@ -842,7 +865,10 @@ export default function App() {
       setSincronizandoFila(false)
     }
 
-    if (sincronizados.length > 0) carregarRegistos()
+    if (sincronizados.length > 0) {
+      carregarRegistos()
+      concluirAvisosPendentes(sincronizados).catch((erro) => console.warn('Avisos pendentes:', erro))
+    }
 
     const falhados = pendentes.length - sincronizados.length
     if (falhados === 0) {
@@ -943,6 +969,7 @@ export default function App() {
           categoria,
           foto_url: fotoPreview,
           descricao: `${pontoReferencia.trim() || 'Ocorrência comunitária'} (Salvo Offline)`,
+          pendenteDeEnvio: true,
           latitude: localizacao.latitude,
           longitude: localizacao.longitude,
           status: 'pendente'
@@ -1025,6 +1052,7 @@ export default function App() {
             categoria,
             foto_url: fotoPreview,
             descricao: `${itemOffline.descricao} (Salvo Offline)`,
+            pendenteDeEnvio: true,
             latitude: localizacao.latitude,
             longitude: localizacao.longitude,
             status: 'pendente'
@@ -1173,6 +1201,7 @@ export default function App() {
             estaOnline={estaOnline}
             categorias={CATEGORIAS}
             resultado={sucessoEnvio}
+        estadoAvisos={sucessoEnvio ? estadoAvisos(sucessoEnvio.id) : null}
             form={{
               categoria,
               fotoPreview,
@@ -1196,6 +1225,7 @@ export default function App() {
               alternarVoz: alternarReconhecimentoVoz,
               enviar: () => handleSubmit({ preventDefault: () => {} }),
               partilhar: partilharOcorrencia,
+          ativarAvisos,
               verRegistos: () => {
                 feedbackSensorial.toqueSuave()
                 setMostrarReportModal(false)
@@ -1359,6 +1389,9 @@ export default function App() {
                   </div>
                   <p className="mt-3 text-xs font-black text-slate-700">Status atual: <span className="text-blue-700">{rotuloDoEstado(resultadoProtocolo.status)}</span></p>
                 </div>
+                {!estaResolvido(resultadoProtocolo.status) && (
+                  <BotaoAvisos estado={estadoAvisos(resultadoProtocolo.id)} onAtivar={() => ativarAvisos(resultadoProtocolo)} />
+                )}
                 {resultadoProtocolo.observacoes && (
                   <div className="rounded-2xl border border-indigo-200 bg-indigo-50 p-3 text-xs text-indigo-900">
                     <strong>Notas e despachos públicos:</strong>
@@ -1424,18 +1457,7 @@ export default function App() {
                 <p className="mt-1 text-sm font-black text-blue-900">{protocoloCivico(sucessoEnvio.id)}</p>
               </div>
             )}
-            <div className="rounded-2xl border border-indigo-200 bg-indigo-50 p-3 text-left">
-              <p className="text-xs font-black text-indigo-900">🔔 Receba atualizações deste protocolo</p>
-              <p className="mt-1 text-[10px] text-indigo-700">Ative as notificações deste dispositivo para acompanhar mudanças de status.</p>
-              <button
-                type="button"
-                onClick={ativarNotificacoes}
-                disabled={notificacoesAtivadas}
-                className="mt-2 rounded-xl bg-indigo-600 px-3 py-2 text-[10px] font-black text-white hover:bg-indigo-700 disabled:bg-emerald-600 cursor-pointer"
-              >
-                {notificacoesAtivadas ? '✓ Notificações ativadas' : 'Ativar notificações'}
-              </button>
-            </div>
+            <BotaoAvisos estado={estadoAvisos(sucessoEnvio.id)} onAtivar={() => ativarAvisos(sucessoEnvio)} />
 
             <div className="space-y-2 pt-1">
               <button

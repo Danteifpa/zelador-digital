@@ -1,6 +1,7 @@
 import { useEffect, useId, useRef, useState } from 'react'
 import { Camera, Check, ChevronLeft, ChevronRight, Copy, ImagePlus, LocateFixed, Mic, X } from 'lucide-react'
 import { protocoloCivico } from '../lib/protocolo'
+import BotaoAvisos from './BotaoAvisos'
 
 const PASSOS = [
   { titulo: 'Tipo de problema', curto: 'Tipo', fala: 'Passo 1. Escolha o tipo de problema.' },
@@ -18,7 +19,7 @@ const SELETOR_FOCAVEIS =
  * O estado do formulário vive no App (rascunho mantém-se ao fechar e reabrir);
  * este componente controla apenas o passo atual, o foco e a apresentação.
  */
-export default function ReportModal({ onFechar, modo, falarTexto, estaOnline, categorias, form, acoes, resultado }) {
+export default function ReportModal({ onFechar, modo, falarTexto, estaOnline, categorias, form, acoes, resultado, estadoAvisos }) {
   const [passo, setPasso] = useState(0)
   const [protocoloCopiado, setProtocoloCopiado] = useState(false)
   const dialogoRef = useRef(null)
@@ -176,6 +177,8 @@ export default function ReportModal({ onFechar, modo, falarTexto, estaOnline, ca
               categoria={categorias.find((c) => c.id === resultado.categoria)}
               copiado={protocoloCopiado}
               onCopiar={copiarProtocolo}
+              estadoAvisos={estadoAvisos}
+              onAtivarAvisos={() => acoes.ativarAvisos(resultado)}
             />
           ) : passo === 0 ? (
             <fieldset>
@@ -418,7 +421,7 @@ function LinhaResumo({ rotulo, onAlterar, children }) {
   )
 }
 
-function PassoProtocolo({ resultado, estaOnline, categoria, copiado, onCopiar }) {
+function PassoProtocolo({ resultado, estaOnline, categoria, copiado, onCopiar, estadoAvisos, onAtivarAvisos }) {
   const codigo = protocoloCivico(resultado.id)
   return (
     <div className="space-y-4 text-center">
@@ -442,6 +445,7 @@ function PassoProtocolo({ resultado, estaOnline, categoria, copiado, onCopiar })
           ? 'A ocorrência foi registrada. Anote o protocolo para acompanhar o andamento em "Consultar".'
           : 'Registro salvo no celular. O protocolo já é válido e a ocorrência será enviada quando a rede voltar.'}
       </p>
+      <BotaoAvisos estado={estadoAvisos} onAtivar={onAtivarAvisos} />
       {categoria && (
         <p className="text-xs font-bold text-slate-500">
           {categoria.icon} {categoria.label}
