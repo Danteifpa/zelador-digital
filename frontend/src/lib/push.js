@@ -6,7 +6,8 @@
 import { supabase } from './supabase'
 import { ehUuid } from './protocolo'
 
-export const VAPID_PUBLIC_KEY = import.meta.env.VITE_VAPID_PUBLIC_KEY || '__VAPID_PUBLIC_KEY__'
+export const VAPID_PUBLIC_KEY =
+  import.meta.env.VITE_VAPID_PUBLIC_KEY || 'BK9zRIzxn1oGnoiyJnVyr76ZWFndu9hhJMUZGQo3cj5IHUXKnTXDxIcVFEDnFlb_rXpKb9BNZNVqUg8ZqSMjfGc'
 
 const CHAVE_INSCRITOS = 'zelador_avisos_protocolos'
 const CHAVE_PENDENTES = 'zelador_avisos_pendentes'
