@@ -13,6 +13,8 @@ export default defineConfig({
       manifest: false, // Utiliza o ficheiro public/manifest.json já configurado
       workbox: {
         cleanupOutdatedCaches: true,
+        // Avisos push (push + notificationclick) — public/push-sw.js
+        importScripts: ['push-sw.js'],
         globPatterns: ['**/*.{js,css,html,ico,png,svg,json}'],
         runtimeCaching: [
           {
