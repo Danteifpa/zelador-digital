@@ -3,13 +3,14 @@ import { supabase } from '../lib/supabase'
 import useSessaoGestor from '../lib/useSessaoGestor'
 import LoginGestor from './LoginGestor'
 import { normalizarEstado, rotuloDoEstado } from '../lib/status'
-import { RAIO_RECURRENCIA_METROS, calcularPontuacaoGUT, dispararAvisoAtualizacao, distanciaMetros, eResolvida, escapeCsv } from '../lib/gestao'
+import { RAIO_RECURRENCIA_METROS, calcularPontuacaoGUT, dispararAvisoAtualizacao, distanciaMetros, eResolvida, escapeCsv, protocoloCivico } from '../lib/gestao'
 import CabecalhoGestor from './gestao/CabecalhoGestor'
 import MetricasGestao from './gestao/MetricasGestao'
 import IndicadoresGestao from './gestao/IndicadoresGestao'
 import SelecaoOficio from './gestao/SelecaoOficio'
 import FiltrosGestao from './gestao/FiltrosGestao'
 import FormEdicaoOcorrencia from './gestao/FormEdicaoOcorrencia'
+import AcoesRelatorios from './gestao/AcoesRelatorios'
 import ListaOcorrenciasGestor from './gestao/ListaOcorrenciasGestor'
 import MapaFocosCriticos from './gestao/MapaFocosCriticos'
 import ModalBoletim from './gestao/ModalBoletim'
@@ -186,6 +187,7 @@ export default function PainelGestor({ ocorrencias = [], onAtualizarDados }) {
         (item.descricao || '').toLowerCase().includes(busca) ||
         (item.categoria || '').toLowerCase().includes(busca) ||
         rotuloDaCategoria(item.categoria).toLowerCase().includes(busca) ||
+        protocoloCivico(item.id).toLowerCase().includes(busca) ||
         (item.id || '').toString().includes(busca)
       return bateuStatus && bateuTexto
     })
@@ -379,12 +381,16 @@ export default function PainelGestor({ ocorrencias = [], onAtualizarDados }) {
     )
   }
 
+  const filtrarPorStatus = (status) => {
+    setFiltroStatus(status)
+    setAbaPainel('lista')
+  }
+
   return (
-    <div className="space-y-4 pb-8">
+    <div className="space-y-3 pb-8">
       <CabecalhoGestor abaPainel={abaPainel} sair={sair} sessao={sessao} setAbaPainel={setAbaPainel} />
-      <MetricasGestao abrirOficio={abrirOficio} exportarCsv={exportarCsv} exportarGeoJson={exportarGeoJson} metricas={metricas} setBoletimCopiado={setBoletimCopiado} setMostrarBoletim={setMostrarBoletim} />
-      <IndicadoresGestao analiseCategorias={analiseCategorias} analiseTemporal={analiseTemporal} maxCategoria={maxCategoria} maxTemporal={maxTemporal} metricas={metricas} />
-      {pendentes.length > 0 && <SelecaoOficio alternarSelecaoOficio={alternarSelecaoOficio} pendentes={pendentes} selecionadasOficio={selecionadasOficio} setSelecionadasOficio={setSelecionadasOficio} />}
+      <MetricasGestao filtroStatus={abaPainel === 'lista' ? filtroStatus : null} metricas={metricas} onFiltrar={filtrarPorStatus} />
+
       {abaPainel === 'lista' && (
         <>
           <FiltrosGestao filtroStatus={filtroStatus} ordenarPorGut={ordenarPorGut} setFiltroStatus={setFiltroStatus} setOrdenarPorGut={setOrdenarPorGut} setTermoBusca={setTermoBusca} termoBusca={termoBusca} />
@@ -392,9 +398,27 @@ export default function PainelGestor({ ocorrencias = [], onAtualizarDados }) {
           <ListaOcorrenciasGestor acaoEmAndamento={acaoEmAndamento} alterarStatusOcorrencia={alterarStatusOcorrencia} carregandoAcao={carregandoAcao} confirmarResolucao={confirmarResolucao} despachoPorId={despachoPorId} fotoResolucaoPorId={fotoResolucaoPorId} itemResolucao={itemResolucao} ocorrenciasFiltradasComGut={ocorrenciasFiltradasComGut} salvarDespacho={salvarDespacho} setDespachoPorId={setDespachoPorId} setFotoResolucaoPorId={setFotoResolucaoPorId} setItemEdicao={setItemEdicao} setItemExclusao={setItemExclusao} setItemResolucao={setItemResolucao} setTramitacaoAberta={setTramitacaoAberta} tramitacaoAberta={tramitacaoAberta} />
         </>
       )}
+
       {abaPainel === 'mapa' && <MapaFocosCriticos ocorrenciasComGut={ocorrenciasComGut} />}
+
+      {abaPainel === 'relatorios' && (
+        <>
+          <AcoesRelatorios
+            abrirOficio={abrirOficio}
+            abrirBoletim={() => {
+              setBoletimCopiado(false)
+              setMostrarBoletim(true)
+            }}
+            exportarCsv={exportarCsv}
+            exportarGeoJson={exportarGeoJson}
+          />
+          {pendentes.length > 0 && <SelecaoOficio alternarSelecaoOficio={alternarSelecaoOficio} pendentes={pendentes} selecionadasOficio={selecionadasOficio} setSelecionadasOficio={setSelecionadasOficio} />}
+          <IndicadoresGestao analiseCategorias={analiseCategorias} analiseTemporal={analiseTemporal} maxCategoria={maxCategoria} maxTemporal={maxTemporal} metricas={metricas} />
+        </>
+      )}
+
       {mostrarBoletim && <ModalBoletim boletimCopiado={boletimCopiado} copiarBoletim={copiarBoletim} setMostrarBoletim={setMostrarBoletim} textoBoletim={textoBoletim} />}
-      {itemExclusao && <ModalExclusao carregandoAcao={carregandoAcao} eliminarOcorrencia={eliminarOcorrencia} setItemExclusao={setItemExclusao} />}
+      {itemExclusao && <ModalExclusao carregandoAcao={carregandoAcao} eliminarOcorrencia={eliminarOcorrencia} itemExclusao={itemExclusao} setItemExclusao={setItemExclusao} />}
       {mostrarOficio && <ModalOficio pendentesSelecionadas={pendentesSelecionadas} resolvidasAuditadas={resolvidasAuditadas} setMostrarOficio={setMostrarOficio} />}
     </div>
   )

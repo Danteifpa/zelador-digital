@@ -1,3 +1,4 @@
+import { protocoloCivico } from '../../lib/protocolo'
 import { ESTADOS, ORDEM_ESTADOS, normalizarEstado } from '../../lib/status'
 import { CATEGORIAS, CATEGORIA_OUTRO } from '../../lib/categorias'
 
@@ -7,7 +8,7 @@ export default function FormEdicaoOcorrencia({ carregandoAcao, itemEdicao, salva
     <>
     <div className="bg-amber-50/80 border border-amber-200 rounded-3xl p-4 space-y-3">
       <div className="flex items-center justify-between">
-        <span className="text-xs font-black text-amber-900">Editar registro #{itemEdicao.id}</span>
+        <span className="text-xs font-black text-amber-900">Editar chamado {protocoloCivico(itemEdicao.id)}</span>
         <button
           type="button"
           onClick={() => setItemEdicao(null)}

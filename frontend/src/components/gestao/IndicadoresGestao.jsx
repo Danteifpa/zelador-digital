@@ -6,33 +6,28 @@ export default function IndicadoresGestao({ analiseCategorias, analiseTemporal, 
   return (
     <>
     {/* Indicadores técnicos e visualizações */}
-    <section className="grid gap-3 lg:grid-cols-3">
+    <section className="grid grid-cols-2 gap-3">
       <div className="bg-white border border-slate-200 rounded-3xl p-4 shadow-2xs">
         <p className="text-[10px] uppercase tracking-wide text-slate-400 font-black">Tempo médio de resolução</p>
         <p className="text-2xl font-black text-slate-800 mt-2">
           {metricas.tempoMedioDias === null ? '—' : `${metricas.tempoMedioDias.toFixed(1)} dias`}
         </p>
         <p className="text-[10px] text-slate-500 mt-1">
-          {metricas.resolvidasComData ? `Baseado em ${metricas.resolvidasComData} registros com data de resolução.` : 'Requer resolved_at ou updated_at nas resolvidas.'}
+          {metricas.resolvidasComData ? `Média de ${metricas.resolvidasComData} chamado(s) resolvido(s).` : 'Ainda sem chamados resolvidos.'}
         </p>
       </div>
       <div className="bg-white border border-slate-200 rounded-3xl p-4 shadow-2xs">
         <p className="text-[10px] uppercase tracking-wide text-slate-400 font-black">Índice de recorrência</p>
         <p className="text-2xl font-black text-amber-600 mt-2">{metricas.indiceRecorrencia}%</p>
-        <p className="text-[10px] text-slate-500 mt-1">Registros em concentração de até {RAIO_RECURRENCIA_METROS} m de outro ponto.</p>
-      </div>
-      <div className="bg-white border border-slate-200 rounded-3xl p-4 shadow-2xs">
-        <p className="text-[10px] uppercase tracking-wide text-slate-400 font-black">Taxa de eficácia</p>
-        <p className="text-2xl font-black text-emerald-600 mt-2">{metricas.percentualResolucao}%</p>
-        <p className="text-[10px] text-slate-500 mt-1">Demandas resolvidas sobre o total registrado.</p>
+        <p className="text-[10px] text-slate-500 mt-1">Chamados a menos de {RAIO_RECURRENCIA_METROS} m de outro chamado.</p>
       </div>
     </section>
 
-    <section className="grid gap-3 lg:grid-cols-2">
+    <section className="grid gap-3">
       <div className="bg-slate-900 rounded-3xl p-4 text-white">
         <div className="flex items-center justify-between mb-4">
-          <h3 className="text-xs font-black">Distribuição por categoria</h3>
-          <span className="text-[10px] text-slate-400">Pareto</span>
+          <h3 className="text-xs font-black">Chamados por tipo</h3>
+          <span className="text-[10px] text-slate-400">Do maior para o menor</span>
         </div>
         <div className="space-y-3">
           {analiseCategorias.length === 0 ? (
@@ -52,7 +47,7 @@ export default function IndicadoresGestao({ analiseCategorias, analiseTemporal, 
       </div>
       <div className="bg-white border border-slate-200 rounded-3xl p-4">
         <div className="flex items-center justify-between mb-2">
-          <h3 className="text-xs font-black text-slate-800">Frequência temporal</h3>
+          <h3 className="text-xs font-black text-slate-800">Novos chamados por semana</h3>
           <span className="text-[10px] text-slate-400">Últimas 4 semanas</span>
         </div>
         <svg viewBox="0 0 320 130" className="w-full h-36" role="img" aria-label="Ocorrências nas últimas quatro semanas">
