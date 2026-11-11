@@ -1,0 +1,12 @@
+# Dependências e builds
+node_modules/
+dist/
+
+# Variáveis locais (nunca versionar segredos)
+.env
+.env.*
+!.env.example
+
+# Sistema
+.DS_Store
+Thumbs.db

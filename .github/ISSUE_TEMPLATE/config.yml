@@ -1,0 +1,8 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Relatar falha de segurança (privado)
+    url: https://github.com/Danteifpa/zelador-digital/security/advisories/new
+    about: Use o relato privado — não abra issue pública para falhas de segurança.
+  - name: Usar o app
+    url: https://zeladordigital.vercel.app
+    about: Registre e acompanhe ocorrências no seu bairro.

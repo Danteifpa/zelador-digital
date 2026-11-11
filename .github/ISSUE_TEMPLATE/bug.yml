@@ -1,0 +1,45 @@
+name: Relatar um problema
+description: Algo não funciona como deveria no app.
+labels: [bug]
+body:
+  - type: markdown
+    attributes:
+      value: Obrigado por ajudar! Falhas de segurança **não** devem ser relatadas aqui — veja SECURITY.md.
+  - type: textarea
+    id: descricao
+    attributes:
+      label: O que aconteceu?
+      placeholder: Ex.: ao tocar em "Enviar registro" sem internet, aparece um erro.
+    validations:
+      required: true
+  - type: textarea
+    id: passos
+    attributes:
+      label: Como reproduzir
+      placeholder: |
+        1. Abra o app
+        2. Toque em ...
+        3. Veja o erro
+    validations:
+      required: true
+  - type: textarea
+    id: esperado
+    attributes:
+      label: O que você esperava?
+  - type: dropdown
+    id: aparelho
+    attributes:
+      label: Aparelho
+      options: [Android (Chrome), iPhone (Safari), iPhone (app instalado), Computador, Outro]
+    validations:
+      required: true
+  - type: input
+    id: protocolo
+    attributes:
+      label: Protocolo (se houver)
+      placeholder: ZD-XXXXXX
+  - type: textarea
+    id: capturas
+    attributes:
+      label: Capturas de tela
+      description: Arraste imagens para cá, se ajudar.
