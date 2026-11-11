@@ -1,9 +1,7 @@
-import { useState, useEffect, useMemo, useRef } from 'react'
+import { useState, useEffect, useMemo, useRef, Suspense } from 'react'
 import { Search } from 'lucide-react'
 import { supabase } from './lib/supabase'
-import PainelGestor from './components/PainelGestor'
-import MapaOcorrencias from './components/MapaOcorrencias'
-import ModalQRCode from './components/ModalQRCode'
+import lazyComRecarga from './lib/lazyComRecarga'
 import { solicitarPermissaoNotificacoes } from './lib/notifications'
 import useNetworkStatus from './lib/useNetworkStatus'
 import { otimizarImagem } from './lib/imageOptimizer'
@@ -15,6 +13,22 @@ import ReportModal from './components/ReportModal'
 import ErrorBoundary from './components/ErrorBoundary'
 import { lerFila, adicionarAFila, atualizarItemNaFila, removerDaFila, FilaCheiaError } from './lib/filaOffline'
 import { gerarIdOcorrencia, ehUuid, protocoloCivico } from './lib/protocolo'
+
+// Módulos pesados (Leaflet, Painel de Gestão, gerador de QR Code) só são descarregados quando
+// o utilizador os abre: quem só regista ocorrências não paga esse peso no 3G/4G.
+const PainelGestor = lazyComRecarga(() => import('./components/PainelGestor'))
+const MapaOcorrencias = lazyComRecarga(() => import('./components/MapaOcorrencias'))
+const ModalQRCode = lazyComRecarga(() => import('./components/ModalQRCode'))
+
+const TAMANHO_PAGINA_LISTA = 20
+
+function CarregandoSecao({ texto = 'A carregar...' }) {
+  return (
+    <div role="status" className="rounded-3xl border border-slate-200 bg-white p-8 text-center text-sm font-bold text-slate-500 animate-pulse">
+      {texto}
+    </div>
+  )
+}
 
 // Coordenadas centrais comunitárias (Ananindeua)
 const CENTRO_COMUNITARIO = {
@@ -128,11 +142,15 @@ const feedbackSensorial = {
       }
     }
   },
-  tocarTom: (frequencia = 440, duracao = 0.08, tipo = 'sine') => {
+  ctx: null,
+  tocarTom: function (frequencia = 440, duracao = 0.08, tipo = 'sine') {
     try {
       const AudioCtx = window.AudioContext || window.webkitAudioContext
       if (!AudioCtx) return
-      const ctx = new AudioCtx()
+      // Um único AudioContext reutilizado (criar um por toque esgota o limite do navegador e gasta memória).
+      if (!this.ctx || this.ctx.state === 'closed') this.ctx = new AudioCtx()
+      const ctx = this.ctx
+      if (ctx.state === 'suspended') ctx.resume().catch(() => {})
       const osc = ctx.createOscillator()
       const gain = ctx.createGain()
 
@@ -256,58 +274,6 @@ function lerRacionaisGps(view, offset, isLittleEndian) {
   return [dNum / (dDen || 1), mNum / (mDen || 1), sNum / (sDen || 1)]
 }
 
-// Compressão móvel via Canvas
-const comprimirImagem = (arquivo, maxWidth = 1280, maxHeight = 1280, quality = 0.8) => {
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader()
-    reader.readAsDataURL(arquivo)
-    reader.onload = (event) => {
-      const img = new Image()
-      img.src = event.target.result
-      img.onload = () => {
-        let width = img.width
-        let height = img.height
-
-        if (width > height) {
-          if (width > maxWidth) {
-            height = Math.round((height * maxWidth) / width)
-            width = maxWidth
-          }
-        } else {
-          if (height > maxHeight) {
-            width = Math.round((width * maxHeight) / height)
-            height = maxHeight
-          }
-        }
-
-        const canvas = document.createElement('canvas')
-        canvas.width = width
-        canvas.height = height
-        const ctx = canvas.getContext('2d')
-        ctx.drawImage(img, 0, 0, width, height)
-
-        canvas.toBlob(
-          (blob) => {
-            if (blob) {
-              const arquivoComprimido = new File([blob], arquivo.name.replace(/\.[^/.]+$/, '.jpg'), {
-                type: 'image/jpeg',
-                lastModified: Date.now()
-              })
-              resolve(arquivoComprimido)
-            } else {
-              resolve(arquivo)
-            }
-          },
-          'image/jpeg',
-          quality
-        )
-      }
-      img.onerror = (error) => reject(error)
-    }
-    reader.onerror = (error) => reject(error)
-  })
-}
-
 export default function App() {
   const [modo, setModo] = useState('normal')
   const [abaAtiva, setAbaAtiva] = useState('inicio')
@@ -339,6 +305,7 @@ export default function App() {
   const [categoria, setCategoria] = useState('buraco')
   const [foto, setFoto] = useState(null)
   const [fotoPreview, setFotoPreview] = useState(null)
+  const previewUrlRef = useRef(null)
   const [processandoFoto, setProcessandoFoto] = useState(false)
   const [localizacao, setLocalizacao] = useState(null)
   const [origemLocalizacao, setOrigemLocalizacao] = useState('gps')
@@ -354,6 +321,7 @@ export default function App() {
   const [filtroCategoria, setFiltroCategoria] = useState('todas')
   const [filtroStatus, setFiltroStatus] = useState('todos')
   const [buscaTexto, setBuscaTexto] = useState('')
+  const [paginaLista, setPaginaLista] = useState({ chave: '', limite: TAMANHO_PAGINA_LISTA })
 
   const [ocorrenciaSelecionada, setOcorrenciaSelecionada] = useState(null)
   const [registos, setRegistos] = useState([])
@@ -460,7 +428,8 @@ export default function App() {
     const modoSalvo = localStorage.getItem('zelador_modo_interface')
     if (modoSalvo) setModo(modoSalvo)
 
-    obterLocalizacaoAtual()
+    // O GPS deixa de ser pedido no arranque (pedido de permissão sem contexto e gasto de bateria):
+    // é pedido ao abrir o registo (assistente ou aba "Registar").
     carregarRegistos()
   }, [])
 
@@ -727,25 +696,33 @@ export default function App() {
           if (modo === 'facil') falarTexto('Localização da foto identificada.')
         }
 
-        const comprimida = await comprimirImagem(file)
+        // Compressão única: o ficheiro guardado já é o que será enviado (sem recomprimir no envio).
+        const comprimida = await otimizarImagem(file)
         setFoto(comprimida)
-        setFotoPreview(URL.createObjectURL(comprimida))
+        trocarPreview(comprimida)
 
         if (modo === 'facil' && !gpsExif) falarTexto('Fotografia adicionada e otimizada.')
       } catch (err) {
         console.warn('Falha no processamento da imagem:', err)
         setFoto(file)
-        setFotoPreview(URL.createObjectURL(file))
+        trocarPreview(file)
       } finally {
         setProcessandoFoto(false)
       }
     }
   }
 
+  // Cria o URL de pré-visualização e liberta o anterior (evita acumular fotos em memória).
+  const trocarPreview = (arquivo) => {
+    if (previewUrlRef.current) URL.revokeObjectURL(previewUrlRef.current)
+    previewUrlRef.current = arquivo ? URL.createObjectURL(arquivo) : null
+    setFotoPreview(previewUrlRef.current)
+  }
+
   const removerFoto = () => {
     feedbackSensorial.toqueSuave()
     setFoto(null)
-    setFotoPreview(null)
+    trocarPreview(null)
   }
 
   const selecionarCategoria = (cat) => {
@@ -921,7 +898,7 @@ export default function App() {
         }
       }
 
-      const fotoOtimizada = foto ? await otimizarImagem(foto) : null
+      const fotoOtimizada = foto
 
       if (!navigator.onLine) {
         let base64Foto = null
@@ -1014,7 +991,7 @@ export default function App() {
     } catch (err) {
       if (!navigator.onLine || /network|fetch|failed to fetch|offline/i.test(err.message || '')) {
         try {
-          const fotoOtimizada = foto ? await otimizarImagem(foto) : null
+          const fotoOtimizada = foto
           const fotoBase64 = fotoOtimizada ? await arquivoParaBase64(fotoOtimizada) : null
           const itemOffline = {
             id: idOcorrencia,
@@ -1073,6 +1050,11 @@ export default function App() {
     )
   }, [localizacao])
 
+  const abrirAbaRegistar = () => {
+    setAbaAtiva('reportar')
+    if (!localizacao && !capturandoGps) obterLocalizacaoAtual()
+  }
+
   const registosFiltrados = useMemo(() => {
     return registos.filter((item) => {
       const bateuCategoria = filtroCategoria === 'todas' || item.categoria === filtroCategoria
@@ -1090,6 +1072,10 @@ export default function App() {
     })
   }, [registos, filtroCategoria, filtroStatus, buscaTexto])
 
+  const chaveFiltrosLista = `${filtroCategoria}|${filtroStatus}|${buscaTexto}`
+  const limiteLista = paginaLista.chave === chaveFiltrosLista ? paginaLista.limite : TAMANHO_PAGINA_LISTA
+  const registosVisiveis = registosFiltrados.slice(0, limiteLista)
+
   const totalRegistos = registos.length
   const totalResolvidos = registos.filter((r) => r.status === 'resolvido' || r.status === 'concluido').length
   const totalPendentes = registos.filter((r) => r.status !== 'resolvido' && r.status !== 'concluido').length
@@ -1097,7 +1083,7 @@ export default function App() {
 
   const urlApp = typeof window !== 'undefined' ? window.location.origin : 'https://zeladordigital.vercel.app'
   return (
-    <div className={`min-h-screen flex flex-col justify-between font-sans pb-20 ${modo === 'facil' ? 'bg-amber-50/30 text-slate-900' : 'bg-slate-100/70 text-slate-800'}`}>
+    <div className={`min-h-dvh flex flex-col justify-between font-sans pb-[calc(5rem+env(safe-area-inset-bottom))] ${modo === 'facil' ? 'bg-amber-50/30 text-slate-900' : 'bg-slate-100/70 text-slate-800'}`}>
       <Header
         estaOnline={estaOnline}
         filaPendente={filaOffline.length}
@@ -1137,7 +1123,11 @@ export default function App() {
         </div>
       )}
 
-      {mostrarQrCode && <ModalQRCode url={urlApp} onClose={() => setMostrarQrCode(false)} />}
+      {mostrarQrCode && (
+        <Suspense fallback={null}>
+          <ModalQRCode url={urlApp} onClose={() => setMostrarQrCode(false)} />
+        </Suspense>
+      )}
 
       {mostrarReportModal && (
         <ErrorBoundary
@@ -1362,8 +1352,8 @@ export default function App() {
                   <div className="rounded-2xl border border-emerald-200 bg-emerald-50 p-3">
                     <span className="rounded-full bg-emerald-600 px-2 py-1 text-[9px] font-black text-white">Comprovado por Auditoria Visual</span>
                     <div className="mt-2 grid grid-cols-2 gap-2">
-                      <img src={resultadoProtocolo.foto_url} alt="Antes: registro inicial" className="h-28 w-full rounded-xl object-cover" />
-                      <img src={resultadoProtocolo.foto_resolucao} alt="Depois: intervenção concluída" className="h-28 w-full rounded-xl object-cover" />
+                      <img src={resultadoProtocolo.foto_url} alt="Antes: registro inicial" loading="lazy" decoding="async" className="h-28 w-full rounded-xl object-cover" />
+                      <img src={resultadoProtocolo.foto_resolucao} alt="Depois: intervenção concluída" loading="lazy" decoding="async" className="h-28 w-full rounded-xl object-cover" />
                     </div>
                     <div className="mt-1 grid grid-cols-2 gap-2 text-[9px] font-bold text-emerald-800"><span>Antes</span><span>Depois</span></div>
                   </div>
@@ -1456,7 +1446,7 @@ export default function App() {
                 onClick={() => {
                   feedbackSensorial.toqueSuave()
                   setSucessoEnvio(null)
-                  setAbaAtiva('reportar')
+                  abrirAbaRegistar()
                 }}
                 className="w-full py-3 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-2xl font-bold text-xs transition-all cursor-pointer"
               >
@@ -1977,7 +1967,9 @@ export default function App() {
         {abaAtiva === 'mapa' && (
           <div className="bg-white rounded-3xl p-4 border border-slate-200 shadow-xs">
             <ErrorBoundary nome="Mapa" chaveReset={abaAtiva}>
-              <MapaOcorrencias ocorrencias={registos} />
+              <Suspense fallback={<CarregandoSecao texto="A carregar o mapa..." />}>
+                <MapaOcorrencias ocorrencias={registos} />
+              </Suspense>
             </ErrorBoundary>
           </div>
         )}
@@ -2109,7 +2101,7 @@ export default function App() {
               </div>
             ) : (
               <div className="space-y-3">
-                {registosFiltrados.map((reg) => {
+                {registosVisiveis.map((reg) => {
                   const distPonto =
                     reg.latitude && reg.longitude
                       ? calcularDistanciaKm(
@@ -2156,11 +2148,20 @@ export default function App() {
                       </div>
 
                       {reg.foto_url && (
-                        <img src={reg.foto_url} alt="Comprovativo" className="w-14 h-14 rounded-xl object-cover shrink-0 border border-slate-200" />
+                        <img src={reg.foto_url} alt="Comprovativo" loading="lazy" decoding="async" width="56" height="56" className="w-14 h-14 rounded-xl object-cover shrink-0 border border-slate-200" />
                       )}
                     </div>
                   )
                 })}
+                {registosFiltrados.length > limiteLista && (
+                  <button
+                    type="button"
+                    onClick={() => setPaginaLista({ chave: chaveFiltrosLista, limite: limiteLista + TAMANHO_PAGINA_LISTA })}
+                    className="w-full min-h-12 rounded-2xl border border-slate-200 bg-white hover:bg-slate-50 text-sm font-bold text-blue-700 cursor-pointer"
+                  >
+                    Mostrar mais ({registosFiltrados.length - limiteLista} restantes)
+                  </button>
+                )}
               </div>
             )}
           </div>
@@ -2169,13 +2170,15 @@ export default function App() {
         {/* 5. GESTÃO */}
         {abaAtiva === 'gestao' && (
           <ErrorBoundary nome="Gestão" chaveReset={abaAtiva}>
-            <PainelGestor ocorrencias={registos} onAtualizarDados={carregarRegistos} />
+            <Suspense fallback={<CarregandoSecao texto="A carregar o Painel de Gestão..." />}>
+              <PainelGestor ocorrencias={registos} onAtualizarDados={carregarRegistos} />
+            </Suspense>
           </ErrorBoundary>
         )}
       </main>
 
       {/* BARRA DE NAVEGAÇÃO INFERIOR */}
-      <nav className="fixed bottom-0 left-0 right-0 z-40 bg-white/90 backdrop-blur-md border-t border-slate-200 shadow-lg">
+      <nav className="fixed bottom-0 left-0 right-0 z-40 bg-white/90 backdrop-blur-md border-t border-slate-200 shadow-lg pb-[env(safe-area-inset-bottom)]">
         <div className="max-w-md mx-auto px-4 h-16 flex items-center justify-between">
           <button
             onClick={() => {
@@ -2208,7 +2211,7 @@ export default function App() {
           <button
             onClick={() => {
               feedbackSensorial.toqueSuave()
-              setAbaAtiva('reportar')
+              abrirAbaRegistar()
               setOcorrenciaSelecionada(null)
             }}
             className="w-12 h-12 rounded-full bg-blue-600 text-white flex items-center justify-center text-xl shadow-md -mt-5 hover:bg-blue-700 active:scale-95 transition-all cursor-pointer border-4 border-white"
