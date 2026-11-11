@@ -17,6 +17,7 @@ import { lerFila, adicionarAFila, atualizarItemNaFila, removerDaFila, FilaCheiaE
 import { lerCache, gravarCache, pedirArmazenamentoPersistente } from './lib/armazenamento'
 import { gerarIdOcorrencia, ehUuid, protocoloCivico } from './lib/protocolo'
 import { estaResolvido, etapaDoEstado, rotuloDoEstado, classeEtiquetaDoEstado, VALORES_EM_ABERTO } from './lib/status'
+import { CATEGORIAS, rotuloDaCategoria } from './lib/categorias'
 
 // Módulos pesados (Leaflet, Painel de Gestão, gerador de QR Code) só são descarregados quando
 // o utilizador os abre: quem só regista ocorrências não paga esse peso no 3G/4G.
@@ -41,13 +42,6 @@ const CENTRO_COMUNITARIO = {
   raioMaximoKm: 18.0,
   nome: 'Ananindeua'
 }
-
-const CATEGORIAS = [
-  { id: 'lixo', label: 'Lixo / Entulho', icon: '🗑️', border: 'border-amber-400', activeBg: 'bg-amber-500 text-white', fala: 'Selecionado: Lixo e Entulho' },
-  { id: 'iluminacao', label: 'Poste Apagado', icon: '💡', border: 'border-indigo-400', activeBg: 'bg-indigo-600 text-white', fala: 'Selecionado: Iluminação ou Poste Apagado' },
-  { id: 'buraco', label: 'Buraco na Rua', icon: '🕳️', border: 'border-orange-500', activeBg: 'bg-orange-600 text-white', fala: 'Selecionado: Buraco na Rua e Vias' },
-  { id: 'esgoto', label: 'Esgoto / Água', icon: '💧', border: 'border-sky-400', activeBg: 'bg-sky-600 text-white', fala: 'Selecionado: Vazamento de Água ou Esgoto' }
-]
 
 function distanciaMetros(a, b) {
   if (![a.latitude, a.longitude, b.latitude, b.longitude].every((valor) => Number.isFinite(Number(valor)))) return Infinity
@@ -281,7 +275,7 @@ function abaDoEndereco() {
 }
 
 export default function App() {
-  const [modo, setModo] = useState('normal')
+  const [modo, setModo] = useState(() => (localStorage.getItem('zelador_modo_interface') === 'facil' ? 'facil' : 'normal'))
   const [abaAtiva, setAbaAtiva] = useState(() => (['mapa', 'registos', 'gestao'].includes(abaDoEndereco()) ? abaDoEndereco() : 'inicio'))
   const [mostrarOnboarding, setMostrarOnboarding] = useState(false)
   const [etapaOnboarding, setEtapaOnboarding] = useState(0)
@@ -451,9 +445,6 @@ export default function App() {
       setMostrarOnboarding(true)
     }
 
-    const modoSalvo = localStorage.getItem('zelador_modo_interface')
-    if (modoSalvo) setModo(modoSalvo)
-
     // O GPS deixa de ser pedido no arranque (pedido de permissão sem contexto e gasto de bateria):
     // é pedido ao abrir o registo (assistente ou aba "Registar").
     carregarRegistos()
@@ -562,6 +553,11 @@ export default function App() {
     localStorage.setItem('zelador_onboarding_concluido', 'true')
     setMostrarOnboarding(false)
   }
+
+  // Modo Fácil: todo o texto e os botões ficam 12,5% maiores (as medidas do Tailwind são em rem).
+  useEffect(() => {
+    document.documentElement.style.fontSize = modo === 'facil' ? '112.5%' : ''
+  }, [modo])
 
   const alternarModo = (novoModo) => {
     feedbackSensorial.toqueSuave()
@@ -772,7 +768,7 @@ export default function App() {
 
   const partilharOcorrencia = async (item) => {
     feedbackSensorial.toqueSuave()
-    const categoriaLabel = CATEGORIAS.find((c) => c.id === item.categoria)?.label || item.categoria
+    const categoriaLabel = rotuloDaCategoria(item.categoria)
     const textoPartilha = `📢 *Zelador Digital - Ocorrência Comunitária*\n📍 *Tipo:* ${categoriaLabel}\n📝 *Detalhe:* ${item.descricao || 'Sem descrição'}\n📌 *Status:* ${rotuloDoEstado(item.status)}\n🗺️ *Ver no Mapa:* https://www.google.com/maps/search/?api=1&query=${item.latitude},${item.longitude}`
 
     if (navigator.share) {
@@ -1143,6 +1139,8 @@ export default function App() {
           setMostrarNotificacoes(true)
         }}
         onAbrirSobre={() => setModalSobreAberto(true)}
+        modoFacil={modo === 'facil'}
+        onAlternarModoFacil={() => alternarModo(modo === 'facil' ? 'normal' : 'facil')}
       />
 
       {/* TOAST FLUTUANTE */}
@@ -1367,7 +1365,7 @@ export default function App() {
               <div className="mt-5 space-y-3">
                 <div className="rounded-2xl bg-slate-900 p-4 text-white">
                   <p className="text-[10px] font-black uppercase tracking-wider text-blue-300">{protocoloCivico(resultadoProtocolo.id)}</p>
-                  <h3 className="mt-1 text-base font-black capitalize">{resultadoProtocolo.categoria || 'Não classificado'}</h3>
+                  <h3 className="mt-1 text-base font-black">{rotuloDaCategoria(resultadoProtocolo.categoria)}</h3>
                   <p className="mt-1 text-[11px] text-slate-300">{resultadoProtocolo.bairro || resultadoProtocolo.endereco || resultadoProtocolo.morada || 'Bairro não informado'}</p>
                   <p className="mt-1 text-[10px] text-slate-400">Aberta em {resultadoProtocolo.created_at ? new Date(resultadoProtocolo.created_at).toLocaleDateString('pt-BR') : 'data não informada'}</p>
                 </div>
@@ -1444,7 +1442,7 @@ export default function App() {
               )}
               <div className="overflow-hidden">
                 <span className="text-xs font-black text-slate-800 capitalize block truncate">
-                  {sucessoEnvio.categoria}
+                  {rotuloDaCategoria(sucessoEnvio.categoria)}
                 </span>
                 <p className="text-[11px] text-slate-500 truncate mt-0.5">
                   {sucessoEnvio.descricao}
@@ -1605,7 +1603,7 @@ export default function App() {
                 <div className="flex items-center space-x-2">
                   <span className="text-xl">📍</span>
                   <h3 className="font-black text-slate-800 text-sm capitalize">
-                    {ocorrenciaSelecionada.categoria}
+                    {rotuloDaCategoria(ocorrenciaSelecionada.categoria)}
                   </h3>
                 </div>
                 <div className="flex items-center space-x-1.5">
@@ -2163,7 +2161,7 @@ export default function App() {
                       <div>
                         <div className="flex items-center space-x-2">
                           <span className="font-bold text-xs capitalize text-slate-800 group-hover:text-blue-600 transition-colors">
-                            {reg.categoria}
+                            {rotuloDaCategoria(reg.categoria)}
                           </span>
                           <span className={`text-[10px] px-2 py-0.5 rounded-full font-semibold border ${classeEtiquetaDoEstado(reg.status)}`}>
                             {rotuloDoEstado(reg.status)}

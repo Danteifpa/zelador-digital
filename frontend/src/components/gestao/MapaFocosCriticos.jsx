@@ -3,6 +3,7 @@ import { useEffect } from 'react'
 import 'leaflet/dist/leaflet.css'
 import { CENTRO_ANANINDEUA, corCriticidade, formatarData, rotuloCriticidade } from '../../lib/gestao'
 import { rotuloDoEstado } from '../../lib/status'
+import { rotuloDaCategoria } from '../../lib/categorias'
 
 function AjustarMapa({ centro, zoom }) {
   const mapa = useMap()
@@ -48,7 +49,7 @@ export default function MapaFocosCriticos({ ocorrenciasComGut }) {
                 >
                   <Popup>
                     <div className="min-w-36 text-xs">
-                      <strong className="block capitalize">{item.categoria || 'Não classificado'}</strong>
+                      <strong className="block">{rotuloDaCategoria(item.categoria)}</strong>
                       <span className="block mt-1">GUT: {item.gut.pontuacao} — {rotuloCriticidade(item.gut.pontuacao)}</span>
                       <span className="block">Data: {formatarData(item.created_at)}</span>
                       <span className="block">Bairro: {item.bairro || item.endereco || item.morada || 'Não informado'}</span>

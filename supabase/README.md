@@ -9,6 +9,7 @@ Tudo o que roda no Supabase do Zelador Digital está versionado nesta pasta.
 | [`20261110_gestores_e_rls.sql`](migrations/20261110_gestores_e_rls.sql) | Tabela `gestores`, função `eh_gestor()`, regras de acesso (RLS) em `ocorrencias`, vista só de leitura e consulta de protocolo |
 | [`20261111_estados_unificados.sql`](migrations/20261111_estados_unificados.sql) | Estados `pendente` / `em_analise` / `resolvido` com restrição `CHECK` |
 | [`20261111_notificacoes_push.sql`](migrations/20261111_notificacoes_push.sql) | Tabela `inscricoes_push` e gatilho que chama a função de avisos |
+| [`20261111_textos_pt_br.sql`](migrations/20261111_textos_pt_br.sql) | Troca a descrição padrão antiga ("registada") por "registrada" |
 
 Cada arquivo roda numa transação e pode ser aplicado mais de uma vez. Para aplicar: **SQL Editor → New query → colar → Run**.
 

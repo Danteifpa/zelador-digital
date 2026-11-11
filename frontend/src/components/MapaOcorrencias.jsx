@@ -2,6 +2,7 @@ import React, { useState, useEffect, useMemo } from 'react'
 import { MapContainer, TileLayer, Marker, Popup, Circle, useMap } from 'react-leaflet'
 import L from 'leaflet'
 import 'leaflet/dist/leaflet.css'
+import { rotuloDaCategoria } from '../lib/categorias'
 
 // Centro territorial de Ananindeua
 const CENTRO_COMUNITARIO = {
@@ -239,7 +240,7 @@ export default function MapaOcorrencias({ ocorrencias = [] }) {
                       )}
                       <div>
                         <span className="text-xs font-black capitalize text-slate-800 block">
-                          {item.categoria}
+                          {rotuloDaCategoria(item.categoria)}
                         </span>
                         <p className="text-[11px] text-slate-600 mt-0.5 leading-tight">
                           {item.descricao || 'Sem descrição.'}

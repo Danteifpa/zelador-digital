@@ -15,6 +15,7 @@ import MapaFocosCriticos from './gestao/MapaFocosCriticos'
 import ModalBoletim from './gestao/ModalBoletim'
 import ModalExclusao from './gestao/ModalExclusao'
 import ModalOficio from './gestao/ModalOficio'
+import { rotuloDaCategoria } from '../lib/categorias'
 
 export default function PainelGestor({ ocorrencias = [], onAtualizarDados }) {
   const { sessao, ehGestor, carregando: aVerificarSessao, erroVerificacao, entrar, sair } = useSessaoGestor()
@@ -184,6 +185,7 @@ export default function PainelGestor({ ocorrencias = [], onAtualizarDados }) {
       const bateuTexto =
         (item.descricao || '').toLowerCase().includes(busca) ||
         (item.categoria || '').toLowerCase().includes(busca) ||
+        rotuloDaCategoria(item.categoria).toLowerCase().includes(busca) ||
         (item.id || '').toString().includes(busca)
       return bateuStatus && bateuTexto
     })
@@ -309,7 +311,7 @@ export default function PainelGestor({ ocorrencias = [], onAtualizarDados }) {
       .slice(0, 5)
     const categoriasPrincipais = analiseCategorias.slice(0, 3)
     const linhasCategorias = categoriasPrincipais.length
-      ? categoriasPrincipais.map(([categoria, quantidade], index) => `${index + 1}. ${categoria}: ${quantidade}`).join('\n')
+      ? categoriasPrincipais.map(([categoria, quantidade], index) => `${index + 1}. ${rotuloDaCategoria(categoria)}: ${quantidade}`).join('\n')
       : 'Nenhuma categoria registrada.'
     const linhasBairros = bairrosCriticos.length
       ? bairrosCriticos.map(([bairro, quantidade], index) => `${index + 1}. ${bairro}: ${quantidade} foco(s) GUT`).join('\n')

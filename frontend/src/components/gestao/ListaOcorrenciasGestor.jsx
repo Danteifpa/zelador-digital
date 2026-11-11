@@ -1,6 +1,7 @@
 import { corCriticidade, eResolvida, etapaStatus, formatarData, protocoloCivico, rotuloCriticidade } from '../../lib/gestao'
 import { ESTADOS, normalizarEstado, rotuloDoEstado } from '../../lib/status'
 import Spinner from './Spinner'
+import { rotuloDaCategoria } from '../../lib/categorias'
 
 /** Lista priorizada com tramitação, despacho e ações de estado. */
 export default function ListaOcorrenciasGestor({ acaoEmAndamento, alterarStatusOcorrencia, carregandoAcao, confirmarResolucao, despachoPorId, fotoResolucaoPorId, itemResolucao, ocorrenciasFiltradasComGut, salvarDespacho, setDespachoPorId, setFotoResolucaoPorId, setItemEdicao, setItemExclusao, setItemResolucao, setTramitacaoAberta, tramitacaoAberta }) {
@@ -23,7 +24,7 @@ export default function ListaOcorrenciasGestor({ acaoEmAndamento, alterarStatusO
                 <p className="text-[10px] font-black uppercase tracking-wide text-slate-500">{protocoloCivico(item.id)}</p>
                 <div className="flex flex-wrap items-center gap-2 mt-1">
                   <span className="text-xs font-black capitalize text-slate-800">
-                    {item.categoria}
+                    {rotuloDaCategoria(item.categoria)}
                   </span>
                 <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full border ${ESTADOS[normalizarEstado(item.status)].classeEtiqueta}`}>
                   {rotuloDoEstado(item.status)}
