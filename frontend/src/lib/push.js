@@ -109,7 +109,7 @@ export async function concluirAvisosPendentes(idsSincronizados) {
 
 export const MENSAGENS_AVISOS = {
   ativado: 'Avisos ativados: você será notificado quando o status deste protocolo mudar.',
-  pendente: 'Avisos guardados: serão ativados assim que o registro for enviado.',
+  pendente: 'Avisos salvos: serão ativados assim que o registro for enviado.',
   negado: 'As notificações estão bloqueadas para este site. Libere nas configurações do navegador.',
   ignorado: 'Permissão não concedida. Toque de novo quando quiser receber avisos.',
   'ios-instalar': 'No iPhone, os avisos só funcionam com o app instalado: toque em Compartilhar → "Adicionar à Tela de Início".',

@@ -1,0 +1,23 @@
+name: Sugerir uma melhoria
+description: Ideia de funcionalidade ou ajuste para o app ou para a gestão.
+labels: [melhoria]
+body:
+  - type: textarea
+    id: problema
+    attributes:
+      label: Qual problema isso resolve?
+      placeholder: Ex.: moradores não sabem se o problema já foi registrado por um vizinho.
+    validations:
+      required: true
+  - type: textarea
+    id: proposta
+    attributes:
+      label: Proposta
+      placeholder: Descreva como imagina a solução.
+    validations:
+      required: true
+  - type: dropdown
+    id: publico
+    attributes:
+      label: Para quem?
+      options: [Moradores, Gestão comunitária, Ambos]

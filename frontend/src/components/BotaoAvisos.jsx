@@ -2,7 +2,7 @@ import { Bell, BellRing, Check } from 'lucide-react'
 
 const TEXTOS = {
   ativado: { titulo: 'Avisos ativados', detalhe: 'Você será notificado quando o status deste protocolo mudar.' },
-  pendente: { titulo: 'Avisos guardados', detalhe: 'Serão ativados assim que o registro for enviado.' },
+  pendente: { titulo: 'Avisos salvos', detalhe: 'Serão ativados assim que o registro for enviado.' },
   'ios-instalar': { titulo: 'Instale o app para receber avisos', detalhe: 'No iPhone: Compartilhar → "Adicionar à Tela de Início". Depois, toque aqui de novo.' },
   negado: { titulo: 'Notificações bloqueadas', detalhe: 'Libere as notificações deste site nas configurações do navegador.' },
   'sem-suporte': { titulo: 'Avisos indisponíveis', detalhe: 'Este navegador não recebe notificações.' }

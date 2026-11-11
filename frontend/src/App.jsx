@@ -2020,7 +2020,7 @@ export default function App() {
               <div>
                 <h2 className="text-base font-bold text-slate-800">Ocorrências Comunitárias</h2>
                 <p className="text-[11px] text-slate-400">
-                  A exibir {registosFiltrados.length} de {registos.length} registos
+                  Exibindo {registosFiltrados.length} de {registos.length} registros
                 </p>
               </div>
               <button

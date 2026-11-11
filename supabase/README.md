@@ -1,64 +1,69 @@
-# Supabase — configuração do Zelador Digital
+# Supabase — banco, permissões e avisos
 
-## Acesso dos gestores (substitui o PIN)
+Tudo o que roda no Supabase do Zelador Digital está versionado nesta pasta.
 
-Faça os passos **por esta ordem e seguidos**. Entre o passo 3 e o passo 4, os gestores ficam alguns minutos sem conseguir alterar ocorrências, porque o app antigo ainda usa o PIN. O registo de ocorrências pelos cidadãos continua a funcionar durante todo o processo.
+## Migrações (aplicar em ordem)
 
-1. **Bloquear novos registos de contas.** Authentication → Sign In / Providers → desligar **"Allow new users to sign up"**. Assim só o administrador cria contas.
-2. **Criar as contas dos 2 gestores.** Authentication → Users → **Add user → Create new user**: email, senha forte (12 ou mais caracteres) e marcar **Auto Confirm User**. Repetir para o segundo gestor.
-3. **Correr o script.** SQL Editor → New query → colar [`migrations/20261110_gestores_e_rls.sql`](migrations/20261110_gestores_e_rls.sql) → **Run**. Depois, no mesmo editor, registar os gestores (trocar emails e nomes):
+| Arquivo | O que faz |
+| --- | --- |
+| [`20261110_gestores_e_rls.sql`](migrations/20261110_gestores_e_rls.sql) | Tabela `gestores`, função `eh_gestor()`, regras de acesso (RLS) em `ocorrencias`, vista só de leitura e consulta de protocolo |
+| [`20261111_estados_unificados.sql`](migrations/20261111_estados_unificados.sql) | Estados `pendente` / `em_analise` / `resolvido` com restrição `CHECK` |
+| [`20261111_notificacoes_push.sql`](migrations/20261111_notificacoes_push.sql) | Tabela `inscricoes_push` e gatilho que chama a função de avisos |
 
+Cada arquivo roda numa transação e pode ser aplicado mais de uma vez. Para aplicar: **SQL Editor → New query → colar → Run**.
+
+## Edge Function `notificar-status`
+
+Envia os avisos push quando o status de uma ocorrência muda ([código](functions/notificar-status/index.ts)). Publicada com `verify_jwt = false`, porque é chamada pelo gatilho do banco; só recebe o id da ocorrência e confirma tudo no banco.
+
+**Segredo necessário** (Edge Functions → Secrets):
+
+| Nome | Valor |
+| --- | --- |
+| `VAPID_PRIVATE_KEY` | chave privada gerada com `npx web-push generate-vapid-keys` |
+| `VAPID_SUBJECT` *(opcional)* | contato, ex.: `mailto:contato@exemplo.com` |
+
+A chave pública correspondente está no código da função e em `frontend/src/lib/push.js`. Se trocar o par de chaves, atualize os dois lugares; as inscrições antigas deixam de funcionar e os moradores precisam ativar os avisos de novo.
+
+## Gestores
+
+Contas são criadas só pelo administrador (o registro público está desligado em **Authentication → Sign In / Providers → Allow new users to sign up**).
+
+**Adicionar um gestor**
+
+1. **Authentication → Users → Add user → Create new user**: email, senha forte e **Auto Confirm User**.
+2. No SQL Editor:
    ```sql
    insert into public.gestores (user_id, nome)
-   select id, 'Nome do Gestor 1' from auth.users where email = 'gestor1@exemplo.com'
-   on conflict (user_id) do nothing;
-
-   insert into public.gestores (user_id, nome)
-   select id, 'Nome do Gestor 2' from auth.users where email = 'gestor2@exemplo.com'
+   select id, 'Nome do gestor' from auth.users where email = 'email@exemplo.com'
    on conflict (user_id) do nothing;
    ```
 
-4. **Integrar o PR** no GitHub. A Vercel publica sozinha em cerca de 1 minuto.
-5. **Testar:** abrir a aba Gestão, entrar com email e senha, e mudar o estado de uma ocorrência.
-
-### Verificar
-
-```sql
--- Deve listar exatamente 4 políticas
-select policyname, cmd from pg_policies where tablename = 'ocorrencias';
-
--- Deve listar os 2 gestores
-select g.nome, u.email from public.gestores g join auth.users u on u.id = g.user_id;
-```
-
-### Tarefas do dia a dia
-
 | Situação | Como fazer |
 | --- | --- |
-| Gestor esqueceu a senha | Authentication → Users → abrir o utilizador → **Reset password** (ou definir uma senha nova) |
-| Novo gestor | Criar a conta (passo 2) e correr o `insert` do passo 3 com o email dele |
-| Retirar o acesso a alguém | `delete from public.gestores where user_id = (select id from auth.users where email = '...');` |
+| Gestor esqueceu a senha | Authentication → Users → abrir o usuário → **Reset password** |
+| Retirar o acesso | `delete from public.gestores where user_id = (select id from auth.users where email = '...');` |
 
-### O que o script muda
+## Quem pode o quê
 
-| Quem | Ler ocorrências | Registar (sempre "pendente") | Alterar / apagar |
+| Quem | Ler ocorrências | Registrar (sempre `pendente`) | Alterar / excluir |
 | --- | --- | --- | --- |
-| Cidadão (sem login) | Sim | Sim | **Não** |
-| Conta com login que não é gestora | Sim | Sim | **Não** |
-| Gestor | Sim | Sim | Sim |
+| Morador (sem login) | sim | sim | não |
+| Conta logada que não é gestora | sim | sim | não |
+| Gestor | sim | sim | sim |
 
-O script também cria a função `consultar_protocolo`. Com ela, a busca de protocolo devolve uma única ocorrência em vez de descarregar até 1000 linhas.
-
-### Desfazer (emergência)
-
-Se for preciso voltar ao comportamento anterior enquanto se investiga um problema:
+## Verificação rápida
 
 ```sql
-create policy "temporario acesso total" on public.ocorrencias for all to anon using (true) with check (true);
-```
+-- 4 regras em ocorrencias
+select policyname, cmd from pg_policies where tablename = 'ocorrencias';
 
-Isto volta a deixar qualquer pessoa alterar e apagar ocorrências. Remova a política assim que possível:
+-- gestores cadastrados
+select g.nome, u.email from public.gestores g join auth.users u on u.id = g.user_id;
 
-```sql
-drop policy "temporario acesso total" on public.ocorrencias;
+-- só os 3 estados oficiais
+select status, count(*) from public.ocorrencias group by 1;
+
+-- últimas chamadas à função de avisos (status 200 = ok)
+select id, status_code, content from net._http_response order by id desc limit 5;
 ```
