@@ -35,7 +35,7 @@ export default function LoginGestor({ onEntrar }) {
 
       <form onSubmit={submeter} className="space-y-3" noValidate>
         <div>
-          <label htmlFor="gestor-email" className="block text-sm font-bold text-slate-700 mb-1">Email</label>
+          <label htmlFor="gestor-email" className="block text-sm font-bold text-slate-700 mb-1">E-mail</label>
           <input
             id="gestor-email"
             type="email"

@@ -128,7 +128,7 @@ export default function MapaOcorrencias({ ocorrencias = [] }) {
           </div>
         </div>
 
-        <div className="flex items-center gap-2 overflow-x-auto pb-1 text-xs">
+        <div className="flex items-center gap-2 overflow-x-auto sem-barra-rolagem pb-1 text-xs">
           <button
             type="button"
             onClick={() => setFiltroTipo('todas')}
@@ -234,7 +234,7 @@ export default function MapaOcorrencias({ ocorrencias = [] }) {
                         />
                       )}
                       <div>
-                        <span className="text-xs font-black capitalize text-slate-800 block">
+                        <span className="text-xs font-black text-slate-800 block">
                           {rotuloDaCategoria(item.categoria)}
                         </span>
                         <p className="text-[11px] text-slate-600 mt-0.5 leading-tight">

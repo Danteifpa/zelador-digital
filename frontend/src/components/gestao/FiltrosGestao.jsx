@@ -14,7 +14,7 @@ export default function FiltrosGestao({ filtroStatus, ordenarPorGut, setFiltroSt
         className="w-full bg-white border border-slate-200 rounded-2xl px-4 py-2.5 text-xs font-medium focus:outline-none focus:border-blue-500 shadow-2xs"
       />
 
-      <div className="flex space-x-1.5 overflow-x-auto pb-1 text-xs">
+      <div className="flex space-x-1.5 overflow-x-auto sem-barra-rolagem pb-1 text-xs">
         {[['todos', 'Todos'], ...ORDEM_ESTADOS.map((estado) => [estado, ESTADOS[estado].rotulo])].map(([status, label]) => (
           <button
             key={status}

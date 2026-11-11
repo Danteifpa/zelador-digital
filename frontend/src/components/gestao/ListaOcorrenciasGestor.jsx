@@ -24,7 +24,7 @@ export default function ListaOcorrenciasGestor({ acaoEmAndamento, alterarStatusO
               <div className="min-w-0">
                 <p className="text-[10px] font-black uppercase tracking-wide text-slate-500">{protocoloCivico(item.id)}</p>
                 <div className="flex flex-wrap items-center gap-2 mt-1">
-                  <span className="text-xs font-black capitalize text-slate-800">
+                  <span className="text-xs font-black text-slate-800">
                     {rotuloDaCategoria(item.categoria)}
                   </span>
                 <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full border ${ESTADOS[normalizarEstado(item.status)].classeEtiqueta}`}>

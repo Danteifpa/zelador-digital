@@ -51,3 +51,12 @@ describe('prioridade GUT do Painel', () => {
     expect(escapeCsv(null)).toBe('""')
   })
 })
+
+describe('formatarKm', () => {
+  it('usa vírgula e uma casa decimal, como no Brasil', async () => {
+    const { formatarKm } = await import('./gestao')
+    expect(formatarKm(3.7)).toBe('3,7 km')
+    expect(formatarKm(12)).toBe('12,0 km')
+    expect(formatarKm(0.04)).toBe('0,0 km')
+  })
+})

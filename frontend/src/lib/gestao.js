@@ -21,6 +21,11 @@ export function distanciaMetros(a, b) {
   return 2 * raioTerra * Math.atan2(Math.sqrt(haversine), Math.sqrt(1 - haversine))
 }
 
+/** 3.7 → "3,7 km" */
+export function formatarKm(km) {
+  return `${Number(km).toLocaleString('pt-BR', { minimumFractionDigits: 1, maximumFractionDigits: 1 })} km`
+}
+
 export function formatarData(data, incluirHora = false) {
   if (!data) return 'Não informado'
   return new Date(data).toLocaleString('pt-BR', incluirHora ? undefined : { dateStyle: 'short' })

@@ -1,6 +1,7 @@
 import { useEffect, useId, useRef, useState } from 'react'
 import { Camera, Check, ChevronLeft, ChevronRight, Copy, ImagePlus, LocateFixed, Mic, X } from 'lucide-react'
 import { protocoloCivico } from '../lib/protocolo'
+import { formatarKm } from '../lib/gestao'
 import BotaoAvisos from './BotaoAvisos'
 
 const PASSOS = [
@@ -268,8 +269,8 @@ export default function ReportModal({ onFechar, modo, falarTexto, estaOnline, ca
                 {form.localizacao && form.distanciaKm !== null && (
                   <p className={`mt-2 text-xs font-bold ${dentroDoRaio ? 'text-emerald-700' : 'text-amber-700'}`}>
                     {dentroDoRaio
-                      ? `Dentro da área comunitária (${form.distanciaKm.toFixed(1)} km do centro)`
-                      : `Fora da área comunitária (${form.distanciaKm.toFixed(1)} km do centro)`}
+                      ? `Dentro da área comunitária (${formatarKm(form.distanciaKm)} do centro)`
+                      : `Fora da área comunitária (${formatarKm(form.distanciaKm)} do centro)`}
                   </p>
                 )}
               </div>
