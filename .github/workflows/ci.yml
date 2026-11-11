@@ -11,7 +11,7 @@ concurrency:
 
 jobs:
   frontend:
-    name: Build e lint (frontend)
+    name: Testes, build e lint (frontend)
     runs-on: ubuntu-latest
     defaults:
       run:
@@ -27,6 +27,9 @@ jobs:
 
       - name: Instalar dependências
         run: npm ci
+
+      - name: Testes automáticos
+        run: npm test
 
       - name: Build de produção
         run: npm run build

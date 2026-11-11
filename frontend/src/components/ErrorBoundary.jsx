@@ -63,7 +63,7 @@ export default class ErrorBoundary extends Component {
 
     return (
       <div role="alert" className="rounded-3xl border border-amber-200 bg-amber-50 p-5 text-center">
-        <p className="text-sm font-black text-amber-900">Não foi possível mostrar esta secção.</p>
+        <p className="text-sm font-black text-amber-900">Não foi possível mostrar esta seção.</p>
         <p className="mt-1 text-xs text-amber-800">O resto do aplicativo continua funcionando.</p>
         <button
           type="button"

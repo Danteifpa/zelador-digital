@@ -26,6 +26,7 @@ Use Node.js 22 (`.nvmrc`). Detalhes no [README](README.md#como-rodar-localmente)
 2. Faça commits pequenos, com mensagem no formato `tipo: descrição` (ex.: `fix: fila offline não perde fotos`).
 3. Rode antes de abrir o PR:
    ```bash
+   npm test
    npm run build
    npm run lint
    ```
