@@ -1,0 +1,61 @@
+name: Backup do banco
+
+# Cópia semanal do banco de produção, criptografada, guardada por 90 dias nos artefatos
+# do GitHub Actions. Precisa de dois segredos do repositório (Settings → Secrets → Actions):
+#   SUPABASE_DB_URL  conexão "Session pooler" do Supabase (Connect → Session pooler), com a senha do banco
+#   BACKUP_SENHA     senha longa para criptografar o arquivo (guarde-a fora do GitHub!)
+# Sem os segredos, o job termina sem fazer nada. Restauração: docs/BACKUP.md
+
+on:
+  schedule:
+    - cron: '17 7 * * 1' # segunda-feira, 4h17 em Ananindeua
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  backup:
+    name: Cópia criptografada do banco
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Conferir segredos
+        id: segredos
+        env:
+          SUPABASE_DB_URL: ${{ secrets.SUPABASE_DB_URL }}
+          BACKUP_SENHA: ${{ secrets.BACKUP_SENHA }}
+        run: |
+          if [ -z "$SUPABASE_DB_URL" ] || [ -z "$BACKUP_SENHA" ]; then
+            echo "::warning::Backup não configurado: adicione SUPABASE_DB_URL e BACKUP_SENHA nos segredos do repositório (veja docs/BACKUP.md)."
+            echo "configurado=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "configurado=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Gerar e criptografar a cópia
+        if: steps.segredos.outputs.configurado == 'true'
+        env:
+          SUPABASE_DB_URL: ${{ secrets.SUPABASE_DB_URL }}
+          BACKUP_SENHA: ${{ secrets.BACKUP_SENHA }}
+        run: |
+          set -euo pipefail
+          ARQUIVO="zelador-digital-$(date -u +%Y-%m-%d).dump"
+          docker run --rm -e URL="$SUPABASE_DB_URL" -v "$PWD:/saida" postgres:17 \
+            sh -c 'pg_dump "$URL" --format=custom --no-owner --no-privileges \
+                     --schema=public --schema=auth --schema=storage --schema=vault \
+                     --file="/saida/'"$ARQUIVO"'"'
+          gpg --batch --yes --pinentry-mode loopback --passphrase "$BACKUP_SENHA" \
+              --symmetric --cipher-algo AES256 --output "$ARQUIVO.gpg" "$ARQUIVO"
+          shred -u "$ARQUIVO"
+          ls -lh "$ARQUIVO.gpg"
+          echo "ARQUIVO=$ARQUIVO.gpg" >> "$GITHUB_ENV"
+
+      - name: Guardar por 90 dias
+        if: steps.segredos.outputs.configurado == 'true'
+        uses: actions/upload-artifact@v4
+        with:
+          name: backup-banco-${{ github.run_number }}
+          path: ${{ env.ARQUIVO }}
+          retention-days: 90
+          if-no-files-found: error
