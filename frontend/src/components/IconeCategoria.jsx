@@ -1,4 +1,4 @@
-import { Construction, Droplets, Lightbulb, MapPin, Trash2 } from 'lucide-react'
+import { Construction, Droplets, Footprints, Lightbulb, MapPin, TrafficCone, Trash2, TreeDeciduous, Waves } from 'lucide-react'
 
 // Um ícone e uma cor por tipo de problema (os mesmos do mapa: lib/iconesSvg.js).
 const ICONES = {
@@ -6,6 +6,10 @@ const ICONES = {
   iluminacao: { Icone: Lightbulb, cor: 'text-indigo-600', fundo: 'bg-indigo-50 border-indigo-200' },
   buraco: { Icone: Construction, cor: 'text-orange-600', fundo: 'bg-orange-50 border-orange-200' },
   esgoto: { Icone: Droplets, cor: 'text-sky-600', fundo: 'bg-sky-50 border-sky-200' },
+  alagamento: { Icone: Waves, cor: 'text-teal-600', fundo: 'bg-teal-50 border-teal-200' },
+  arvore: { Icone: TreeDeciduous, cor: 'text-green-600', fundo: 'bg-green-50 border-green-200' },
+  calcada: { Icone: Footprints, cor: 'text-violet-600', fundo: 'bg-violet-50 border-violet-200' },
+  sinalizacao: { Icone: TrafficCone, cor: 'text-rose-600', fundo: 'bg-rose-50 border-rose-200' },
   outro: { Icone: MapPin, cor: 'text-slate-600', fundo: 'bg-slate-100 border-slate-200' }
 }
 
