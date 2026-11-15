@@ -38,5 +38,3 @@ enabled = false
 [analytics]
 enabled = false
 
-[inbucket]
-enabled = false
