@@ -4,6 +4,9 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/). 
 
 ## [Não lançado]
 
+### Alterado
+- Cartaz A4 novo ("Quem vai consertar a sua rua?") e QR Code com a identidade do app, na janela de divulgação e na impressão.
+
 ### Corrigido
 - O cartaz A4 agora sai com o QR Code na impressão, pelos dois botões (tela inicial e janela do QR Code), e sempre aponta para o endereço oficial.
 
