@@ -16,6 +16,7 @@ import MapaFocosCriticos from './gestao/MapaFocosCriticos'
 import ModalBoletim from './gestao/ModalBoletim'
 import ModalExclusao from './gestao/ModalExclusao'
 import ModalOficio from './gestao/ModalOficio'
+import ErrosDoApp from './gestao/ErrosDoApp'
 import { rotuloDaCategoria } from '../lib/categorias'
 import { caminhoNoStorage, estaDenunciada } from '../lib/moderacao'
 
@@ -447,6 +448,7 @@ export default function PainelGestor({ ocorrencias = [], onAtualizarDados }) {
           />
           {pendentes.length > 0 && <SelecaoOficio alternarSelecaoOficio={alternarSelecaoOficio} pendentes={pendentes} selecionadasOficio={selecionadasOficio} setSelecionadasOficio={setSelecionadasOficio} />}
           <IndicadoresGestao analiseCategorias={analiseCategorias} analiseTemporal={analiseTemporal} maxCategoria={maxCategoria} maxTemporal={maxTemporal} metricas={metricas} />
+          <ErrosDoApp />
         </>
       )}
 
