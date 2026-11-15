@@ -5,6 +5,7 @@ import { protocoloCivico } from '../lib/protocolo'
 import { formatarKm } from '../lib/gestao'
 import BotaoAvisos from './BotaoAvisos'
 import AvisoFoto from './AvisoFoto'
+import PrivacidadeFoto from './PrivacidadeFoto'
 
 const PASSOS = [
   { titulo: 'Tipo de problema', curto: 'Tipo', fala: 'Passo 1. Escolha o tipo de problema.' },
@@ -212,7 +213,7 @@ export default function ReportModal({ onFechar, modo, falarTexto, estaOnline, ca
 
               {form.processandoFoto ? (
                 <div role="status" className="rounded-2xl border border-slate-200 bg-slate-50 p-10 text-center text-sm text-blue-600 font-bold animate-pulse">
-                  Otimizando a foto e lendo o GPS...
+                  Otimizando a foto, protegendo rostos e lendo o GPS...
                 </div>
               ) : form.fotoPreview ? (
                 <div className="relative rounded-2xl overflow-hidden border border-slate-200 bg-slate-100">
@@ -235,6 +236,10 @@ export default function ReportModal({ onFechar, modo, falarTexto, estaOnline, ca
                   <span className={`font-black ${facil ? 'text-lg' : 'text-base'}`}>Abrir câmera</span>
                   <span className="text-xs text-slate-500">A localização da foto é lida automaticamente</span>
                 </button>
+              )}
+
+              {form.fotoPreview && !form.processandoFoto && acoes.borrarAreas && (
+                <PrivacidadeFoto fotoPreview={form.fotoPreview} rostosBorrados={form.rostosBorrados} onBorrar={acoes.borrarAreas} grande={facil} />
               )}
 
               {!form.fotoPreview && !form.processandoFoto && (

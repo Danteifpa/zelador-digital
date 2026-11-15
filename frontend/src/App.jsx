@@ -20,6 +20,8 @@ import { textoConfirmacoes, MENSAGENS_APOIO } from './lib/apoios'
 import { ehLimiteDeRegistros, MENSAGEM_LIMITE_REGISTROS } from './lib/moderacao'
 import DenunciarOcorrencia from './components/DenunciarOcorrencia'
 import AvisoFoto from './components/AvisoFoto'
+import PrivacidadeFoto from './components/PrivacidadeFoto'
+import { protegerFoto } from './lib/privacidadeFoto'
 import { lerFila, adicionarAFila, atualizarItemNaFila, removerDaFila, FilaCheiaError } from './lib/filaOffline'
 import { lerCache, gravarCache, pedirArmazenamentoPersistente } from './lib/armazenamento'
 import { gerarIdOcorrencia, ehUuid, protocoloCivico, caminhoDaFoto } from './lib/protocolo'
@@ -331,6 +333,7 @@ export default function App() {
   const [fotoPreview, setFotoPreview] = useState(null)
   const previewUrlRef = useRef(null)
   const [processandoFoto, setProcessandoFoto] = useState(false)
+  const [rostosBorrados, setRostosBorrados] = useState(0)
   const [localizacao, setLocalizacao] = useState(null)
   const [origemLocalizacao, setOrigemLocalizacao] = useState('gps')
   const [capturandoGps, setCapturandoGps] = useState(false)
@@ -755,8 +758,12 @@ export default function App() {
 
         // Compressão única: o ficheiro guardado já é o que será enviado (sem recomprimir no envio).
         const comprimida = await otimizarImagem(file)
-        setFoto(comprimida)
-        trocarPreview(comprimida)
+        // Rostos são borrados no próprio celular antes de a foto existir no app.
+        const { arquivo: protegida, rostos } = await protegerFoto(comprimida).catch(() => ({ arquivo: comprimida, rostos: 0 }))
+        setFoto(protegida)
+        trocarPreview(protegida)
+        setRostosBorrados(rostos)
+        if (rostos > 0) mostrarAlertaToast(rostos === 1 ? '🙂 Um rosto foi borrado na foto para proteger a pessoa.' : `🙂 ${rostos} rostos foram borrados na foto para proteger as pessoas.`)
 
         if (modo === 'facil' && !gpsExif) falarTexto('Fotografia adicionada e otimizada.')
       } catch (err) {
@@ -780,6 +787,22 @@ export default function App() {
     feedbackSensorial.toqueSuave()
     setFoto(null)
     trocarPreview(null)
+    setRostosBorrados(0)
+  }
+
+  // "Borrar área": placas, números de casa ou rostos que o detector não achou.
+  const borrarAreasDaFoto = async (areas) => {
+    if (!foto || areas.length === 0) return
+    try {
+      const { arquivo } = await protegerFoto(foto, { detectar: false, areas })
+      setFoto(arquivo)
+      trocarPreview(arquivo)
+      feedbackSensorial.toqueSuave()
+      mostrarAlertaToast('Área borrada. Confira a foto antes de enviar.')
+    } catch (erro) {
+      console.warn('Falha ao borrar área:', erro)
+      mostrarAlertaToast('Não foi possível borrar a área. Tente de novo ou troque a foto.')
+    }
   }
 
   const selecionarCategoria = (cat) => {
@@ -1261,6 +1284,7 @@ export default function App() {
               categoria,
               fotoPreview,
               processandoFoto,
+              rostosBorrados,
               localizacao,
               origemLocalizacao,
               capturandoGps,
@@ -1275,6 +1299,7 @@ export default function App() {
               selecionarCategoria,
               fotoChange: handleFotoChange,
               removerFoto,
+              borrarAreas: borrarAreasDaFoto,
               capturarGps: obterLocalizacaoAtual,
               pontoReferenciaChange: setPontoReferencia,
               alternarVoz: alternarReconhecimentoVoz,
@@ -1991,7 +2016,7 @@ export default function App() {
 
               {processandoFoto ? (
                 <div className="rounded-2xl border border-slate-200 bg-slate-50 p-8 text-center text-xs text-blue-600 font-bold animate-pulse">
-                  Otimizando a foto e lendo a localização... ⚡
+                  Otimizando a foto, protegendo rostos e lendo a localização... ⚡
                 </div>
               ) : fotoPreview ? (
                 <div className="relative rounded-2xl overflow-hidden border border-slate-200 bg-slate-100">
@@ -2004,7 +2029,11 @@ export default function App() {
                     ✕ Trocar Foto
                   </button>
                 </div>
-              ) : (
+              ) : null}
+              {fotoPreview && !processandoFoto && (
+                <PrivacidadeFoto fotoPreview={fotoPreview} rostosBorrados={rostosBorrados} onBorrar={borrarAreasDaFoto} grande={modo === 'facil'} />
+              )}
+              {processandoFoto || fotoPreview ? null : (
                 <label className={`border-2 border-dashed border-slate-300 hover:border-blue-500 rounded-2xl flex flex-col items-center justify-center cursor-pointer bg-slate-50 transition-all ${modo === 'facil' ? 'p-7' : 'p-5'}`}>
                   <Camera size={modo === 'facil' ? 36 : 28} strokeWidth={2} className="mb-1.5 text-blue-600" aria-hidden="true" />
                   <span className={`font-bold text-slate-700 ${modo === 'facil' ? 'text-sm' : 'text-xs'}`}>Tirar foto ou selecionar</span>
