@@ -5,6 +5,7 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/). 
 ## [Não lançado]
 
 ### Alterado
+- Nova identidade visual "Rota": símbolo (Z feito de rua com o pino do problema), nome em dois pesos com a fonte Sora (embutida, funciona offline), ícones do app, favicon, imagem de compartilhamento e cartaz atualizados. Cor principal #1D4ED8 e detalhe #F59E0B.
 - Código reorganizado: o App.jsx caiu de ~2.450 para ~1.240 linhas, com telas em `src/telas/`, modais em `src/components/` e funções auxiliares em `src/lib/` (sem mudança de comportamento).
 
 ### Alterado (licença)

@@ -1,4 +1,5 @@
 import { Accessibility, Bell, Info } from 'lucide-react'
+import Logotipo from './Logotipo'
 
 /**
  * Topo da aplicação: faixas de estado (offline / fila pendente) + barra com título e ações.
@@ -54,10 +55,9 @@ export default function Header({
           <button
             onClick={onIrParaInicio}
             className="text-left focus:outline-none cursor-pointer"
+            aria-label="Zelador Digital, ir para o início"
           >
-            <div>
-              <span className="text-xl font-black text-blue-600 tracking-tight leading-none">Zelador Digital</span>
-            </div>
+            <Logotipo size={32} compacto />
           </button>
 
           <div className="flex items-center gap-2">

@@ -1,10 +1,11 @@
+import Logotipo from './Logotipo'
 export default function ModalSobre({ setModalSobreAberto, abrirComoUsar }) {
   return (
     <div className="fixed inset-0 z-50 bg-slate-950/70 backdrop-blur-xs flex items-end sm:items-center justify-center p-0 sm:p-4">
       <div className="bg-white w-full max-w-md rounded-t-3xl sm:rounded-3xl p-6 border border-slate-200 shadow-2xl">
         <div className="flex items-start justify-between gap-4">
           <div>
-            <span className="text-[10px] font-black uppercase tracking-wider text-blue-600">Zelador Digital</span>
+            <Logotipo size={26} />
             <h2 className="text-lg font-black text-slate-800 mt-1">Sobre o Desenvolvedor</h2>
           </div>
           <button

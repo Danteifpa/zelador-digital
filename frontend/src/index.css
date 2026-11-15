@@ -1,5 +1,10 @@
 @import "tailwindcss";
 
+/* Fonte da marca (Sora), embutida para funcionar offline. Só títulos e logotipo usam. */
+@font-face { font-family: 'Sora'; font-style: normal; font-weight: 400; font-display: swap; src: url('./assets/sora-latin-400-normal.woff2') format('woff2'); }
+@font-face { font-family: 'Sora'; font-style: normal; font-weight: 600; font-display: swap; src: url('./assets/sora-latin-600-normal.woff2') format('woff2'); }
+@font-face { font-family: 'Sora'; font-style: normal; font-weight: 800; font-display: swap; src: url('./assets/sora-latin-800-normal.woff2') format('woff2'); }
+
 html, body {
   margin: 0;
   padding: 0;
@@ -49,3 +54,4 @@ html.modo-facil .barra-navegacao button > span:last-child { font-size: 0.8125rem
   /* Altura visível real em telemóveis (sem a área por trás da barra de endereço). */
   min-height: 100dvh;
 }
+.font-marca { font-family: 'Sora', system-ui, sans-serif; }
