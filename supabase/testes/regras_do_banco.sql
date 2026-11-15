@@ -36,6 +36,7 @@ begin
   perform pg_temp.verificar(r.total_apoios = 0, 'quem registra não define o contador de apoios');
   perform pg_temp.verificar(r.bairro = 'Bairro de Teste', 'bairro preenchido pelo ponto do GPS');
 
+  perform set_config('request.headers', '{"x-forwarded-for":"203.0.113.11"}', true);
   begin
     insert into public.ocorrencias (categoria, status, localizacao) values ('inventada', 'pendente', 'SRID=4326;POINT(-48.39 -1.365)');
     perform pg_temp.verificar(false, 'categoria desconhecida deveria ser recusada');
