@@ -1,7 +1,7 @@
 import { ETAPAS_ONBOARDING } from '../lib/conteudoApp'
 import { feedbackSensorial } from '../lib/feedbackSensorial'
 
-export default function Onboarding({ concluirOnboarding, etapaOnboarding, setEtapaOnboarding }) {
+export default function Onboarding({ concluirOnboarding, etapaOnboarding, setEtapaOnboarding, abrirComoUsar }) {
   return (
     <div className="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-md flex items-center justify-center p-4 animate-in fade-in duration-300">
       <div className="bg-white w-full max-w-sm rounded-3xl p-6 shadow-2xl flex flex-col justify-between text-center space-y-6 relative border border-slate-100">
@@ -59,6 +59,15 @@ export default function Onboarding({ concluirOnboarding, etapaOnboarding, setEta
               className="w-full py-3.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-2xl font-black text-xs uppercase tracking-wider shadow-md transition-all active:scale-[0.99] cursor-pointer"
             >
               Começar a usar 🚀
+            </button>
+          )}
+          {abrirComoUsar && (
+            <button
+              type="button"
+              onClick={abrirComoUsar}
+              className="w-full py-2 text-xs font-bold text-blue-700 hover:underline cursor-pointer"
+            >
+              Ver o tutorial passo a passo
             </button>
           )}
         </div>

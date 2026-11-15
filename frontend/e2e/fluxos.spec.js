@@ -71,3 +71,16 @@ test('morador responde o questionário de usabilidade depois de registrar', asyn
   await page.getByRole('button', { name: 'Enviar respostas' }).click()
   await expect(page.getByText(/Obrigado! Sua resposta/)).toBeVisible()
 })
+
+test('tutorial "Como usar" navega pelos passos e leva ao registro', async ({ page }) => {
+  await abrirApp(page, { latitude: -1.3655, longitude: -48.3955 })
+  await page.getByRole('button', { name: /Como usar o app/ }).click()
+  await expect(page.getByText(/passo 1 de 9/i)).toBeVisible()
+  await page.getByRole('button', { name: /Próximo/ }).click()
+  await expect(page.getByText(/passo 2 de 9/i)).toBeVisible()
+  await page.getByRole('button', { name: 'Passo 9' }).click()
+  await expect(page.getByRole('button', { name: /Concluir/ })).toBeVisible()
+  await page.getByRole('button', { name: 'Passo 1' }).click()
+  await page.getByRole('button', { name: /Registrar agora/ }).click()
+  await expect(page.getByRole('button', { name: /^Continuar$/ })).toBeVisible()
+})

@@ -1,4 +1,4 @@
-export default function ModalSobre({ setModalSobreAberto }) {
+export default function ModalSobre({ setModalSobreAberto, abrirComoUsar }) {
   return (
     <div className="fixed inset-0 z-50 bg-slate-950/70 backdrop-blur-xs flex items-end sm:items-center justify-center p-0 sm:p-4">
       <div className="bg-white w-full max-w-md rounded-t-3xl sm:rounded-3xl p-6 border border-slate-200 shadow-2xl">
@@ -34,10 +34,19 @@ export default function ModalSobre({ setModalSobreAberto }) {
             . O nome e a marca Zelador Digital não fazem parte da licença.
           </p>
         </div>
+        {abrirComoUsar && (
+          <button
+            type="button"
+            onClick={abrirComoUsar}
+            className="w-full mt-6 py-3 rounded-2xl border border-blue-200 bg-blue-50 text-blue-800 text-sm font-bold hover:bg-blue-100 cursor-pointer"
+          >
+            Como usar o app (tutorial)
+          </button>
+        )}
         <button
           type="button"
           onClick={() => setModalSobreAberto(false)}
-          className="w-full mt-6 py-3 rounded-2xl bg-slate-900 hover:bg-slate-800 text-white text-sm font-bold transition-colors cursor-pointer"
+          className="w-full mt-2 py-3 rounded-2xl bg-slate-900 hover:bg-slate-800 text-white text-sm font-bold transition-colors cursor-pointer"
         >
           Fechar
         </button>
