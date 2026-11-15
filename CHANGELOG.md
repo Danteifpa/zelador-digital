@@ -4,6 +4,12 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/). 
 
 ## [Não lançado]
 
+### Adicionado
+- Botão "Denunciar foto ou registro" no detalhe da ocorrência. Com 3 denúncias a foto fica oculta até a gestão revisar.
+- Filtro "Denunciados" no Painel, com os motivos e as ações "Manter foto" e "Remover foto".
+- Aviso no passo da foto: "Fotografe o problema, não pessoas nem placas de carro".
+- Limite de registros por conexão (8 por hora, 20 por dia) para evitar abusos; gestores não têm limite.
+
 ### Alterado
 - Cartaz A4 novo ("Quem vai consertar a sua rua?") e QR Code com a identidade do app, na janela de divulgação e na impressão.
 

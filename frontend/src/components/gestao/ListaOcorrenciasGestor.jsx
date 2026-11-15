@@ -5,6 +5,8 @@ import Spinner from './Spinner'
 import { rotuloDaCategoria } from '../../lib/categorias'
 import IconeCategoria from '../IconeCategoria'
 import { textoConfirmacoes } from '../../lib/apoios'
+import { estaDenunciada } from '../../lib/moderacao'
+import RevisaoDenuncia from './RevisaoDenuncia'
 
 // O que o gestor pode fazer a partir de cada status (o status atual não vira botão).
 const PROXIMOS_PASSOS = {
@@ -24,7 +26,7 @@ const PROXIMOS_PASSOS = {
 const ETAPAS = ['Registrado', 'Em análise', 'Resolvido']
 
 /** Lista priorizada: uma linha por chamado; tocar abre fotos, tramitação e ações. */
-export default function ListaOcorrenciasGestor({ acaoEmAndamento, alterarStatusOcorrencia, carregandoAcao, confirmarResolucao, despachoPorId, fotoResolucaoPorId, itemResolucao, ocorrenciasFiltradasComGut, salvarDespacho, setDespachoPorId, setFotoResolucaoPorId, setItemEdicao, setItemExclusao, setItemResolucao, setTramitacaoAberta, tramitacaoAberta }) {
+export default function ListaOcorrenciasGestor({ revisarFoto, acaoEmAndamento, alterarStatusOcorrencia, carregandoAcao, confirmarResolucao, despachoPorId, fotoResolucaoPorId, itemResolucao, ocorrenciasFiltradasComGut, salvarDespacho, setDespachoPorId, setFotoResolucaoPorId, setItemEdicao, setItemExclusao, setItemResolucao, setTramitacaoAberta, tramitacaoAberta }) {
   const [aberto, setAberto] = useState(null)
 
   if (ocorrenciasFiltradasComGut.length === 0) {
@@ -74,6 +76,11 @@ export default function ListaOcorrenciasGestor({ acaoEmAndamento, alterarStatusO
                   >
                     {rotuloCriticidade(item.gut.pontuacao)}
                   </span>
+                  {estaDenunciada(item) && (
+                    <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-rose-50 text-rose-700 border border-rose-200">
+                      🚩 {item.total_denuncias}{item.foto_oculta ? ' · oculta' : ''}
+                    </span>
+                  )}
                   {textoConfirmacoes(item.total_apoios) && (
                     <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-blue-50 text-blue-700 border border-blue-200">
                       👥 {item.total_apoios}
@@ -100,6 +107,10 @@ export default function ListaOcorrenciasGestor({ acaoEmAndamento, alterarStatusO
                   </div>
                 ) : (
                   item.foto_url && <img src={item.foto_url} alt="Foto do chamado" className="w-full h-44 object-cover rounded-xl border border-slate-100" />
+                )}
+
+                {estaDenunciada(item) && revisarFoto && (
+                  <RevisaoDenuncia item={item} acaoEmAndamento={acaoEmAndamento} carregandoAcao={carregandoAcao} revisarFoto={revisarFoto} />
                 )}
 
                 <p className="text-sm text-slate-700 leading-relaxed">{item.descricao || 'Sem descrição registrada.'}</p>

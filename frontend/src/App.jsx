@@ -17,6 +17,9 @@ import AvisoAtualizacao from './components/AvisoAtualizacao'
 import BotaoAvisos from './components/BotaoAvisos'
 import BotaoApoio from './components/BotaoApoio'
 import { textoConfirmacoes, MENSAGENS_APOIO } from './lib/apoios'
+import { ehLimiteDeRegistros, MENSAGEM_LIMITE_REGISTROS } from './lib/moderacao'
+import DenunciarOcorrencia from './components/DenunciarOcorrencia'
+import AvisoFoto from './components/AvisoFoto'
 import { lerFila, adicionarAFila, atualizarItemNaFila, removerDaFila, FilaCheiaError } from './lib/filaOffline'
 import { lerCache, gravarCache, pedirArmazenamentoPersistente } from './lib/armazenamento'
 import { gerarIdOcorrencia, ehUuid, protocoloCivico, caminhoDaFoto } from './lib/protocolo'
@@ -832,6 +835,7 @@ export default function App() {
     sincronizandoRef.current = true
     setSincronizandoFila(true)
     const sincronizados = []
+    let barradosPeloLimite = 0
 
     try {
       for (const item of pendentes) {
@@ -870,6 +874,7 @@ export default function App() {
           if (insertError && insertError.code !== '23505') throw insertError
           sincronizados.push(item.id)
         } catch (e) {
+          if (ehLimiteDeRegistros(e)) barradosPeloLimite += 1
           console.error('Falha ao sincronizar item offline:', e)
         }
       }
@@ -893,6 +898,8 @@ export default function App() {
     if (falhados === 0) {
       feedbackSensorial.envioSucesso()
       mostrarAlertaToast('Todos os registros offline foram sincronizados com sucesso!')
+    } else if (barradosPeloLimite > 0) {
+      mostrarAlertaToast(`${MENSAGEM_LIMITE_REGISTROS} ${falhados} registro(s) ficam no celular e serão enviados depois.`)
     } else if (sincronizados.length > 0) {
       mostrarAlertaToast(`${sincronizados.length} registro(s) enviado(s). ${falhados} ficam no celular para nova tentativa.`)
     } else {
@@ -1105,6 +1112,11 @@ export default function App() {
       feedbackSensorial.alertaErro()
       if (err instanceof FilaCheiaError) {
         mostrarAlertaToast(err.message)
+        return
+      }
+      if (ehLimiteDeRegistros(err)) {
+        mostrarAlertaToast(MENSAGEM_LIMITE_REGISTROS)
+        if (modo === 'facil') falarTexto(MENSAGEM_LIMITE_REGISTROS)
         return
       }
       console.error('Erro de envio:', err)
@@ -1689,7 +1701,7 @@ export default function App() {
                 </div>
               </div>
 
-              {ocorrenciaSelecionada.foto_url && (
+              {ocorrenciaSelecionada.foto_url ? (
                 <div className="rounded-2xl overflow-hidden border border-slate-200 bg-slate-100">
                   <img
                     src={ocorrenciaSelecionada.foto_url}
@@ -1697,7 +1709,11 @@ export default function App() {
                     className="w-full h-48 object-cover"
                   />
                 </div>
-              )}
+              ) : ocorrenciaSelecionada.foto_oculta ? (
+                <div className="rounded-2xl border border-dashed border-slate-300 bg-slate-50 px-4 py-6 text-center text-xs font-bold text-slate-500">
+                  Foto oculta após denúncias de moradores. A gestão está revisando.
+                </div>
+              ) : null}
 
               <div className="bg-slate-50 rounded-2xl p-4 border border-slate-200/80 space-y-3">
                 <h4 className="text-xs font-black text-slate-500 uppercase tracking-wider">Acompanhamento do Chamado</h4>
@@ -1763,6 +1779,15 @@ export default function App() {
                   Ver no Google Maps ↗
                 </a>
               )}
+
+              <DenunciarOcorrencia
+                key={`denuncia-${ocorrenciaSelecionada.id}`}
+                ocorrencia={ocorrenciaSelecionada}
+                onDenunciado={(resultado, mensagem) => {
+                  mostrarAlertaToast(mensagem)
+                  if (resultado?.oculta) carregarRegistos()
+                }}
+              />
             </div>
           </div>
         )}
@@ -1929,6 +1954,8 @@ export default function App() {
               <label className={`block font-black text-slate-600 uppercase tracking-wider mb-2 ${modo === 'facil' ? 'text-sm' : 'text-xs'}`}>
                 2. Fotografia do Local:
               </label>
+
+              {!fotoPreview && !processandoFoto && <AvisoFoto grande={modo === 'facil'} />}
 
               {processandoFoto ? (
                 <div className="rounded-2xl border border-slate-200 bg-slate-50 p-8 text-center text-xs text-blue-600 font-bold animate-pulse">

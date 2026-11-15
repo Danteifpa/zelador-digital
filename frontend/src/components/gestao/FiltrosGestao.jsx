@@ -1,7 +1,7 @@
 import { ESTADOS, ORDEM_ESTADOS } from '../../lib/status'
 
 /** Busca, filtros de estado e ordenação por prioridade GUT. */
-export default function FiltrosGestao({ filtroStatus, ordenarPorGut, setFiltroStatus, setOrdenarPorGut, setTermoBusca, termoBusca }) {
+export default function FiltrosGestao({ totalDenunciados = 0, filtroStatus, ordenarPorGut, setFiltroStatus, setOrdenarPorGut, setTermoBusca, termoBusca }) {
   return (
     <>
     {/* Busca e Filtros */}
@@ -29,6 +29,19 @@ export default function FiltrosGestao({ filtroStatus, ordenarPorGut, setFiltroSt
             {label}
           </button>
         ))}
+        {totalDenunciados > 0 && (
+          <button
+            type="button"
+            onClick={() => setFiltroStatus('denunciados')}
+            className={`px-3 py-1.5 rounded-xl text-[11px] font-bold transition-all shrink-0 cursor-pointer ${
+              filtroStatus === 'denunciados'
+                ? 'bg-rose-600 text-white shadow-2xs'
+                : 'bg-rose-50 border border-rose-200 text-rose-700 hover:bg-rose-100'
+            }`}
+          >
+            🚩 Denunciados ({totalDenunciados})
+          </button>
+        )}
         <button
           type="button"
           onClick={() => setOrdenarPorGut((atual) => !atual)}
