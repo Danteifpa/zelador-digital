@@ -1650,6 +1650,18 @@ export default function App() {
               <p className="text-sm text-slate-600 leading-relaxed">
                 Criador e desenvolvedor do Zelador Digital, projeto de iniciativa comunitária independente para mapeamento e acompanhamento de zeladoria urbana em Ananindeua.
               </p>
+              <p className="text-xs text-slate-500 leading-relaxed">
+                Software livre sob a licença AGPL-3.0.{' '}
+                <a
+                  href="https://github.com/Danteifpa/zelador-digital"
+                  target="_blank"
+                  rel="noreferrer"
+                  className="font-bold text-blue-700 underline"
+                >
+                  Ver código-fonte
+                </a>
+                . O nome e a marca Zelador Digital não fazem parte da licença.
+              </p>
             </div>
             <button
               type="button"
