@@ -3,7 +3,7 @@ import { MapContainer, TileLayer, Marker, Popup, Circle, useMap } from 'react-le
 import L from 'leaflet'
 import 'leaflet/dist/leaflet.css'
 import { Flame, LoaderCircle, LocateFixed, MapPin } from 'lucide-react'
-import { rotuloDaCategoria } from '../lib/categorias'
+import { CATEGORIAS, rotuloDaCategoria } from '../lib/categorias'
 import { SVG_MARCADOR } from '../lib/iconesSvg'
 import IconeCategoria from './IconeCategoria'
 
@@ -41,10 +41,7 @@ const criarIcone = (svg, bgCor) => {
 }
 
 const ICONES = {
-  lixo: criarIcone(SVG_MARCADOR.lixo, '#d97706'),
-  iluminacao: criarIcone(SVG_MARCADOR.iluminacao, '#4f46e5'),
-  buraco: criarIcone(SVG_MARCADOR.buraco, '#ea580c'),
-  esgoto: criarIcone(SVG_MARCADOR.esgoto, '#0284c7'),
+  ...Object.fromEntries(CATEGORIAS.map((cat) => [cat.id, criarIcone(SVG_MARCADOR[cat.id] || SVG_MARCADOR.padrao, cat.cor)])),
   padrao: criarIcone(SVG_MARCADOR.padrao, '#2563eb')
 }
 
@@ -140,42 +137,22 @@ export default function MapaOcorrencias({ ocorrencias = [] }) {
           >
             Todos ({ocorrencias.length})
           </button>
-          <button
-            type="button"
-            onClick={() => setFiltroTipo('lixo')}
-            className={`min-h-10 px-3 rounded-xl text-[11px] font-bold shrink-0 cursor-pointer ${
-              filtroTipo === 'lixo' ? 'bg-amber-600 text-white' : 'bg-slate-100 text-slate-600'
-            }`}
-          >
-            <span className="inline-flex items-center gap-1.5"><IconeCategoria categoria="lixo" size={15} colorido={filtroTipo !== 'lixo'} />Lixo</span>
-          </button>
-          <button
-            type="button"
-            onClick={() => setFiltroTipo('iluminacao')}
-            className={`min-h-10 px-3 rounded-xl text-[11px] font-bold shrink-0 cursor-pointer ${
-              filtroTipo === 'iluminacao' ? 'bg-indigo-600 text-white' : 'bg-slate-100 text-slate-600'
-            }`}
-          >
-            <span className="inline-flex items-center gap-1.5"><IconeCategoria categoria="iluminacao" size={15} colorido={filtroTipo !== 'iluminacao'} />Postes</span>
-          </button>
-          <button
-            type="button"
-            onClick={() => setFiltroTipo('buraco')}
-            className={`min-h-10 px-3 rounded-xl text-[11px] font-bold shrink-0 cursor-pointer ${
-              filtroTipo === 'buraco' ? 'bg-orange-600 text-white' : 'bg-slate-100 text-slate-600'
-            }`}
-          >
-            <span className="inline-flex items-center gap-1.5"><IconeCategoria categoria="buraco" size={15} colorido={filtroTipo !== 'buraco'} />Buracos</span>
-          </button>
-          <button
-            type="button"
-            onClick={() => setFiltroTipo('esgoto')}
-            className={`min-h-10 px-3 rounded-xl text-[11px] font-bold shrink-0 cursor-pointer ${
-              filtroTipo === 'esgoto' ? 'bg-sky-600 text-white' : 'bg-slate-100 text-slate-600'
-            }`}
-          >
-            <span className="inline-flex items-center gap-1.5"><IconeCategoria categoria="esgoto" size={15} colorido={filtroTipo !== 'esgoto'} />Esgoto</span>
-          </button>
+          {CATEGORIAS.map((cat) => {
+            const ativo = filtroTipo === cat.id
+            return (
+              <button
+                key={cat.id}
+                type="button"
+                onClick={() => setFiltroTipo(cat.id)}
+                style={ativo ? { backgroundColor: cat.cor } : undefined}
+                className={`min-h-10 px-3 rounded-xl text-[11px] font-bold shrink-0 cursor-pointer ${
+                  ativo ? 'text-white' : 'bg-slate-100 text-slate-600'
+                }`}
+              >
+                <span className="inline-flex items-center gap-1.5"><IconeCategoria categoria={cat.id} size={15} colorido={!ativo} />{cat.curto}</span>
+              </button>
+            )
+          })}
         </div>
       </div>
 

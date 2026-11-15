@@ -12,6 +12,7 @@ Tudo o que roda no Supabase do Zelador Digital está versionado nesta pasta.
 | [`20261111_textos_pt_br.sql`](migrations/20261111_textos_pt_br.sql) | Troca a descrição padrão antiga ("registada") por "registrada" |
 | [`20261111_apoios.sql`](migrations/20261111_apoios.sql) | "Também vi este problema": tabela `apoios`, função `apoiar_ocorrencia` (1 por aparelho, limite por hora) e remove `incrementar_apoio` |
 | [`20261114_moderacao.sql`](migrations/20261114_moderacao.sql) | Moderação: limite de 8 registros/hora e 20/dia por conexão (gestores isentos), denúncia de fotos (`denunciar_ocorrencia`, foto oculta com 3 denúncias) e gestores podem apagar fotos do Storage |
+| [`20261115_categorias.sql`](migrations/20261115_categorias.sql) | Lista fechada de categorias, com as novas alagamento, árvore, calçada e sinalização |
 
 Cada arquivo roda numa transação e pode ser aplicado mais de uma vez. Para aplicar: **SQL Editor → New query → colar → Run**.
 

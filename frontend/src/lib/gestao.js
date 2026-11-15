@@ -38,7 +38,9 @@ export function escapeCsv(valor) {
 export function categoriaGravidade(categoria = '') {
   const normalizada = categoria.toLowerCase()
   if (normalizada.includes('esgoto') || normalizada.includes('saneamento') || normalizada.includes('hospitalar') || normalizada.includes('acumulado')) return 5
-  if (normalizada.includes('buraco') || normalizada.includes('via')) return 4
+  if (normalizada.includes('alagamento')) return 5
+  if (normalizada.includes('buraco') || normalizada.includes('via') || normalizada.includes('arvore') || normalizada.includes('sinalizacao')) return 4
+  if (normalizada.includes('calcada')) return 3
   if (normalizada.includes('ilumin')) return 3
   return 2
 }
