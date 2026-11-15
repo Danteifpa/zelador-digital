@@ -8,6 +8,7 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/). 
 - O projeto passa da licença MIT para a **GNU AGPL-3.0** a partir desta versão. Quem oferecer o app pela internet precisa publicar o código-fonte das mudanças. Versões anteriores continuam sob a MIT. A marca "Zelador Digital" não é licenciada.
 
 ### Adicionado
+- CI com banco descartável: a cada PR um Supabase local aplica todas as migrações do zero, roda 20 testes das regras do banco e 4 testes de ponta a ponta (Playwright) com o app de verdade.
 - Verificação em duas etapas para gestores (app autenticador). Depois de ativada, a senha sozinha não abre o Painel.
 - Proteção de privacidade na foto: rostos são borrados automaticamente no próprio celular antes do envio, e o botão "Borrar área" permite esconder placas, números de casa ou qualquer outra parte da foto.
 - Bairro automático: cada registro recebe o bairro pelo GPS (limites do OpenStreetMap).
