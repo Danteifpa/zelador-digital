@@ -1,0 +1,37 @@
+/**
+ * Marca "Zelador Digital", direção Rota: símbolo (Z feito de rua, com o pino) + nome em dois pesos.
+ * O símbolo é SVG inline para ficar nítido em qualquer tamanho e funcionar offline.
+ */
+export function SimboloMarca({ size = 32, className = '', fundo = '#1D4ED8', traco = '#FFFFFF', acento = '#F59E0B', titulo }) {
+  return (
+    <svg
+      viewBox="0 0 100 100"
+      width={size}
+      height={size}
+      className={className}
+      role={titulo ? 'img' : undefined}
+      aria-label={titulo}
+      aria-hidden={titulo ? undefined : true}
+    >
+      <rect x="4" y="4" width="92" height="92" rx="24" fill={fundo} />
+      <path d="M24 28 H74 L26 72 H76" fill="none" stroke={traco} strokeWidth="16" strokeLinecap="round" strokeLinejoin="round" />
+      <path d="M24 28 H74 L26 72 H76" fill="none" stroke={fundo} strokeWidth="3" strokeDasharray="6 7" strokeLinecap="round" strokeLinejoin="round" />
+      <circle cx="76" cy="72" r="11" fill={acento} />
+      <circle cx="76" cy="72" r="4.5" fill={fundo} />
+    </svg>
+  )
+}
+
+/** Logotipo horizontal. `escuro` para uso sobre fundo escuro. */
+export default function Logotipo({ size = 30, escuro = false, className = '', compacto = false }) {
+  const texto = Math.round(size * 0.78)
+  return (
+    <span className={`inline-flex items-center gap-2 ${className}`}>
+      <SimboloMarca size={size} fundo={escuro ? '#FFFFFF' : '#1D4ED8'} traco={escuro ? '#1D4ED8' : '#FFFFFF'} />
+      <span className="font-marca leading-none tracking-tight whitespace-nowrap" style={{ fontSize: texto }}>
+        <span className={`font-extrabold ${escuro ? 'text-white' : 'text-blue-700'}`}>Zelador</span>{' '}
+        <span className={`font-normal ${escuro ? 'text-white' : 'text-slate-900'} ${compacto ? 'hidden min-[360px]:inline' : ''}`}>Digital</span>
+      </span>
+    </span>
+  )
+}

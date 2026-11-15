@@ -1,7 +1,7 @@
 {
   "short_name": "Zelador",
-  "name": "Zelador Digital Comunitário",
-  "description": "Mapeamento urbano e zeladoria comunitária independente para o Residencial Novo Cristo e Icuí.",
+  "name": "Zelador Digital",
+  "description": "Registre problemas da sua rua em Ananindeua em 1 minuto: lixo, buracos, postes apagados e mais. Gratuito e sem cadastro.",
   "icons": [
     {
       "src": "/icon-192.png",
@@ -30,7 +30,7 @@
   ],
   "start_url": "/",
   "background_color": "#ffffff",
-  "theme_color": "#2563eb",
+  "theme_color": "#1D4ED8",
   "display": "standalone",
   "orientation": "portrait-primary",
   "scope": "/",
@@ -58,6 +58,19 @@
       "short_name": "Mapa",
       "description": "Ver o mapa de calor e as ocorrências",
       "url": "/?aba=mapa",
+      "icons": [
+        {
+          "src": "/icon-192.png",
+          "sizes": "192x192",
+          "type": "image/png"
+        }
+      ]
+    },
+    {
+      "name": "Como usar",
+      "short_name": "Tutorial",
+      "description": "Tutorial rápido do app",
+      "url": "/?aba=ajuda",
       "icons": [
         {
           "src": "/icon-192.png",

@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { createPortal } from 'react-dom'
 import { QRCodeSVG } from 'qrcode.react'
+import Logotipo from './Logotipo'
 
 // QR Code com a identidade do app (public/qr-zelador.svg), gerado para https://zeladordigital.vercel.app.
 // Se o endereço oficial mudar, gere de novo; o QR simples (QRCodeSVG) segue como reserva para outros endereços.
@@ -53,8 +54,8 @@ export default function ModalQRCode({ url, onClose, imprimirAoAbrir = false }) {
             ✕
           </button>
           <div className="mb-5">
-            <span className="text-3xl">📲</span>
-            <h2 id="titulo-modal-qr" className="mt-2 text-lg font-black">Divulgue o Zelador Digital</h2>
+            <Logotipo size={30} escuro className="justify-center" />
+            <h2 id="titulo-modal-qr" className="mt-3 text-lg font-black">Divulgue o Zelador Digital</h2>
             <p className="mt-2 text-xs leading-relaxed text-slate-300">
               Leve a fiscalização cidadã para a sua rua em Ananindeua
             </p>
@@ -88,7 +89,7 @@ export default function ModalQRCode({ url, onClose, imprimirAoAbrir = false }) {
         <div className="flex h-[297mm] w-[210mm] flex-col overflow-hidden bg-[#F6F7F2] text-[#14213D]">
           <div className="flex flex-col gap-[4mm] bg-[#1D4ED8] px-[16mm] pb-[13mm] pt-[16mm] text-[#F6F7F2]">
             <p className="text-[11pt] font-black uppercase tracking-[0.25em] text-[#FFE08A]">Ananindeua · zeladoria comunitária</p>
-            <h1 className="text-[52pt] font-black leading-[0.98] tracking-tight">Quem vai consertar a sua rua?</h1>
+            <h1 className="font-marca text-[52pt] font-extrabold leading-[0.98] tracking-tight">Quem vai consertar a sua rua?</h1>
             <p className="max-w-[150mm] text-[15pt] leading-snug text-[#E4EAF5]">A resposta começa com uma foto. Aponte a câmera aqui.</p>
           </div>
           <div className="flex flex-1 flex-col items-center justify-center gap-[5mm]">
@@ -110,7 +111,7 @@ export default function ModalQRCode({ url, onClose, imprimirAoAbrir = false }) {
             ))}
           </div>
           <div className="mx-[16mm] flex items-center justify-between border-t-2 border-[#D9DED3] pb-[11mm] pt-[4.5mm]">
-            <span className="text-[13pt] font-black">Zelador Digital</span>
+            <Logotipo size={36} />
             <span className="text-[10pt] text-[#3E4A61]">Grátis · sem cadastro · zeladordigital.vercel.app</span>
           </div>
         </div>
