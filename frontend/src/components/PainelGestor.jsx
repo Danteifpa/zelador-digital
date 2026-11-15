@@ -18,6 +18,7 @@ import ModalExclusao from './gestao/ModalExclusao'
 import ModalOficio from './gestao/ModalOficio'
 import ErrosDoApp from './gestao/ErrosDoApp'
 import SegurancaConta from './gestao/SegurancaConta'
+import ResultadoSus from './gestao/ResultadoSus'
 import SegundaEtapaLogin from './gestao/SegundaEtapaLogin'
 import { rotuloDaCategoria } from '../lib/categorias'
 import { caminhoNoStorage, estaDenunciada } from '../lib/moderacao'
@@ -454,6 +455,7 @@ export default function PainelGestor({ ocorrencias = [], onAtualizarDados }) {
           />
           {pendentes.length > 0 && <SelecaoOficio alternarSelecaoOficio={alternarSelecaoOficio} pendentes={pendentes} selecionadasOficio={selecionadasOficio} setSelecionadasOficio={setSelecionadasOficio} />}
           <IndicadoresGestao analiseCategorias={analiseCategorias} analiseTemporal={analiseTemporal} maxCategoria={maxCategoria} maxTemporal={maxTemporal} metricas={metricas} />
+          <ResultadoSus />
           <SegurancaConta />
           <ErrosDoApp />
         </>

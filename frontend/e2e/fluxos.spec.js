@@ -58,3 +58,16 @@ test('página de gestão pede login', async ({ page }) => {
   await page.goto('/?aba=gestao')
   await expect(page.getByRole('heading', { name: 'Painel de Gestão' })).toBeVisible()
 })
+
+test('morador responde o questionário de usabilidade depois de registrar', async ({ page }) => {
+  await abrirApp(page, { latitude: -1.3635, longitude: -48.3915 })
+  await registrar(page, { referencia: 'E2E pesquisa' })
+  await page.getByRole('button', { name: /^Responder$/ }).click()
+  const grupos = page.locator('fieldset')
+  await expect(grupos).toHaveCount(10)
+  for (let i = 0; i < 10; i++) {
+    await grupos.nth(i).getByRole('button', { name: i % 2 === 0 ? 'Concordo' : 'Discordo', exact: true }).click()
+  }
+  await page.getByRole('button', { name: 'Enviar respostas' }).click()
+  await expect(page.getByText(/Obrigado! Sua resposta/)).toBeVisible()
+})

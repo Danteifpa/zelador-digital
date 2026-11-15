@@ -139,4 +139,25 @@ begin
   perform pg_temp.verificar(rota_salva = '/x', 'rota salva sem parâmetros');
 end $t$;
 
+-- 8) Pesquisa SUS: pontuação, validação e limite -------------------------------------
+do $t$
+declare j jsonb; i int; barrado boolean := false;
+begin
+  perform pg_temp.verificar(public.pontuacao_sus('{5,1,5,1,5,1,5,1,5,1}') = 100, 'SUS máximo = 100');
+  perform pg_temp.verificar(public.pontuacao_sus('{3,3,3,3,3,3,3,3,3,3}') = 50, 'SUS neutro = 50');
+  perform set_config('request.headers', '{"x-forwarded-for":"203.0.113.50"}', true);
+  set local role anon;
+  j := public.registrar_pesquisa_sus('{4,2,4,2,4,2,4,2,4,2}', 'gostei', 'teste');
+  perform pg_temp.verificar((j ->> 'pontuacao')::numeric = 75, 'resposta registrada com pontuação 75');
+  begin
+    j := public.registrar_pesquisa_sus('{6,2,4,2,4,2,4,2,4,2}');
+    perform pg_temp.verificar(false, 'resposta fora de 1..5 deveria ser recusada');
+  exception when invalid_parameter_value then
+    perform pg_temp.verificar(true, 'resposta fora de 1..5 recusada');
+  end;
+  for i in 1..3 loop j := public.registrar_pesquisa_sus('{3,3,3,3,3,3,3,3,3,3}'); end loop;
+  perform pg_temp.verificar(j ->> 'motivo' = 'limite', 'no máximo 3 respostas por dia por conexão');
+  reset role;
+end $t$;
+
 rollback;

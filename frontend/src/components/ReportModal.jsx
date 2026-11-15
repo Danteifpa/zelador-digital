@@ -6,6 +6,7 @@ import { formatarKm } from '../lib/gestao'
 import BotaoAvisos from './BotaoAvisos'
 import AvisoFoto from './AvisoFoto'
 import PrivacidadeFoto from './PrivacidadeFoto'
+import PesquisaUsabilidade from './PesquisaUsabilidade'
 
 const PASSOS = [
   { titulo: 'Tipo de problema', curto: 'Tipo', fala: 'Passo 1. Escolha o tipo de problema.' },
@@ -463,6 +464,7 @@ function PassoProtocolo({ resultado, estaOnline, categoria, copiado, onCopiar, e
           <IconeCategoria categoria={categoria.id} size={14} /> {categoria.label}
         </p>
       )}
+      {estaOnline && <PesquisaUsabilidade />}
     </div>
   )
 }
