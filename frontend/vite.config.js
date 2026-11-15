@@ -16,7 +16,18 @@ export default defineConfig({
         // Avisos push (public/push-sw.js) e envio da fila offline em segundo plano (public/sync-sw.js)
         importScripts: ['push-sw.js', 'sync-sw.js'],
         globPatterns: ['**/*.{js,css,html,ico,png,svg,json}'],
+        // Detector de rostos (~1,5 MB): não vai na instalação; baixa no primeiro uso e fica guardado.
+        globIgnores: ['**/face-api*.js', 'modelos/**'],
         runtimeCaching: [
+          {
+            urlPattern: ({ url }) => url.pathname.startsWith('/modelos/') || /\/assets\/face-api[^/]*\.js$/.test(url.pathname),
+            handler: 'CacheFirst',
+            options: {
+              cacheName: 'detector-rostos',
+              expiration: { maxEntries: 10, maxAgeSeconds: 60 * 60 * 24 * 90 },
+              cacheableResponse: { statuses: [0, 200] }
+            }
+          },
           {
             // Cache para os blocos de mapa (CartoDB Positron / Voyager / OpenStreetMap)
             urlPattern: /^https:\/\/[a-c]\.basemaps\.cartocdn\.com\/.*/i,
