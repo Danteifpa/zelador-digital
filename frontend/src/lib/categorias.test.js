@@ -27,7 +27,7 @@ describe('categorias', () => {
   })
 
   it('a lista do app é a mesma aceita pelo banco', () => {
-    const sql = readFileSync(resolve(process.cwd(), '../supabase/migrations/20261115_categorias.sql'), 'utf8')
+    const sql = readFileSync(resolve(process.cwd(), '../supabase/migrations/20261115022825_categorias.sql'), 'utf8')
     const doBanco = [...sql.match(/categoria in \(([^)]+)\)/)[1].matchAll(/'([a-z_]+)'/g)].map((m) => m[1]).sort()
     expect(doBanco).toEqual([...CATEGORIAS, CATEGORIA_OUTRO].map((cat) => cat.id).sort())
   })

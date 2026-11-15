@@ -1,6 +1,6 @@
 // Moderação comunitária: limite de registros e denúncia de fotos.
 //
-// O servidor faz o trabalho pesado (migração 20261114_moderacao.sql):
+// O servidor faz o trabalho pesado (migração 20261115015856_moderacao.sql):
 //   * recusa mais de 8 registros por hora / 20 por dia vindos da mesma conexão;
 //   * aceita uma denúncia por celular e por ocorrência e oculta a foto com 3 denúncias.
 // Aqui guardamos só o que este celular já denunciou, para não oferecer o botão de novo.

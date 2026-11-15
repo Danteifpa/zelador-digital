@@ -10,3 +10,7 @@ dist/
 # Sistema
 .DS_Store
 Thumbs.db
+
+# Testes de ponta a ponta
+frontend/test-results/
+frontend/playwright-report/
