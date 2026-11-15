@@ -4,10 +4,11 @@ import IconeCategoria from './IconeCategoria'
 import { protocoloCivico } from '../lib/protocolo'
 import { formatarKm } from '../lib/gestao'
 import BotaoAvisos from './BotaoAvisos'
+import AvisoFoto from './AvisoFoto'
 
 const PASSOS = [
   { titulo: 'Tipo de problema', curto: 'Tipo', fala: 'Passo 1. Escolha o tipo de problema.' },
-  { titulo: 'Fotografia do local', curto: 'Foto', fala: 'Passo 2. Tire uma fotografia do local.' },
+  { titulo: 'Fotografia do local', curto: 'Foto', fala: 'Passo 2. Tire uma fotografia do problema. Não fotografe pessoas nem placas de carro.' },
   { titulo: 'Localização', curto: 'Local', fala: 'Passo 3. Confirme a localização.' },
   { titulo: 'Rever e enviar', curto: 'Enviar', fala: 'Passo 4. Reveja os dados e envie.' }
 ]
@@ -207,6 +208,8 @@ export default function ReportModal({ onFechar, modo, falarTexto, estaOnline, ca
             </fieldset>
           ) : passo === 1 ? (
             <div className="space-y-3">
+              {!form.fotoPreview && !form.processandoFoto && <AvisoFoto grande={facil} />}
+
               {form.processandoFoto ? (
                 <div role="status" className="rounded-2xl border border-slate-200 bg-slate-50 p-10 text-center text-sm text-blue-600 font-bold animate-pulse">
                   Otimizando a foto e lendo o GPS...

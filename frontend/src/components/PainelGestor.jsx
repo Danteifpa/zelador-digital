@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { supabase } from '../lib/supabase'
 import useSessaoGestor from '../lib/useSessaoGestor'
 import LoginGestor from './LoginGestor'
@@ -17,6 +17,7 @@ import ModalBoletim from './gestao/ModalBoletim'
 import ModalExclusao from './gestao/ModalExclusao'
 import ModalOficio from './gestao/ModalOficio'
 import { rotuloDaCategoria } from '../lib/categorias'
+import { caminhoNoStorage, estaDenunciada } from '../lib/moderacao'
 
 export default function PainelGestor({ ocorrencias = [], onAtualizarDados }) {
   const { sessao, ehGestor, carregando: aVerificarSessao, erroVerificacao, entrar, sair } = useSessaoGestor()
@@ -36,6 +37,36 @@ export default function PainelGestor({ ocorrencias = [], onAtualizarDados }) {
   const [boletimCopiado, setBoletimCopiado] = useState(false)
   const [itemResolucao, setItemResolucao] = useState(null)
   const [fotoResolucaoPorId, setFotoResolucaoPorId] = useState({})
+
+  // Ao entrar como gestor, recarrega: a vista só mostra fotos ocultas para gestores.
+  useEffect(() => {
+    if (ehGestor) onAtualizarDados?.()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [ehGestor])
+
+  const revisarFoto = async (item, acao) => {
+    setCarregandoAcao(true)
+    setAcaoEmAndamento(`denuncia-${item.id}`)
+    try {
+      const atualizacao = { foto_oculta: false, total_denuncias: 0 }
+      if (acao === 'remover') {
+        const caminho = caminhoNoStorage(item.foto_url)
+        if (caminho) {
+          const { error: erroStorage } = await supabase.storage.from('ocorrencias').remove([caminho])
+          if (erroStorage) throw erroStorage
+        }
+        atualizacao.foto_url = null
+      }
+      const { error } = await supabase.from('ocorrencias').update(atualizacao).eq('id', item.id)
+      if (error) throw error
+      if (onAtualizarDados) await onAtualizarDados()
+    } catch (err) {
+      alert('Erro ao revisar a denúncia: ' + err.message)
+    } finally {
+      setCarregandoAcao(false)
+      setAcaoEmAndamento(null)
+    }
+  }
 
   const alterarStatusOcorrencia = async (id, novoStatus) => {
     setCarregandoAcao(true)
@@ -181,7 +212,8 @@ export default function PainelGestor({ ocorrencias = [], onAtualizarDados }) {
 
   const ocorrenciasFiltradasComGut = useMemo(() => {
     const filtradas = ocorrenciasComGut.filter((item) => {
-      const bateuStatus = filtroStatus === 'todos' || normalizarEstado(item.status) === filtroStatus
+      const bateuStatus = filtroStatus === 'todos'
+        || (filtroStatus === 'denunciados' ? estaDenunciada(item) : normalizarEstado(item.status) === filtroStatus)
       const busca = termoBusca.toLowerCase()
       const bateuTexto =
         (item.descricao || '').toLowerCase().includes(busca) ||
@@ -248,6 +280,7 @@ export default function PainelGestor({ ocorrencias = [], onAtualizarDados }) {
   }, [ocorrencias])
 
   const pendentes = useMemo(() => ocorrencias.filter((item) => !eResolvida(item)), [ocorrencias])
+  const totalDenunciados = useMemo(() => ocorrencias.filter(estaDenunciada).length, [ocorrencias])
   const pendentesSelecionadas = pendentes.filter((item) => selecionadasOficio.includes(item.id))
   const resolvidasAuditadas = ocorrencias.filter((item) => eResolvida(item) && item.foto_url && item.foto_resolucao)
   const maxCategoria = Math.max(1, ...analiseCategorias.map(([, quantidade]) => quantidade))
@@ -393,9 +426,9 @@ export default function PainelGestor({ ocorrencias = [], onAtualizarDados }) {
 
       {abaPainel === 'lista' && (
         <>
-          <FiltrosGestao filtroStatus={filtroStatus} ordenarPorGut={ordenarPorGut} setFiltroStatus={setFiltroStatus} setOrdenarPorGut={setOrdenarPorGut} setTermoBusca={setTermoBusca} termoBusca={termoBusca} />
+          <FiltrosGestao totalDenunciados={totalDenunciados} filtroStatus={filtroStatus} ordenarPorGut={ordenarPorGut} setFiltroStatus={setFiltroStatus} setOrdenarPorGut={setOrdenarPorGut} setTermoBusca={setTermoBusca} termoBusca={termoBusca} />
           {itemEdicao && <FormEdicaoOcorrencia carregandoAcao={carregandoAcao} itemEdicao={itemEdicao} salvarEdicao={salvarEdicao} setItemEdicao={setItemEdicao} />}
-          <ListaOcorrenciasGestor acaoEmAndamento={acaoEmAndamento} alterarStatusOcorrencia={alterarStatusOcorrencia} carregandoAcao={carregandoAcao} confirmarResolucao={confirmarResolucao} despachoPorId={despachoPorId} fotoResolucaoPorId={fotoResolucaoPorId} itemResolucao={itemResolucao} ocorrenciasFiltradasComGut={ocorrenciasFiltradasComGut} salvarDespacho={salvarDespacho} setDespachoPorId={setDespachoPorId} setFotoResolucaoPorId={setFotoResolucaoPorId} setItemEdicao={setItemEdicao} setItemExclusao={setItemExclusao} setItemResolucao={setItemResolucao} setTramitacaoAberta={setTramitacaoAberta} tramitacaoAberta={tramitacaoAberta} />
+          <ListaOcorrenciasGestor revisarFoto={revisarFoto} acaoEmAndamento={acaoEmAndamento} alterarStatusOcorrencia={alterarStatusOcorrencia} carregandoAcao={carregandoAcao} confirmarResolucao={confirmarResolucao} despachoPorId={despachoPorId} fotoResolucaoPorId={fotoResolucaoPorId} itemResolucao={itemResolucao} ocorrenciasFiltradasComGut={ocorrenciasFiltradasComGut} salvarDespacho={salvarDespacho} setDespachoPorId={setDespachoPorId} setFotoResolucaoPorId={setFotoResolucaoPorId} setItemEdicao={setItemEdicao} setItemExclusao={setItemExclusao} setItemResolucao={setItemResolucao} setTramitacaoAberta={setTramitacaoAberta} tramitacaoAberta={tramitacaoAberta} />
         </>
       )}
 
