@@ -4,6 +4,9 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/). 
 
 ## [Não lançado]
 
+### Alterado
+- Código reorganizado: o App.jsx caiu de ~2.450 para ~1.240 linhas, com telas em `src/telas/`, modais em `src/components/` e funções auxiliares em `src/lib/` (sem mudança de comportamento).
+
 ### Alterado (licença)
 - O projeto passa da licença MIT para a **GNU AGPL-3.0** a partir desta versão. Quem oferecer o app pela internet precisa publicar o código-fonte das mudanças. Versões anteriores continuam sob a MIT. A marca "Zelador Digital" não é licenciada.
 
