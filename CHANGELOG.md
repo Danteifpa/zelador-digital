@@ -4,6 +4,9 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/). 
 
 ## [Não lançado]
 
+### Alterado (licença)
+- O projeto passa da licença MIT para a **GNU AGPL-3.0** a partir desta versão. Quem oferecer o app pela internet precisa publicar o código-fonte das mudanças. Versões anteriores continuam sob a MIT. A marca "Zelador Digital" não é licenciada.
+
 ### Adicionado
 - Botão "Denunciar foto ou registro" no detalhe da ocorrência. Com 3 denúncias a foto fica oculta até a gestão revisar.
 - Filtro "Denunciados" no Painel, com os motivos e as ações "Manter foto" e "Remover foto".

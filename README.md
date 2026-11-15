@@ -11,7 +11,7 @@ O morador fotografa um buraco, um poste apagado, lixo acumulado ou um vazamento 
 [**Abrir o app →**](https://zeladordigital.vercel.app)
 
 [![CI](https://github.com/Danteifpa/zelador-digital/actions/workflows/ci.yml/badge.svg)](https://github.com/Danteifpa/zelador-digital/actions/workflows/ci.yml)
-[![Licença MIT](https://img.shields.io/badge/licen%C3%A7a-MIT-2563eb.svg)](LICENSE)
+[![Licença AGPL-3.0](https://img.shields.io/badge/licen%C3%A7a-AGPL--3.0-2563eb.svg)](LICENSE)
 ![PWA](https://img.shields.io/badge/PWA-offline-2563eb.svg)
 ![React 19](https://img.shields.io/badge/React-19-149eca.svg)
 ![Supabase](https://img.shields.io/badge/Supabase-Postgres%20%2B%20Auth-3ecf8e.svg)
@@ -144,6 +144,12 @@ Histórico de versões: [`CHANGELOG.md`](CHANGELOG.md).
 
 ## Licença
 
-[MIT](LICENSE) © 2026 Dante Dias Monteiro.
+[GNU AGPL-3.0](LICENSE) © 2026 Dante Dias Monteiro. Veja também [`NOTICE`](NOTICE).
+
+Você pode usar, estudar, modificar e redistribuir o código. Quem oferecer o Zelador Digital (ou uma versão modificada) a outras pessoas pela internet, por exemplo como serviço para um órgão público, precisa publicar o código-fonte completo dessa versão sob a mesma licença.
+
+As versões publicadas até a v1.1.0 e até o commit anterior a esta mudança (14/11/2026) continuam sob a licença MIT.
+
+O nome **Zelador Digital** e a identidade visual do projeto não são licenciados: não use a marca para oferecer cópias ou serviços derivados sem autorização.
 
 Projeto independente de iniciativa comunitária, sem vínculo com a Prefeitura de Ananindeua.
