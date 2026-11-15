@@ -2,6 +2,11 @@ import { useEffect, useState } from 'react'
 import { createPortal } from 'react-dom'
 import { QRCodeSVG } from 'qrcode.react'
 
+// QR Code com a identidade do app (public/qr-zelador.svg), gerado para https://zeladordigital.vercel.app.
+// Se o endereço oficial mudar, gere de novo; o QR simples (QRCodeSVG) segue como reserva para outros endereços.
+const URL_OFICIAL = 'https://zeladordigital.vercel.app'
+const QR_PERSONALIZADO = '/qr-zelador.svg'
+
 export default function ModalQRCode({ url, onClose, imprimirAoAbrir = false }) {
   const [copiado, setCopiado] = useState(false)
   const [erro, setErro] = useState('')
@@ -55,7 +60,7 @@ export default function ModalQRCode({ url, onClose, imprimirAoAbrir = false }) {
             </p>
           </div>
           <div className="mx-auto inline-block rounded-3xl bg-white p-4 shadow-inner">
-            <QRCodeSVG value={url} size={200} bgColor="#ffffff" fgColor="#0f172a" level="M" includeMargin />
+            <img src={QR_PERSONALIZADO} alt="QR Code para abrir o Zelador Digital" width="200" height="200" className="block h-[200px] w-[200px]" />
           </div>
           <p className="mt-3 truncate text-[10px] text-slate-400">{url}</p>
           <div className="mt-4 grid grid-cols-2 gap-2">
@@ -79,26 +84,35 @@ export default function ModalQRCode({ url, onClose, imprimirAoAbrir = false }) {
       </div>
 
       {createPortal(
-      <div className="cartaz-qr-impressao hidden print:block bg-white text-black">
-        <div className="m-[12mm] flex min-h-[273mm] flex-col items-center justify-between border-[3px] border-black p-[14mm] text-center">
-          <div>
-            <p className="text-[13px] font-black uppercase tracking-[0.3em]">Zelador Digital</p>
-            <h1 className="mt-12 text-[30pt] font-black uppercase leading-tight">FISCALIZE O NOSSO BAIRRO!</h1>
-            <p className="mt-8 text-[17pt] font-bold leading-snug">
-              Viu entulho irregular, esgoto a céu aberto ou poste apagado? Registre agora pelo celular.
-            </p>
+      <div className="cartaz-qr-impressao hidden print:block">
+        <div className="flex h-[297mm] w-[210mm] flex-col overflow-hidden bg-[#F6F7F2] text-[#14213D]">
+          <div className="flex flex-col gap-[4mm] bg-[#1D4ED8] px-[16mm] pb-[13mm] pt-[16mm] text-[#F6F7F2]">
+            <p className="text-[11pt] font-black uppercase tracking-[0.25em] text-[#FFE08A]">Ananindeua · zeladoria comunitária</p>
+            <h1 className="text-[52pt] font-black leading-[0.98] tracking-tight">Quem vai consertar a sua rua?</h1>
+            <p className="max-w-[150mm] text-[15pt] leading-snug text-[#E4EAF5]">A resposta começa com uma foto. Aponte a câmera aqui.</p>
           </div>
-          <div className="rounded-[10mm] border-2 border-black bg-white p-[8mm]">
-            <QRCodeSVG value={url} size={320} bgColor="#ffffff" fgColor="#000000" level="M" includeMargin title="QR Code para abrir o Zelador Digital" />
+          <div className="flex flex-1 flex-col items-center justify-center gap-[5mm]">
+            <div className="rounded-[8mm] bg-white p-[3mm] shadow-[0_0_0_2.5mm_#ffffff]">
+              {url === URL_OFICIAL ? (
+                <img src={QR_PERSONALIZADO} alt="QR Code para abrir o Zelador Digital" className="block h-[100mm] w-[100mm]" />
+              ) : (
+                <QRCodeSVG value={url} size={378} bgColor="#ffffff" fgColor="#14213D" level="M" includeMargin title="QR Code para abrir o Zelador Digital" />
+              )}
+            </div>
+            <p className="text-[13pt] font-black uppercase tracking-[0.08em] text-[#EA580C]">Escaneie com a câmera</p>
           </div>
-          <div className="max-w-[155mm] text-[14pt] font-bold leading-relaxed">
-            <p>1. Aponte a câmera do seu celular para o QR Code</p>
-            <p>2. Tire uma foto do local</p>
-            <p>3. Acompanhe a resolução com o protocolo gerado.</p>
+          <div className="grid grid-cols-3 gap-[4mm] px-[16mm] pb-[10mm]">
+            {['Aponte a câmera', 'Fotografe o problema', 'Acompanhe pelo protocolo'].map((passo, i) => (
+              <div key={passo} className="flex flex-col gap-[1.5mm] rounded-[5mm] border-2 border-[#D9DED3] bg-white px-[5mm] py-[4mm]">
+                <span className="text-[18pt] font-black text-[#1D4ED8]">{i + 1}</span>
+                <span className="text-[11.5pt] font-bold leading-tight">{passo}</span>
+              </div>
+            ))}
           </div>
-          <p className="border-t-2 border-black pt-5 text-[10pt] font-black">
-            Zelador Digital • Plataforma Cívica Independente de Ananindeua • Iniciativa Comunitária
-          </p>
+          <div className="mx-[16mm] flex items-center justify-between border-t-2 border-[#D9DED3] pb-[11mm] pt-[4.5mm]">
+            <span className="text-[13pt] font-black">Zelador Digital</span>
+            <span className="text-[10pt] text-[#3E4A61]">Grátis · sem cadastro · zeladordigital.vercel.app</span>
+          </div>
         </div>
       </div>,
       document.body
