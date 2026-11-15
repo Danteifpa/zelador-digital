@@ -9,6 +9,8 @@ export default function useSessaoGestor() {
   const [ehGestor, setEhGestor] = useState(false)
   const [carregando, setCarregando] = useState(true)
   const [erroVerificacao, setErroVerificacao] = useState(null)
+  // Verificação em duas etapas: a conta tem app autenticador e esta sessão ainda não digitou o código.
+  const [precisaCodigo, setPrecisaCodigo] = useState(false)
 
   useEffect(() => {
     let ativo = true
@@ -18,6 +20,16 @@ export default function useSessaoGestor() {
       setSessao(novaSessao)
       setErroVerificacao(null)
       if (!novaSessao) {
+        setEhGestor(false)
+        setPrecisaCodigo(false)
+        setCarregando(false)
+        return
+      }
+      const { data: nivel } = await supabase.auth.mfa.getAuthenticatorAssuranceLevel()
+      if (!ativo) return
+      const faltaCodigo = nivel?.nextLevel === 'aal2' && nivel?.currentLevel !== 'aal2'
+      setPrecisaCodigo(faltaCodigo)
+      if (faltaCodigo) {
         setEhGestor(false)
         setCarregando(false)
         return
@@ -57,9 +69,21 @@ export default function useSessaoGestor() {
     return `Não foi possível entrar: ${error.message}`
   }, [])
 
+  // Segunda etapa do login: o código de 6 dígitos do app autenticador.
+  const confirmarCodigo = useCallback(async (codigo) => {
+    const { data: fatores, error: erroFatores } = await supabase.auth.mfa.listFactors()
+    if (erroFatores) return 'Não foi possível verificar o código agora. Tente novamente.'
+    const fator = fatores?.totp?.find((f) => f.status === 'verified')
+    if (!fator) return 'Nenhum app autenticador ativo nesta conta.'
+    const { error } = await supabase.auth.mfa.challengeAndVerify({ factorId: fator.id, code: codigo.trim() })
+    if (!error) return null
+    if (error.status === 429) return 'Muitas tentativas seguidas. Aguarde alguns minutos.'
+    return 'Código incorreto ou expirado. Confira o app autenticador e tente de novo.'
+  }, [])
+
   const sair = useCallback(async () => {
     await supabase.auth.signOut()
   }, [])
 
-  return { sessao, ehGestor, carregando, erroVerificacao, entrar, sair }
+  return { sessao, ehGestor, carregando, erroVerificacao, precisaCodigo, entrar, confirmarCodigo, sair }
 }

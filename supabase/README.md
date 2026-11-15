@@ -15,6 +15,7 @@ Tudo o que roda no Supabase do Zelador Digital está versionado nesta pasta.
 | [`20261115_categorias.sql`](migrations/20261115_categorias.sql) | Lista fechada de categorias, com as novas alagamento, árvore, calçada e sinalização |
 | [`20261115_erros_app.sql`](migrations/20261115_erros_app.sql) | Registro de erros do app (`registrar_erro`, sem dados pessoais, limite por hora) visível só para gestores |
 | [`20261115_bairros_transparencia.sql`](migrations/20261115_bairros_transparencia.sql) | Tabela `bairros`, bairro automático e `resolvido_em` nas ocorrências, views públicas `transparencia_bairros` e `dados_abertos`. Carga dos limites: [`dados/carregar_bairros.sql`](dados/carregar_bairros.sql) |
+| [`20261115_mfa_gestores.sql`](migrations/20261115_mfa_gestores.sql) | `eh_gestor()` exige sessão com código (aal2) para gestores que ativaram a verificação em duas etapas |
 
 Cada arquivo roda numa transação e pode ser aplicado mais de uma vez. Para aplicar: **SQL Editor → New query → colar → Run**.
 

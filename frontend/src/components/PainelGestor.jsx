@@ -17,11 +17,13 @@ import ModalBoletim from './gestao/ModalBoletim'
 import ModalExclusao from './gestao/ModalExclusao'
 import ModalOficio from './gestao/ModalOficio'
 import ErrosDoApp from './gestao/ErrosDoApp'
+import SegurancaConta from './gestao/SegurancaConta'
+import SegundaEtapaLogin from './gestao/SegundaEtapaLogin'
 import { rotuloDaCategoria } from '../lib/categorias'
 import { caminhoNoStorage, estaDenunciada } from '../lib/moderacao'
 
 export default function PainelGestor({ ocorrencias = [], onAtualizarDados }) {
-  const { sessao, ehGestor, carregando: aVerificarSessao, erroVerificacao, entrar, sair } = useSessaoGestor()
+  const { sessao, ehGestor, carregando: aVerificarSessao, erroVerificacao, precisaCodigo, entrar, confirmarCodigo, sair } = useSessaoGestor()
   const [filtroStatus, setFiltroStatus] = useState('todos')
   const [termoBusca, setTermoBusca] = useState('')
   const [itemEdicao, setItemEdicao] = useState(null)
@@ -397,6 +399,10 @@ export default function PainelGestor({ ocorrencias = [], onAtualizarDados }) {
     return <LoginGestor onEntrar={entrar} />
   }
 
+  if (precisaCodigo) {
+    return <SegundaEtapaLogin onConfirmar={confirmarCodigo} onSair={sair} />
+  }
+
   if (!ehGestor) {
     return (
       <div role="alert" className="bg-white rounded-3xl p-6 border border-amber-200 shadow-sm max-w-sm mx-auto my-6 text-center">
@@ -448,6 +454,7 @@ export default function PainelGestor({ ocorrencias = [], onAtualizarDados }) {
           />
           {pendentes.length > 0 && <SelecaoOficio alternarSelecaoOficio={alternarSelecaoOficio} pendentes={pendentes} selecionadasOficio={selecionadasOficio} setSelecionadasOficio={setSelecionadasOficio} />}
           <IndicadoresGestao analiseCategorias={analiseCategorias} analiseTemporal={analiseTemporal} maxCategoria={maxCategoria} maxTemporal={maxTemporal} metricas={metricas} />
+          <SegurancaConta />
           <ErrosDoApp />
         </>
       )}
