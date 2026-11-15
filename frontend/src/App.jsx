@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo, useRef, Suspense } from 'react'
-import { ClipboardList, House, LayoutDashboard, Map as IconeMapa, Plus, Search, Smartphone } from 'lucide-react'
+import { Camera, ClipboardList, House, LayoutDashboard, Map as IconeMapa, MapPin, Plus, RefreshCw, Save, Search, Send, Smartphone, Volume2 } from 'lucide-react'
 import IconeCategoria from './components/IconeCategoria'
 import { supabase } from './lib/supabase'
 import lazyComRecarga from './lib/lazyComRecarga'
@@ -1872,7 +1872,7 @@ export default function App() {
             {modo === 'facil' && (
               <div className="bg-amber-100/70 border border-amber-300 rounded-2xl p-3 flex items-center justify-between text-amber-900">
                 <div className="flex items-center space-x-2">
-                  <span className="text-xl">🔊</span>
+                  <Volume2 size={20} strokeWidth={2.25} aria-hidden="true" />
                   <span className="text-xs font-bold">Modo Fácil: Botões ampliados e áudio ativo</span>
                 </div>
                 <button
@@ -1935,7 +1935,7 @@ export default function App() {
                 </div>
               ) : (
                 <label className={`border-2 border-dashed border-slate-300 hover:border-blue-500 rounded-2xl flex flex-col items-center justify-center cursor-pointer bg-slate-50 transition-all ${modo === 'facil' ? 'p-7' : 'p-5'}`}>
-                  <span className={modo === 'facil' ? 'text-3xl mb-1' : 'text-2xl mb-1'}>📸</span>
+                  <Camera size={modo === 'facil' ? 36 : 28} strokeWidth={2} className="mb-1.5 text-blue-600" aria-hidden="true" />
                   <span className={`font-bold text-slate-700 ${modo === 'facil' ? 'text-sm' : 'text-xs'}`}>Tirar foto ou selecionar</span>
                   <span className="text-[11px] text-slate-400 mt-0.5">Leitura de GPS EXIF e compressão automática</span>
                   <input
@@ -1953,7 +1953,9 @@ export default function App() {
             <div className={`rounded-2xl border border-slate-200 bg-slate-50 space-y-2 ${modo === 'facil' ? 'p-4' : 'p-3.5'}`}>
               <div className="flex items-center justify-between">
                 <div className="flex items-center space-x-2.5">
-                  <span className="text-2xl">{origemLocalizacao === 'exif' ? '📷' : '📍'}</span>
+                  <span className="w-9 h-9 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-600 flex items-center justify-center shrink-0" aria-hidden="true">
+                    {origemLocalizacao === 'exif' ? <Camera size={18} strokeWidth={2.25} /> : <MapPin size={18} strokeWidth={2.25} />}
+                  </span>
                   <div>
                     <div className="flex items-center space-x-2">
                       <p className={`font-bold text-slate-800 ${modo === 'facil' ? 'text-sm' : 'text-xs'}`}>
@@ -1986,7 +1988,7 @@ export default function App() {
                   className="px-3 py-2 text-xs font-bold bg-white border border-slate-200 text-slate-700 hover:bg-slate-100 rounded-xl transition-all shadow-2xs cursor-pointer"
                   title="Recapturar GPS atual"
                 >
-                  {capturandoGps ? 'Obtendo...' : '🔄'}
+                  {capturandoGps ? 'Obtendo...' : <RefreshCw size={16} strokeWidth={2.25} aria-label="Atualizar GPS" />}
                 </button>
               </div>
 
@@ -2048,7 +2050,10 @@ export default function App() {
                 enviando || processandoFoto ? 'bg-blue-400 cursor-not-allowed' : 'bg-blue-600 hover:bg-blue-700 active:scale-[0.99] cursor-pointer'
               }`}
             >
-              {enviando ? 'Processando... 🚀' : estaOnline ? 'Enviar Registro 🚀' : 'Salvar no Celular 💾'}
+              <span className="inline-flex items-center justify-center gap-2">
+                {enviando ? 'Processando...' : estaOnline ? 'Enviar registro' : 'Salvar no celular'}
+                {!enviando && (estaOnline ? <Send size={18} strokeWidth={2.25} aria-hidden="true" /> : <Save size={18} strokeWidth={2.25} aria-hidden="true" />)}
+              </span>
             </button>
           </form>
         )}
@@ -2081,7 +2086,7 @@ export default function App() {
                 }}
                 className="text-xs text-blue-600 font-bold hover:underline cursor-pointer"
               >
-                🔄 Atualizar
+                <span className="inline-flex items-center gap-1"><RefreshCw size={13} strokeWidth={2.5} aria-hidden="true" />Atualizar</span>
               </button>
             </div>
 
