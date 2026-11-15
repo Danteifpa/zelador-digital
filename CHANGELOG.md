@@ -8,6 +8,7 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/). 
 - O projeto passa da licença MIT para a **GNU AGPL-3.0** a partir desta versão. Quem oferecer o app pela internet precisa publicar o código-fonte das mudanças. Versões anteriores continuam sob a MIT. A marca "Zelador Digital" não é licenciada.
 
 ### Adicionado
+- Questionário de usabilidade (SUS) anônimo e opcional depois do registro, com resultado no Painel (média, avaliação, média por pergunta e sugestões).
 - Limpeza automática, toda semana, das fotos que não pertencem a nenhum registro (mais de 7 dias).
 - Backup semanal criptografado do banco no GitHub Actions (precisa de dois segredos; veja docs/BACKUP.md).
 - CI com banco descartável: a cada PR um Supabase local aplica todas as migrações do zero, roda 20 testes das regras do banco e 4 testes de ponta a ponta (Playwright) com o app de verdade.
