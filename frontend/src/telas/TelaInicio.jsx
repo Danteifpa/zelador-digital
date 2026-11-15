@@ -2,7 +2,7 @@ import CommunityAlert from '../components/CommunityAlert'
 import RegisterButton from '../components/RegisterButton'
 import StatsOverview from '../components/StatsOverview'
 import { feedbackSensorial } from '../lib/feedbackSensorial'
-import { ChevronRight, ClipboardList, Map as IconeMapa, Landmark, Search, Smartphone } from 'lucide-react'
+import { ChevronRight, CircleHelp, ClipboardList, Map as IconeMapa, Landmark, Search, Smartphone } from 'lucide-react'
 
 export default function TelaInicio({ bannerPwaIgnorado, imprimirCartazA4, instalarAplicacaoPWA, pwaInstalado, setAbaAtiva, setBannerPwaIgnorado, setErroProtocolo, setImprimirCartaz, setMostrarConsultaProtocolo, setMostrarQrCode, setMostrarReportModal, setProtocoloConsulta, setResultadoProtocolo, setSucessoEnvio, totalPendentes, totalRegistos, totalResolvidos }) {
   return (
@@ -86,6 +86,24 @@ export default function TelaInicio({ bannerPwaIgnorado, imprimirCartazA4, instal
           <ChevronRight size={18} className="text-slate-400" aria-hidden="true" />
         </button>
       </div>
+
+      <button
+        type="button"
+        onClick={() => {
+          feedbackSensorial.toqueSuave()
+          setAbaAtiva('ajuda')
+        }}
+        className="w-full flex items-center gap-3 rounded-2xl border border-blue-200 bg-blue-50 p-3 text-left hover:bg-blue-100 cursor-pointer"
+      >
+        <span className="w-9 h-9 rounded-xl bg-blue-600 text-white flex items-center justify-center shrink-0" aria-hidden="true">
+          <CircleHelp size={18} strokeWidth={2.25} />
+        </span>
+        <span className="flex-1 min-w-0">
+          <span className="block text-xs font-black text-blue-900">Como usar o app</span>
+          <span className="block text-[10px] text-blue-700">Tutorial rápido em 9 passos, com leitura em voz alta</span>
+        </span>
+        <ChevronRight size={18} className="text-blue-400" aria-hidden="true" />
+      </button>
 
       {/* Convite para instalar: discreto, depois das ações principais. */}
       {!pwaInstalado && !bannerPwaIgnorado && (

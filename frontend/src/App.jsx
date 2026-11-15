@@ -40,6 +40,7 @@ const PainelGestor = lazyComRecarga(() => import('./components/PainelGestor'))
 const MapaOcorrencias = lazyComRecarga(() => import('./components/MapaOcorrencias'))
 const ModalQRCode = lazyComRecarga(() => import('./components/ModalQRCode'))
 const Transparencia = lazyComRecarga(() => import('./components/Transparencia'))
+const ComoUsar = lazyComRecarga(() => import('./components/ComoUsar'))
 
 const TAMANHO_PAGINA_LISTA = 20
 
@@ -53,7 +54,7 @@ function CarregandoSecao({ texto = 'Carregando...' }) {
 
 export default function App() {
   const [modo, setModo] = useState(() => (localStorage.getItem('zelador_modo_interface') === 'facil' ? 'facil' : 'normal'))
-  const [abaAtiva, setAbaAtiva] = useState(() => (['mapa', 'registos', 'gestao', 'transparencia'].includes(abaDoEndereco()) ? abaDoEndereco() : 'inicio'))
+  const [abaAtiva, setAbaAtiva] = useState(() => (['mapa', 'registos', 'gestao', 'transparencia', 'ajuda'].includes(abaDoEndereco()) ? abaDoEndereco() : 'inicio'))
   const [mostrarOnboarding, setMostrarOnboarding] = useState(() => !localStorage.getItem('zelador_onboarding_concluido'))
   const [etapaOnboarding, setEtapaOnboarding] = useState(0)
 
@@ -1101,11 +1102,11 @@ export default function App() {
 
       {/* MODAL DE ONBOARDING */}
       {mostrarOnboarding && (
-        <Onboarding concluirOnboarding={concluirOnboarding} etapaOnboarding={etapaOnboarding} setEtapaOnboarding={setEtapaOnboarding} />
+        <Onboarding concluirOnboarding={concluirOnboarding} etapaOnboarding={etapaOnboarding} setEtapaOnboarding={setEtapaOnboarding} abrirComoUsar={() => { concluirOnboarding(); setAbaAtiva('ajuda') }} />
       )}
 
       {modalSobreAberto && (
-        <ModalSobre setModalSobreAberto={setModalSobreAberto} />
+        <ModalSobre setModalSobreAberto={setModalSobreAberto} abrirComoUsar={() => { setModalSobreAberto(false); setAbaAtiva('ajuda') }} />
       )}
 
       {/* Conteúdo Central */}
@@ -1126,6 +1127,33 @@ export default function App() {
         )}
 
         {/* 3. MAPA */}
+        {abaAtiva === 'ajuda' && (
+          <ErrorBoundary nome="Como usar" chaveReset={abaAtiva}>
+            <Suspense fallback={<CarregandoSecao texto="Carregando o tutorial..." />}>
+              <ComoUsar
+                modoFacil={modo === 'facil'}
+                falarTexto={falarTexto}
+                onVoltar={() => setAbaAtiva('inicio')}
+                onIr={(destino) => {
+                  if (destino === 'registrar') {
+                    setAbaAtiva('inicio')
+                    setSucessoEnvio(null)
+                    setMostrarReportModal(true)
+                  } else if (destino === 'consultar') {
+                    setAbaAtiva('inicio')
+                    setErroProtocolo('')
+                    setResultadoProtocolo(null)
+                    setProtocoloConsulta('')
+                    setMostrarConsultaProtocolo(true)
+                  } else {
+                    setAbaAtiva(destino)
+                  }
+                }}
+              />
+            </Suspense>
+          </ErrorBoundary>
+        )}
+
         {abaAtiva === 'transparencia' && (
           <ErrorBoundary nome="Transparência" chaveReset={abaAtiva}>
             <Suspense fallback={<CarregandoSecao texto="Carregando a transparência..." />}>
