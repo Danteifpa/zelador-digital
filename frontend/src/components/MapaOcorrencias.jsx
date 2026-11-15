@@ -2,7 +2,10 @@ import { useState, useEffect, useMemo } from 'react'
 import { MapContainer, TileLayer, Marker, Popup, Circle, useMap } from 'react-leaflet'
 import L from 'leaflet'
 import 'leaflet/dist/leaflet.css'
+import { Flame, LoaderCircle, LocateFixed, MapPin } from 'lucide-react'
 import { rotuloDaCategoria } from '../lib/categorias'
+import { SVG_MARCADOR } from '../lib/iconesSvg'
+import IconeCategoria from './IconeCategoria'
 
 // Centro territorial de Ananindeua
 const CENTRO_COMUNITARIO = {
@@ -13,7 +16,7 @@ const CENTRO_COMUNITARIO = {
 }
 
 // Criação segura de ícones
-const criarIcone = (emoji, bgCor) => {
+const criarIcone = (svg, bgCor) => {
   return L.divIcon({
     html: `
       <div style="
@@ -24,11 +27,10 @@ const criarIcone = (emoji, bgCor) => {
         display: flex;
         align-items: center;
         justify-content: center;
-        font-size: 16px;
         box-shadow: 0 4px 8px rgba(0,0,0,0.25);
         border: 2px solid white;
       ">
-        ${emoji}
+        ${svg}
       </div>
     `,
     className: 'custom-pin',
@@ -39,11 +41,11 @@ const criarIcone = (emoji, bgCor) => {
 }
 
 const ICONES = {
-  lixo: criarIcone('🗑️', '#f59e0b'),
-  iluminacao: criarIcone('💡', '#6366f1'),
-  buraco: criarIcone('🕳️', '#ea580c'),
-  esgoto: criarIcone('💧', '#0284c7'),
-  padrao: criarIcone('📍', '#2563eb')
+  lixo: criarIcone(SVG_MARCADOR.lixo, '#d97706'),
+  iluminacao: criarIcone(SVG_MARCADOR.iluminacao, '#4f46e5'),
+  buraco: criarIcone(SVG_MARCADOR.buraco, '#ea580c'),
+  esgoto: criarIcone(SVG_MARCADOR.esgoto, '#0284c7'),
+  padrao: criarIcone(SVG_MARCADOR.padrao, '#2563eb')
 }
 
 function AjustarVisualizacao({ centro, zoom }) {
@@ -114,7 +116,7 @@ export default function MapaOcorrencias({ ocorrencias = [] }) {
                 modoVisualizacao === 'pontos' ? 'bg-white text-blue-700 shadow-sm' : 'text-slate-600'
               }`}
             >
-              📍 Pontos
+              <span className="inline-flex items-center gap-1.5"><MapPin size={15} strokeWidth={2.4} aria-hidden="true" />Pontos</span>
             </button>
             <button
               type="button"
@@ -123,7 +125,7 @@ export default function MapaOcorrencias({ ocorrencias = [] }) {
                 modoVisualizacao === 'calor' ? 'bg-white text-amber-700 shadow-sm' : 'text-slate-600'
               }`}
             >
-              🔥 Calor
+              <span className="inline-flex items-center gap-1.5"><Flame size={15} strokeWidth={2.4} aria-hidden="true" />Calor</span>
             </button>
           </div>
         </div>
@@ -142,10 +144,10 @@ export default function MapaOcorrencias({ ocorrencias = [] }) {
             type="button"
             onClick={() => setFiltroTipo('lixo')}
             className={`min-h-10 px-3 rounded-xl text-[11px] font-bold shrink-0 cursor-pointer ${
-              filtroTipo === 'lixo' ? 'bg-amber-500 text-white' : 'bg-slate-100 text-slate-600'
+              filtroTipo === 'lixo' ? 'bg-amber-600 text-white' : 'bg-slate-100 text-slate-600'
             }`}
           >
-            🗑️ Lixo
+            <span className="inline-flex items-center gap-1.5"><IconeCategoria categoria="lixo" size={15} colorido={filtroTipo !== 'lixo'} />Lixo</span>
           </button>
           <button
             type="button"
@@ -154,7 +156,7 @@ export default function MapaOcorrencias({ ocorrencias = [] }) {
               filtroTipo === 'iluminacao' ? 'bg-indigo-600 text-white' : 'bg-slate-100 text-slate-600'
             }`}
           >
-            💡 Postes
+            <span className="inline-flex items-center gap-1.5"><IconeCategoria categoria="iluminacao" size={15} colorido={filtroTipo !== 'iluminacao'} />Postes</span>
           </button>
           <button
             type="button"
@@ -163,7 +165,7 @@ export default function MapaOcorrencias({ ocorrencias = [] }) {
               filtroTipo === 'buraco' ? 'bg-orange-600 text-white' : 'bg-slate-100 text-slate-600'
             }`}
           >
-            🕳️ Buracos
+            <span className="inline-flex items-center gap-1.5"><IconeCategoria categoria="buraco" size={15} colorido={filtroTipo !== 'buraco'} />Buracos</span>
           </button>
           <button
             type="button"
@@ -172,7 +174,7 @@ export default function MapaOcorrencias({ ocorrencias = [] }) {
               filtroTipo === 'esgoto' ? 'bg-sky-600 text-white' : 'bg-slate-100 text-slate-600'
             }`}
           >
-            💧 Esgoto
+            <span className="inline-flex items-center gap-1.5"><IconeCategoria categoria="esgoto" size={15} colorido={filtroTipo !== 'esgoto'} />Esgoto</span>
           </button>
         </div>
       </div>
@@ -207,7 +209,7 @@ export default function MapaOcorrencias({ ocorrencias = [] }) {
           />
 
           {posicaoGps && (
-            <Marker position={posicaoGps} icon={criarIcone('📍', '#10b981')}>
+            <Marker position={posicaoGps} icon={criarIcone(SVG_MARCADOR.gps, '#10b981')}>
               <Popup>
                 <div className="text-center font-sans p-1 text-xs font-bold text-emerald-800">
                   Localização Atual
@@ -275,7 +277,7 @@ export default function MapaOcorrencias({ ocorrencias = [] }) {
           title="Recentralizar na minha posição"
           aria-label="Recentralizar na minha posição"
         >
-          {obtendoGps ? '⏳' : '🎯'}
+          {obtendoGps ? <LoaderCircle size={22} className="animate-spin" aria-hidden="true" /> : <LocateFixed size={22} strokeWidth={2.25} aria-hidden="true" />}
         </button>
 
       </div>

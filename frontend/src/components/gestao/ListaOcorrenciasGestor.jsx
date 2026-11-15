@@ -2,7 +2,8 @@ import { useState } from 'react'
 import { corCriticidade, eResolvida, etapaStatus, formatarData, protocoloCivico, rotuloCriticidade } from '../../lib/gestao'
 import { ESTADOS, normalizarEstado, rotuloDoEstado } from '../../lib/status'
 import Spinner from './Spinner'
-import { iconeDaCategoria, rotuloDaCategoria } from '../../lib/categorias'
+import { rotuloDaCategoria } from '../../lib/categorias'
+import IconeCategoria from '../IconeCategoria'
 import { textoConfirmacoes } from '../../lib/apoios'
 
 // O que o gestor pode fazer a partir de cada status (o status atual não vira botão).
@@ -54,9 +55,7 @@ export default function ListaOcorrenciasGestor({ acaoEmAndamento, alterarStatusO
               {item.foto_url ? (
                 <img src={item.foto_url} alt="" loading="lazy" className="w-14 h-14 rounded-xl object-cover border border-slate-100 shrink-0" />
               ) : (
-                <span className="w-14 h-14 rounded-xl bg-slate-100 flex items-center justify-center text-2xl shrink-0" aria-hidden="true">
-                  {iconeDaCategoria(item.categoria)}
-                </span>
+                <IconeCategoria categoria={item.categoria} size={26} selo className="w-14 h-14 shrink-0" />
               )}
               <span className="min-w-0 flex-1">
                 <span className="flex items-center justify-between gap-2">

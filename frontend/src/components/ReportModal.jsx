@@ -1,5 +1,6 @@
 import { useEffect, useId, useRef, useState } from 'react'
 import { Camera, Check, ChevronLeft, ChevronRight, Copy, ImagePlus, LocateFixed, Mic, X } from 'lucide-react'
+import IconeCategoria from './IconeCategoria'
 import { protocoloCivico } from '../lib/protocolo'
 import { formatarKm } from '../lib/gestao'
 import BotaoAvisos from './BotaoAvisos'
@@ -197,7 +198,7 @@ export default function ReportModal({ onFechar, modo, falarTexto, estaOnline, ca
                         ativo ? `${cat.activeBg} ${cat.border} shadow-sm` : 'bg-slate-50 border-slate-200 text-slate-700 hover:bg-slate-100'
                       }`}
                     >
-                      <span className={facil ? 'text-4xl mb-1' : 'text-3xl mb-1'} aria-hidden="true">{cat.icon}</span>
+                      <IconeCategoria categoria={cat.id} size={facil ? 40 : 32} colorido={!ativo} className="mb-1.5" />
                       <span className={`font-bold ${facil ? 'text-base' : 'text-sm'}`}>{cat.label}</span>
                     </button>
                   )
@@ -316,7 +317,9 @@ export default function ReportModal({ onFechar, modo, falarTexto, estaOnline, ca
             <div className="space-y-3">
               <dl className="rounded-2xl border border-slate-200 divide-y divide-slate-100">
                 <LinhaResumo rotulo="Tipo" onAlterar={() => setPasso(0)}>
-                  {categoriaAtual ? `${categoriaAtual.icon} ${categoriaAtual.label}` : form.categoria}
+                  {categoriaAtual ? (
+                    <span className="inline-flex items-center gap-2"><IconeCategoria categoria={categoriaAtual.id} size={18} />{categoriaAtual.label}</span>
+                  ) : form.categoria}
                 </LinhaResumo>
                 <LinhaResumo rotulo="Foto" onAlterar={() => setPasso(1)}>
                   {form.fotoPreview ? (
@@ -448,8 +451,8 @@ function PassoProtocolo({ resultado, estaOnline, categoria, copiado, onCopiar, e
       </p>
       <BotaoAvisos estado={estadoAvisos} onAtivar={onAtivarAvisos} />
       {categoria && (
-        <p className="text-xs font-bold text-slate-500">
-          {categoria.icon} {categoria.label}
+        <p className="inline-flex items-center gap-1.5 text-xs font-bold text-slate-500">
+          <IconeCategoria categoria={categoria.id} size={14} /> {categoria.label}
         </p>
       )}
     </div>
