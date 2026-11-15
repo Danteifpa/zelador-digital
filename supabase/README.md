@@ -6,16 +6,16 @@ Tudo o que roda no Supabase do Zelador Digital está versionado nesta pasta.
 
 | Arquivo | O que faz |
 | --- | --- |
-| [`20261110_gestores_e_rls.sql`](migrations/20261110_gestores_e_rls.sql) | Tabela `gestores`, função `eh_gestor()`, regras de acesso (RLS) em `ocorrencias`, vista só de leitura e consulta de protocolo |
-| [`20261111_estados_unificados.sql`](migrations/20261111_estados_unificados.sql) | Estados `pendente` / `em_analise` / `resolvido` com restrição `CHECK` |
-| [`20261111_notificacoes_push.sql`](migrations/20261111_notificacoes_push.sql) | Tabela `inscricoes_push` e gatilho que chama a função de avisos |
-| [`20261111_textos_pt_br.sql`](migrations/20261111_textos_pt_br.sql) | Troca a descrição padrão antiga ("registada") por "registrada" |
-| [`20261111_apoios.sql`](migrations/20261111_apoios.sql) | "Também vi este problema": tabela `apoios`, função `apoiar_ocorrencia` (1 por aparelho, limite por hora) e remove `incrementar_apoio` |
-| [`20261114_moderacao.sql`](migrations/20261114_moderacao.sql) | Moderação: limite de 8 registros/hora e 20/dia por conexão (gestores isentos), denúncia de fotos (`denunciar_ocorrencia`, foto oculta com 3 denúncias) e gestores podem apagar fotos do Storage |
-| [`20261115_categorias.sql`](migrations/20261115_categorias.sql) | Lista fechada de categorias, com as novas alagamento, árvore, calçada e sinalização |
-| [`20261115_erros_app.sql`](migrations/20261115_erros_app.sql) | Registro de erros do app (`registrar_erro`, sem dados pessoais, limite por hora) visível só para gestores |
-| [`20261115_bairros_transparencia.sql`](migrations/20261115_bairros_transparencia.sql) | Tabela `bairros`, bairro automático e `resolvido_em` nas ocorrências, views públicas `transparencia_bairros` e `dados_abertos`. Carga dos limites: [`dados/carregar_bairros.sql`](dados/carregar_bairros.sql) |
-| [`20261115_mfa_gestores.sql`](migrations/20261115_mfa_gestores.sql) | `eh_gestor()` exige sessão com código (aal2) para gestores que ativaram a verificação em duas etapas |
+| [`20261110233504_gestores_e_rls.sql`](migrations/20261110233504_gestores_e_rls.sql) | Tabela `gestores`, função `eh_gestor()`, regras de acesso (RLS) em `ocorrencias`, vista só de leitura e consulta de protocolo |
+| [`20261111002456_estados_unificados.sql`](migrations/20261111002456_estados_unificados.sql) | Estados `pendente` / `em_analise` / `resolvido` com restrição `CHECK` |
+| [`20261111004515_notificacoes_push.sql`](migrations/20261111004515_notificacoes_push.sql) | Tabela `inscricoes_push` e gatilho que chama a função de avisos |
+| [`20261111123327_textos_pt_br.sql`](migrations/20261111123327_textos_pt_br.sql) | Troca a descrição padrão antiga ("registada") por "registrada" |
+| [`20261111124716_apoios.sql`](migrations/20261111124716_apoios.sql) | "Também vi este problema": tabela `apoios`, função `apoiar_ocorrencia` (1 por aparelho, limite por hora) e remove `incrementar_apoio` |
+| [`20261115015856_moderacao.sql`](migrations/20261115015856_moderacao.sql) | Moderação: limite de 8 registros/hora e 20/dia por conexão (gestores isentos), denúncia de fotos (`denunciar_ocorrencia`, foto oculta com 3 denúncias) e gestores podem apagar fotos do Storage |
+| [`20261115022825_categorias.sql`](migrations/20261115022825_categorias.sql) | Lista fechada de categorias, com as novas alagamento, árvore, calçada e sinalização |
+| [`20261115023735_erros_app.sql`](migrations/20261115023735_erros_app.sql) | Registro de erros do app (`registrar_erro`, sem dados pessoais, limite por hora) visível só para gestores |
+| [`20261115024033_bairros_transparencia.sql`](migrations/20261115024033_bairros_transparencia.sql) | Tabela `bairros`, bairro automático e `resolvido_em` nas ocorrências, views públicas `transparencia_bairros` e `dados_abertos`. Carga dos limites: [`dados/carregar_bairros.sql`](dados/carregar_bairros.sql) |
+| [`20261115024747_mfa_gestores.sql`](migrations/20261115024747_mfa_gestores.sql) | `eh_gestor()` exige sessão com código (aal2) para gestores que ativaram a verificação em duas etapas |
 
 Cada arquivo roda numa transação e pode ser aplicado mais de uma vez. Para aplicar: **SQL Editor → New query → colar → Run**.
 
