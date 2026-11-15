@@ -1,3 +1,5 @@
+import { MapPin } from 'lucide-react'
+
 /**
  * Cartão "Visão Geral" com os 3 indicadores: Total, Resolvidos e Pendentes.
  */
@@ -15,8 +17,8 @@ export default function StatsOverview({ total, resolvidos, pendentes }) {
           <span className="text-[11px] uppercase tracking-wider text-sky-100 font-bold">Monitoramento Cívico</span>
           <h1 className="text-xl font-black mt-0.5">Visão Geral</h1>
         </div>
-        <div className="w-9 h-9 rounded-2xl bg-white/20 backdrop-blur-md flex items-center justify-center text-lg shadow-inner">
-          📍
+        <div className="w-9 h-9 rounded-2xl bg-white/20 backdrop-blur-md flex items-center justify-center shadow-inner" aria-hidden="true">
+          <MapPin size={20} strokeWidth={2.25} />
         </div>
       </div>
 

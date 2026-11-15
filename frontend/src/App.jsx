@@ -1,5 +1,6 @@
 import { useState, useEffect, useMemo, useRef, Suspense } from 'react'
-import { Search } from 'lucide-react'
+import { ClipboardList, House, LayoutDashboard, Map as IconeMapa, Plus, Search, Smartphone } from 'lucide-react'
+import IconeCategoria from './components/IconeCategoria'
 import { supabase } from './lib/supabase'
 import lazyComRecarga from './lib/lazyComRecarga'
 import { ativarAvisosDoProtocolo, concluirAvisosPendentes, concluirAvisosForaDaFila, avisosAtivosPara, MENSAGENS_AVISOS } from './lib/push'
@@ -20,7 +21,7 @@ import { lerFila, adicionarAFila, atualizarItemNaFila, removerDaFila, FilaCheiaE
 import { lerCache, gravarCache, pedirArmazenamentoPersistente } from './lib/armazenamento'
 import { gerarIdOcorrencia, ehUuid, protocoloCivico, caminhoDaFoto } from './lib/protocolo'
 import { estaResolvido, etapaDoEstado, rotuloDoEstado, classeEtiquetaDoEstado, VALORES_EM_ABERTO } from './lib/status'
-import { CATEGORIAS, rotuloDaCategoria, iconeDaCategoria } from './lib/categorias'
+import { CATEGORIAS, rotuloDaCategoria } from './lib/categorias'
 import { formatarKm } from './lib/gestao'
 
 // Módulos pesados (Leaflet, Painel de Gestão, gerador de QR Code) só são descarregados quando
@@ -1646,7 +1647,7 @@ export default function App() {
             <div className="bg-white w-full max-w-md rounded-t-3xl sm:rounded-3xl p-6 border border-slate-200 shadow-xl max-h-[90vh] overflow-y-auto space-y-5">
               <div className="flex items-center justify-between border-b border-slate-100 pb-3">
                 <div className="flex items-center space-x-2 min-w-0">
-                  <span className="text-xl" aria-hidden="true">{iconeDaCategoria(ocorrenciaSelecionada.categoria)}</span>
+                  <IconeCategoria categoria={ocorrenciaSelecionada.categoria} size={22} selo className="w-10 h-10 shrink-0" />
                   <div className="min-w-0">
                     <h3 className="font-black text-slate-800 text-sm">
                       {rotuloDaCategoria(ocorrenciaSelecionada.categoria)}
@@ -1779,8 +1780,8 @@ export default function App() {
                   }}
                   className="w-full bg-white hover:bg-slate-50 border border-slate-200/90 rounded-2xl p-2.5 shadow-2xs flex flex-col items-start transition-all cursor-pointer text-left"
                 >
-                  <div className="w-6 h-6 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center text-sm mb-2 border border-emerald-100">
-                    📋
+                  <div className="w-8 h-8 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center mb-2 border border-emerald-100">
+                    <ClipboardList size={17} strokeWidth={2.25} aria-hidden="true" />
                   </div>
                   <span className="text-xs font-black text-slate-800">Registros</span>
                   <span className="text-[10px] text-slate-400 mt-0.5">Histórico</span>
@@ -1793,8 +1794,8 @@ export default function App() {
                   }}
                   className="w-full bg-white hover:bg-slate-50 border border-slate-200/90 rounded-2xl p-2.5 shadow-2xs flex flex-col items-start transition-all cursor-pointer text-left"
                 >
-                  <div className="w-6 h-6 rounded-xl bg-sky-50 text-sky-600 flex items-center justify-center text-sm mb-2 border border-sky-100">
-                    🗺️
+                  <div className="w-8 h-8 rounded-xl bg-sky-50 text-sky-600 flex items-center justify-center mb-2 border border-sky-100">
+                    <IconeMapa size={17} strokeWidth={2.25} aria-hidden="true" />
                   </div>
                   <span className="text-xs font-black text-slate-800">Ver Mapa</span>
                   <span className="text-[10px] text-slate-400 mt-0.5">Pontos e calor</span>
@@ -1811,8 +1812,8 @@ export default function App() {
                   }}
                   className="w-full bg-white hover:bg-slate-50 border border-slate-200/90 rounded-2xl p-2.5 shadow-2xs flex flex-col items-start transition-all cursor-pointer text-left"
                 >
-                  <div className="w-6 h-6 rounded-xl bg-indigo-50 text-indigo-600 flex items-center justify-center mb-2 border border-indigo-100">
-                    <Search size={14} strokeWidth={2.25} />
+                  <div className="w-8 h-8 rounded-xl bg-indigo-50 text-indigo-600 flex items-center justify-center mb-2 border border-indigo-100">
+                    <Search size={17} strokeWidth={2.25} aria-hidden="true" />
                   </div>
                   <span className="text-xs font-black text-slate-800">Consultar</span>
                   <span className="text-[10px] text-slate-400 mt-0.5">Protocolo</span>
@@ -1823,8 +1824,8 @@ export default function App() {
             {/* Convite para instalar: discreto, depois das ações principais. */}
             {!pwaInstalado && !bannerPwaIgnorado && (
               <div className="flex items-center gap-3 rounded-2xl border border-slate-200 bg-white p-3 shadow-2xs">
-                <span className="w-9 h-9 rounded-xl bg-blue-50 border border-blue-100 flex items-center justify-center text-lg shrink-0" aria-hidden="true">
-                  📲
+                <span className="w-9 h-9 rounded-xl bg-blue-50 border border-blue-100 text-blue-600 flex items-center justify-center shrink-0" aria-hidden="true">
+                  <Smartphone size={18} strokeWidth={2.25} />
                 </span>
                 <p className="flex-1 text-xs font-bold text-slate-700 leading-snug">Instale o app na tela inicial</p>
                 <button
@@ -1904,7 +1905,7 @@ export default function App() {
                           : `bg-slate-50 border-slate-200 text-slate-700 hover:bg-slate-100`
                       }`}
                     >
-                      <span className={modo === 'facil' ? 'text-3xl mb-1' : 'text-2xl mb-1'}>{cat.icon}</span>
+                      <IconeCategoria categoria={cat.id} size={modo === 'facil' ? 36 : 28} colorido={!ativo} className="mb-1.5" />
                       <span className={`font-bold ${modo === 'facil' ? 'text-sm' : 'text-xs'}`}>{cat.label}</span>
                     </button>
                   )
@@ -2175,7 +2176,7 @@ export default function App() {
                       : 'bg-slate-100 text-slate-500 hover:bg-slate-200'
                   }`}
                 >
-                  <span>{cat.icon}</span>
+                  <IconeCategoria categoria={cat.id} size={14} colorido={filtroCategoria !== cat.id} />
                   <span>{cat.label}</span>
                 </button>
               ))}
@@ -2278,7 +2279,7 @@ export default function App() {
               abaAtiva === 'inicio' ? 'text-blue-600' : 'text-slate-400 hover:text-slate-700'
             }`}
           >
-            <span className="text-lg">🏠</span>
+            <span aria-hidden="true"><House size={22} strokeWidth={2.1} /></span>
             <span className="text-[9px] font-bold">Início</span>
           </button>
 
@@ -2292,7 +2293,7 @@ export default function App() {
               abaAtiva === 'mapa' ? 'text-blue-600' : 'text-slate-400 hover:text-slate-700'
             }`}
           >
-            <span className="text-lg">🗺️</span>
+            <span aria-hidden="true"><IconeMapa size={22} strokeWidth={2.1} /></span>
             <span className="text-[9px] font-bold">Mapa</span>
           </button>
 
@@ -2306,7 +2307,7 @@ export default function App() {
             title="Registrar ocorrência"
             aria-label="Registrar ocorrência"
           >
-            ➕
+            <Plus size={26} strokeWidth={2.6} aria-hidden="true" />
           </button>
 
           <button
@@ -2319,7 +2320,7 @@ export default function App() {
               abaAtiva === 'registos' ? 'text-blue-600' : 'text-slate-400 hover:text-slate-700'
             }`}
           >
-            <span className="text-lg">📋</span>
+            <span aria-hidden="true"><ClipboardList size={22} strokeWidth={2.1} /></span>
             <span className="text-[9px] font-bold">Registros</span>
           </button>
 
@@ -2333,7 +2334,7 @@ export default function App() {
               abaAtiva === 'gestao' ? 'text-blue-600' : 'text-slate-400 hover:text-slate-700'
             }`}
           >
-            <span className="text-lg">⚙️</span>
+            <span aria-hidden="true"><LayoutDashboard size={22} strokeWidth={2.1} /></span>
             <span className="text-[9px] font-bold">Gestão</span>
           </button>
         </div>

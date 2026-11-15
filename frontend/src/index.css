@@ -41,6 +41,7 @@ html.modo-facil .border-slate-200\/90 { border-color: #94a3b8; }
 /* Barra de baixo mais alta, com ícones e nomes maiores. */
 html.modo-facil .barra-navegacao > div { height: 4.25rem; }
 html.modo-facil .barra-navegacao button > span:first-child { font-size: 1.5rem; line-height: 1; }
+html.modo-facil .barra-navegacao button svg { width: 1.75rem; height: 1.75rem; }
 html.modo-facil .barra-navegacao button > span:last-child { font-size: 0.8125rem; }
 
 #root {
