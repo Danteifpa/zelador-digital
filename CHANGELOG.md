@@ -4,6 +4,9 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/). 
 
 ## [Não lançado]
 
+### Corrigido
+- O cartaz A4 agora sai com o QR Code na impressão, pelos dois botões (tela inicial e janela do QR Code), e sempre aponta para o endereço oficial.
+
 ### Alterado
 - Painel de Gestão reorganizado: abas Chamados, Mapa e Relatórios; lista logo abaixo dos números (que filtram ao tocar); um chamado por linha, que abre os detalhes; status atual sem botão e próximos passos claros; "Excluir chamado" separado, com confirmação que mostra o protocolo ([#32](https://github.com/Danteifpa/zelador-digital/pull/32)).
 - Tela inicial: o convite "Instalar aplicativo" saiu do topo e virou uma linha discreta depois das ações principais.

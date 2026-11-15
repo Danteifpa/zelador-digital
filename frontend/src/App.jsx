@@ -363,10 +363,12 @@ export default function App() {
   const [mostrarReportModal, setMostrarReportModal] = useState(() => abaDoEndereco() === 'reportar')
   const [erroGps, setErroGps] = useState(null)
 
+  // Abre o cartaz e pede a impressão só depois que ele carregou (ModalQRCode, imprimirAoAbrir).
+  const [imprimirCartaz, setImprimirCartaz] = useState(false)
   const imprimirCartazA4 = () => {
     feedbackSensorial.toqueSuave()
+    setImprimirCartaz(true)
     setMostrarQrCode(true)
-    window.setTimeout(() => window.print(), 100)
   }
 
   useEffect(() => {
@@ -1152,7 +1154,9 @@ export default function App() {
   const totalResolvidos = registos.filter((r) => estaResolvido(r.status)).length
   const totalPendentes = registos.length - totalResolvidos
 
-  const urlApp = typeof window !== 'undefined' ? window.location.origin : 'https://zeladordigital.vercel.app'
+  // Endereço oficial no QR Code e no cartaz, mesmo abrindo por uma prévia ou pelo endereço antigo:
+  // um cartaz impresso não pode levar a um endereço que muda.
+  const urlApp = 'https://zeladordigital.vercel.app'
   return (
     <div className={`min-h-dvh flex flex-col justify-between font-sans pb-[calc(5rem+env(safe-area-inset-bottom))] ${modo === 'facil' ? 'bg-amber-50/30 text-slate-900' : 'bg-slate-100/70 text-slate-800'}`}>
       <Header
@@ -1201,7 +1205,14 @@ export default function App() {
 
       {mostrarQrCode && (
         <Suspense fallback={null}>
-          <ModalQRCode url={urlApp} onClose={() => setMostrarQrCode(false)} />
+          <ModalQRCode
+            url={urlApp}
+            imprimirAoAbrir={imprimirCartaz}
+            onClose={() => {
+              setMostrarQrCode(false)
+              setImprimirCartaz(false)
+            }}
+          />
         </Suspense>
       )}
 
@@ -1852,6 +1863,7 @@ export default function App() {
             <CommunityAlert
               onAbrirQrCode={() => {
                 feedbackSensorial.toqueSuave()
+                setImprimirCartaz(false)
                 setMostrarQrCode(true)
               }}
               onImprimirCartaz={imprimirCartazA4}

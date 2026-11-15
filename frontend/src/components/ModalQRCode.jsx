@@ -1,9 +1,18 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
+import { createPortal } from 'react-dom'
 import { QRCodeSVG } from 'qrcode.react'
 
-export default function ModalQRCode({ url, onClose }) {
+export default function ModalQRCode({ url, onClose, imprimirAoAbrir = false }) {
   const [copiado, setCopiado] = useState(false)
   const [erro, setErro] = useState('')
+
+  // "Imprimir Cartaz A4" na tela inicial: só abre a impressão depois que o cartaz
+  // (com o QR Code) já está na página. Antes, a impressão abria antes de o módulo carregar.
+  useEffect(() => {
+    if (!imprimirAoAbrir) return
+    const quadro = window.requestAnimationFrame(() => window.setTimeout(() => window.print(), 50))
+    return () => window.cancelAnimationFrame(quadro)
+  }, [imprimirAoAbrir])
 
   const copiarLink = async () => {
     try {
@@ -18,20 +27,14 @@ export default function ModalQRCode({ url, onClose }) {
 
   return (
     <>
+      {/* Na impressão só o cartaz aparece. Ele fica direto no <body> (portal), então esconder
+          os outros filhos do body não esconde o cartaz junto, como acontecia antes. */}
       <style>{`@media print {
-        body * { display: none !important; }
-        body { margin: 0 !important; background: #fff !important; }
-        .cartaz-qr-impressao, .cartaz-qr-impressao * {
-          display: block !important;
-          visibility: visible !important;
-        }
-        .cartaz-qr-impressao {
-          position: absolute !important;
-          inset: 0 !important;
-          width: 210mm !important;
-          min-height: 297mm !important;
-          margin: 0 !important;
-        }
+        @page { size: A4; margin: 0; }
+        html, body { margin: 0 !important; background: #fff !important; }
+        body > *:not(.cartaz-qr-impressao) { display: none !important; }
+        .cartaz-qr-impressao { display: block !important; width: 210mm; }
+        .cartaz-qr-impressao * { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
       }`}</style>
 
       <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/80 p-4 backdrop-blur-sm" role="dialog" aria-modal="true" aria-labelledby="titulo-modal-qr">
@@ -75,6 +78,7 @@ export default function ModalQRCode({ url, onClose }) {
         </div>
       </div>
 
+      {createPortal(
       <div className="cartaz-qr-impressao hidden print:block bg-white text-black">
         <div className="m-[12mm] flex min-h-[273mm] flex-col items-center justify-between border-[3px] border-black p-[14mm] text-center">
           <div>
@@ -85,7 +89,7 @@ export default function ModalQRCode({ url, onClose }) {
             </p>
           </div>
           <div className="rounded-[10mm] border-2 border-black bg-white p-[8mm]">
-            <QRCodeSVG value={url} size={320} bgColor="#ffffff" fgColor="#000000" level="M" includeMargin />
+            <QRCodeSVG value={url} size={320} bgColor="#ffffff" fgColor="#000000" level="M" includeMargin title="QR Code para abrir o Zelador Digital" />
           </div>
           <div className="max-w-[155mm] text-[14pt] font-bold leading-relaxed">
             <p>1. Aponte a câmera do seu celular para o QR Code</p>
@@ -96,7 +100,9 @@ export default function ModalQRCode({ url, onClose }) {
             Zelador Digital • Plataforma Cívica Independente de Ananindeua • Iniciativa Comunitária
           </p>
         </div>
-      </div>
+      </div>,
+      document.body
+      )}
     </>
   )
 }
