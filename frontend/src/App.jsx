@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo, useRef, Suspense } from 'react'
-import { Camera, ClipboardList, House, LayoutDashboard, Map as IconeMapa, MapPin, Plus, RefreshCw, Save, Search, Send, Smartphone, Volume2 } from 'lucide-react'
+import { Camera, ChevronRight, ClipboardList, House, Landmark, LayoutDashboard, Map as IconeMapa, MapPin, Plus, RefreshCw, Save, Search, Send, Smartphone, Volume2 } from 'lucide-react'
 import IconeCategoria from './components/IconeCategoria'
 import { supabase } from './lib/supabase'
 import lazyComRecarga from './lib/lazyComRecarga'
@@ -32,6 +32,7 @@ import { formatarKm } from './lib/gestao'
 const PainelGestor = lazyComRecarga(() => import('./components/PainelGestor'))
 const MapaOcorrencias = lazyComRecarga(() => import('./components/MapaOcorrencias'))
 const ModalQRCode = lazyComRecarga(() => import('./components/ModalQRCode'))
+const Transparencia = lazyComRecarga(() => import('./components/Transparencia'))
 
 const TAMANHO_PAGINA_LISTA = 20
 
@@ -286,7 +287,7 @@ function abaDoEndereco() {
 
 export default function App() {
   const [modo, setModo] = useState(() => (localStorage.getItem('zelador_modo_interface') === 'facil' ? 'facil' : 'normal'))
-  const [abaAtiva, setAbaAtiva] = useState(() => (['mapa', 'registos', 'gestao'].includes(abaDoEndereco()) ? abaDoEndereco() : 'inicio'))
+  const [abaAtiva, setAbaAtiva] = useState(() => (['mapa', 'registos', 'gestao', 'transparencia'].includes(abaDoEndereco()) ? abaDoEndereco() : 'inicio'))
   const [mostrarOnboarding, setMostrarOnboarding] = useState(() => !localStorage.getItem('zelador_onboarding_concluido'))
   const [etapaOnboarding, setEtapaOnboarding] = useState(0)
 
@@ -1689,6 +1690,7 @@ export default function App() {
                     </h3>
                     <p className="text-[11px] font-bold text-slate-500">
                       Protocolo <span className="font-black text-slate-700 select-all">{protocoloCivico(ocorrenciaSelecionada.id)}</span>
+                      {ocorrenciaSelecionada.bairro && <> · {ocorrenciaSelecionada.bairro}</>}
                     </p>
                   </div>
                 </div>
@@ -1867,6 +1869,24 @@ export default function App() {
                   <span className="text-[10px] text-slate-400 mt-0.5">Protocolo</span>
                 </button>
               </div>
+
+              <button
+                type="button"
+                onClick={() => {
+                  feedbackSensorial.toqueSuave()
+                  setAbaAtiva('transparencia')
+                }}
+                className="mt-2.5 w-full flex items-center gap-3 rounded-2xl border border-slate-200/90 bg-white p-3 text-left shadow-2xs hover:bg-slate-50 cursor-pointer"
+              >
+                <span className="w-9 h-9 rounded-xl bg-slate-900 text-white flex items-center justify-center shrink-0" aria-hidden="true">
+                  <Landmark size={18} strokeWidth={2.25} />
+                </span>
+                <span className="flex-1 min-w-0">
+                  <span className="block text-xs font-black text-slate-800">Transparência por bairro</span>
+                  <span className="block text-[10px] text-slate-400">Quanto está em aberto, quanto foi resolvido e dados abertos</span>
+                </span>
+                <ChevronRight size={18} className="text-slate-400" aria-hidden="true" />
+              </button>
             </div>
 
             {/* Convite para instalar: discreto, depois das ações principais. */}
@@ -2110,6 +2130,14 @@ export default function App() {
         )}
 
         {/* 3. MAPA */}
+        {abaAtiva === 'transparencia' && (
+          <ErrorBoundary nome="Transparência" chaveReset={abaAtiva}>
+            <Suspense fallback={<CarregandoSecao texto="Carregando a transparência..." />}>
+              <Transparencia onVoltar={() => setAbaAtiva('inicio')} />
+            </Suspense>
+          </ErrorBoundary>
+        )}
+
         {abaAtiva === 'mapa' && (
           <div className="bg-white rounded-3xl p-4 border border-slate-200 shadow-xs">
             <ErrorBoundary nome="Mapa" chaveReset={abaAtiva}>

@@ -1,4 +1,5 @@
 import { Component } from 'react'
+import { registrarErro } from '../lib/registroErros'
 
 /**
  * Impede que um erro de renderização deixe o ecrã em branco.
@@ -21,6 +22,7 @@ export default class ErrorBoundary extends Component {
 
   componentDidCatch(erro, info) {
     console.error(`[ErrorBoundary${this.props.nome ? `: ${this.props.nome}` : ''}]`, erro, info?.componentStack)
+    registrarErro(erro, `tela ${this.props.nome || 'sem nome'}`)
   }
 
   componentDidUpdate(propsAnteriores) {
