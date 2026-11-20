@@ -14,3 +14,11 @@ Thumbs.db
 # Testes de ponta a ponta
 frontend/test-results/
 frontend/playwright-report/
+
+# Simulação experimental (MiroFish): motor clonado e logs brutos não são versionados
+simulation/mirofish-engine/
+simulation/logs/
+simulation/.venv/
+
+# Estado local de ferramentas (OMC)
+.omc/
