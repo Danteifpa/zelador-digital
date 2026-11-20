@@ -13,8 +13,22 @@ function AjustarMapa({ centro, zoom }) {
   return null
 }
 
+/** Centraliza o mapa na ocorrência escolhida na lista (desktop). */
+function SeguirSelecionada({ ponto }) {
+  const mapa = useMap()
+  const [lat, lng] = ponto || []
+  useEffect(() => {
+    if (Number.isFinite(lat) && Number.isFinite(lng)) mapa.flyTo([lat, lng], Math.max(mapa.getZoom(), 15), { duration: 0.6 })
+  }, [lat, lng, mapa])
+  return null
+}
+
 /** Mapa de focos críticos coloridos pela pontuação GUT. */
-export default function MapaFocosCriticos({ ocorrenciasComGut }) {
+export default function MapaFocosCriticos({ ocorrenciasComGut, selecionadaId = null, onSelecionar, compacto = false }) {
+  const selecionada = ocorrenciasComGut.find((item) => item.id === selecionadaId)
+  const pontoSelecionado = selecionada && Number.isFinite(Number(selecionada.latitude)) && Number.isFinite(Number(selecionada.longitude))
+    ? [Number(selecionada.latitude), Number(selecionada.longitude)]
+    : null
   return (
     <>
     <section className="space-y-3">
@@ -29,9 +43,10 @@ export default function MapaFocosCriticos({ ocorrenciasComGut }) {
           <span className="text-emerald-300">● Rotina</span>
         </div>
       </div>
-      <div className="h-[65vh] min-h-[420px] max-h-[600px] overflow-hidden rounded-3xl border border-slate-200 shadow-sm">
+      <div className={`${compacto ? 'h-[44vh] min-h-[320px] max-h-[520px]' : 'h-[65vh] min-h-[420px] max-h-[600px] lg:max-h-[75vh]'} overflow-hidden rounded-3xl border border-slate-200 shadow-sm`}>
         <MapContainer center={CENTRO_ANANINDEUA} zoom={11} scrollWheelZoom style={{ width: '100%', height: '100%' }}>
           <AjustarMapa centro={CENTRO_ANANINDEUA} zoom={11} />
+          <SeguirSelecionada ponto={pontoSelecionado} />
           <TileLayer
             attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
             url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
@@ -45,7 +60,8 @@ export default function MapaFocosCriticos({ ocorrenciasComGut }) {
                   key={item.id}
                   center={[Number(item.latitude), Number(item.longitude)]}
                   radius={6 + (item.gut.pontuacao / 125) * 14}
-                  pathOptions={{ color: cor, fillColor: cor, fillOpacity: 0.65, weight: 2 }}
+                  pathOptions={{ color: item.id === selecionadaId ? '#1d4ed8' : cor, fillColor: cor, fillOpacity: 0.65, weight: item.id === selecionadaId ? 4 : 2 }}
+                  eventHandlers={onSelecionar ? { click: () => onSelecionar(item.id) } : undefined}
                 >
                   <Popup>
                     <div className="min-w-36 text-xs">

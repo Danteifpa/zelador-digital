@@ -13,6 +13,8 @@ import FormEdicaoOcorrencia from './gestao/FormEdicaoOcorrencia'
 import AcoesRelatorios from './gestao/AcoesRelatorios'
 import ListaOcorrenciasGestor from './gestao/ListaOcorrenciasGestor'
 import MapaFocosCriticos from './gestao/MapaFocosCriticos'
+import DetalheSelecionada from './gestao/DetalheSelecionada'
+import useTelaGrande from '../lib/useTelaGrande'
 import ModalBoletim from './gestao/ModalBoletim'
 import ModalExclusao from './gestao/ModalExclusao'
 import ModalOficio from './gestao/ModalOficio'
@@ -41,6 +43,8 @@ export default function PainelGestor({ ocorrencias = [], onAtualizarDados }) {
   const [boletimCopiado, setBoletimCopiado] = useState(false)
   const [itemResolucao, setItemResolucao] = useState(null)
   const [fotoResolucaoPorId, setFotoResolucaoPorId] = useState({})
+  const [selecionadaId, setSelecionadaId] = useState(null)
+  const telaGrande = useTelaGrande()
 
   // Ao entrar como gestor, recarrega: a vista só mostra fotos ocultas para gestores.
   useEffect(() => {
@@ -433,11 +437,19 @@ export default function PainelGestor({ ocorrencias = [], onAtualizarDados }) {
       <MetricasGestao filtroStatus={abaPainel === 'lista' ? filtroStatus : null} metricas={metricas} onFiltrar={filtrarPorStatus} />
 
       {abaPainel === 'lista' && (
-        <>
-          <FiltrosGestao totalDenunciados={totalDenunciados} filtroStatus={filtroStatus} ordenarPorGut={ordenarPorGut} setFiltroStatus={setFiltroStatus} setOrdenarPorGut={setOrdenarPorGut} setTermoBusca={setTermoBusca} termoBusca={termoBusca} />
-          {itemEdicao && <FormEdicaoOcorrencia carregandoAcao={carregandoAcao} itemEdicao={itemEdicao} salvarEdicao={salvarEdicao} setItemEdicao={setItemEdicao} />}
-          <ListaOcorrenciasGestor revisarFoto={revisarFoto} acaoEmAndamento={acaoEmAndamento} alterarStatusOcorrencia={alterarStatusOcorrencia} carregandoAcao={carregandoAcao} confirmarResolucao={confirmarResolucao} despachoPorId={despachoPorId} fotoResolucaoPorId={fotoResolucaoPorId} itemResolucao={itemResolucao} ocorrenciasFiltradasComGut={ocorrenciasFiltradasComGut} salvarDespacho={salvarDespacho} setDespachoPorId={setDespachoPorId} setFotoResolucaoPorId={setFotoResolucaoPorId} setItemEdicao={setItemEdicao} setItemExclusao={setItemExclusao} setItemResolucao={setItemResolucao} setTramitacaoAberta={setTramitacaoAberta} tramitacaoAberta={tramitacaoAberta} />
-        </>
+        <div className="space-y-3 lg:grid lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)] lg:items-start lg:gap-5 lg:space-y-0">
+          <div className="space-y-3 min-w-0">
+            <FiltrosGestao totalDenunciados={totalDenunciados} filtroStatus={filtroStatus} ordenarPorGut={ordenarPorGut} setFiltroStatus={setFiltroStatus} setOrdenarPorGut={setOrdenarPorGut} setTermoBusca={setTermoBusca} termoBusca={termoBusca} />
+            {itemEdicao && <FormEdicaoOcorrencia carregandoAcao={carregandoAcao} itemEdicao={itemEdicao} salvarEdicao={salvarEdicao} setItemEdicao={setItemEdicao} />}
+            <ListaOcorrenciasGestor selecionadaId={selecionadaId} onSelecionar={setSelecionadaId} revisarFoto={revisarFoto} acaoEmAndamento={acaoEmAndamento} alterarStatusOcorrencia={alterarStatusOcorrencia} carregandoAcao={carregandoAcao} confirmarResolucao={confirmarResolucao} despachoPorId={despachoPorId} fotoResolucaoPorId={fotoResolucaoPorId} itemResolucao={itemResolucao} ocorrenciasFiltradasComGut={ocorrenciasFiltradasComGut} salvarDespacho={salvarDespacho} setDespachoPorId={setDespachoPorId} setFotoResolucaoPorId={setFotoResolucaoPorId} setItemEdicao={setItemEdicao} setItemExclusao={setItemExclusao} setItemResolucao={setItemResolucao} setTramitacaoAberta={setTramitacaoAberta} tramitacaoAberta={tramitacaoAberta} />
+          </div>
+          {telaGrande && (
+            <aside className="space-y-3 lg:sticky lg:top-20 min-w-0" aria-label="Mapa e detalhes">
+              <MapaFocosCriticos compacto ocorrenciasComGut={ocorrenciasFiltradasComGut} selecionadaId={selecionadaId} onSelecionar={setSelecionadaId} />
+              <DetalheSelecionada item={ocorrenciasFiltradasComGut.find((i) => i.id === selecionadaId)} carregandoAcao={carregandoAcao} alterarStatusOcorrencia={alterarStatusOcorrencia} />
+            </aside>
+          )}
+        </div>
       )}
 
       {abaPainel === 'mapa' && <MapaFocosCriticos ocorrenciasComGut={ocorrenciasComGut} />}
