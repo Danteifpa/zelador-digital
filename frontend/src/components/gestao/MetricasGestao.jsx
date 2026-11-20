@@ -9,20 +9,20 @@ export default function MetricasGestao({ filtroStatus, metricas, onFiltrar }) {
     { status: 'resolvido', label: 'Resolvidos', value: metricas.resolvidas, tone: 'text-emerald-300' }
   ]
   return (
-    <section className="bg-slate-900 rounded-3xl p-3 text-white shadow-sm">
-      <div className="grid grid-cols-4 gap-1.5">
+    <section className="bg-slate-900 rounded-3xl p-3 lg:p-5 text-white shadow-sm">
+      <div className="grid grid-cols-4 gap-1.5 lg:gap-4">
         {itens.map((item) => (
           <button
             key={item.status}
             type="button"
             onClick={() => onFiltrar(item.status)}
             aria-pressed={filtroStatus === item.status}
-            className={`rounded-2xl border p-2 text-left transition-colors cursor-pointer ${
+            className={`rounded-2xl border p-2 lg:p-5 text-left transition-colors cursor-pointer ${
               filtroStatus === item.status ? 'bg-slate-700 border-slate-500' : 'bg-slate-800/80 border-slate-700 hover:bg-slate-800'
             }`}
           >
-            <span className={`block text-xl font-black leading-tight ${item.tone}`}>{item.value}</span>
-            <span className="block text-[10px] font-bold text-slate-300 leading-tight">{item.label}</span>
+            <span className={`block text-xl lg:text-4xl font-black leading-tight ${item.tone}`}>{item.value}</span>
+            <span className="block text-[10px] lg:text-sm font-bold text-slate-300 leading-tight">{item.label}</span>
           </button>
         ))}
       </div>

@@ -13,6 +13,8 @@ import FormEdicaoOcorrencia from './gestao/FormEdicaoOcorrencia'
 import AcoesRelatorios from './gestao/AcoesRelatorios'
 import ListaOcorrenciasGestor from './gestao/ListaOcorrenciasGestor'
 import MapaFocosCriticos from './gestao/MapaFocosCriticos'
+import DetalheSelecionada from './gestao/DetalheSelecionada'
+import useTelaGrande from '../lib/useTelaGrande'
 import ModalBoletim from './gestao/ModalBoletim'
 import ModalExclusao from './gestao/ModalExclusao'
 import ModalOficio from './gestao/ModalOficio'
@@ -46,6 +48,8 @@ export default function PainelGestor({ ocorrencias = [], onAtualizarDados }) {
   // null = ainda não escolheu: gestor de um órgão abre o painel já filtrado no órgão dele.
   const [escolhaOrgao, setFiltroOrgao] = useState(null)
   const filtroOrgao = escolhaOrgao ?? (orgaoGestor || 'todos')
+  const [selecionadaId, setSelecionadaId] = useState(null)
+  const telaGrande = useTelaGrande()
 
   // Ao entrar como gestor, recarrega: a vista só mostra fotos ocultas para gestores.
   useEffect(() => {
@@ -445,23 +449,31 @@ export default function PainelGestor({ ocorrencias = [], onAtualizarDados }) {
       <MetricasGestao filtroStatus={abaPainel === 'lista' ? filtroStatus : null} metricas={metricas} onFiltrar={filtrarPorStatus} />
 
       {abaPainel === 'lista' && (
-        <>
-          {(prazos.atrasados > 0 || prazos.venceLogo > 0) && (
-            <div role="status" className="rounded-2xl border border-rose-200 bg-rose-50 p-3 text-xs text-rose-800">
-              <strong>⏰ Prazos{filtroOrgao !== 'todos' ? ` · ${nomeDoOrgao(filtroOrgao)}` : ''}:</strong>{' '}
-              {prazos.atrasados} chamado(s) atrasado(s)
-              {prazos.venceLogo > 0 && ` e ${prazos.venceLogo} vencendo em até 2 dias`}.
-              {prazos.atrasados > 0 && (
-                <button type="button" onClick={() => setFiltroStatus('atrasados')} className="ml-1 font-black underline cursor-pointer">
-                  Ver atrasados
-                </button>
-              )}
-            </div>
+        <div className="space-y-3 lg:grid lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)] lg:items-start lg:gap-5 lg:space-y-0">
+          <div className="space-y-3 min-w-0">
+            {(prazos.atrasados > 0 || prazos.venceLogo > 0) && (
+              <div role="status" className="rounded-2xl border border-rose-200 bg-rose-50 p-3 text-xs text-rose-800">
+                <strong>⏰ Prazos{filtroOrgao !== 'todos' ? ` · ${nomeDoOrgao(filtroOrgao)}` : ''}:</strong>{' '}
+                {prazos.atrasados} chamado(s) atrasado(s)
+                {prazos.venceLogo > 0 && ` e ${prazos.venceLogo} vencendo em até 2 dias`}.
+                {prazos.atrasados > 0 && (
+                  <button type="button" onClick={() => setFiltroStatus('atrasados')} className="ml-1 font-black underline cursor-pointer">
+                    Ver atrasados
+                  </button>
+                )}
+              </div>
+            )}
+            <FiltrosGestao filtroOrgao={filtroOrgao} orgaoGestor={orgaoGestor} setFiltroOrgao={setFiltroOrgao} totalAtrasados={prazos.atrasados} totalDenunciados={totalDenunciados} filtroStatus={filtroStatus} ordenarPorGut={ordenarPorGut} setFiltroStatus={setFiltroStatus} setOrdenarPorGut={setOrdenarPorGut} setTermoBusca={setTermoBusca} termoBusca={termoBusca} />
+            {itemEdicao && <FormEdicaoOcorrencia carregandoAcao={carregandoAcao} itemEdicao={itemEdicao} salvarEdicao={salvarEdicao} setItemEdicao={setItemEdicao} />}
+            <ListaOcorrenciasGestor selecionadaId={selecionadaId} onSelecionar={setSelecionadaId} revisarFoto={revisarFoto} acaoEmAndamento={acaoEmAndamento} alterarStatusOcorrencia={alterarStatusOcorrencia} carregandoAcao={carregandoAcao} confirmarResolucao={confirmarResolucao} despachoPorId={despachoPorId} fotoResolucaoPorId={fotoResolucaoPorId} itemResolucao={itemResolucao} ocorrenciasFiltradasComGut={ocorrenciasFiltradasComGut} salvarDespacho={salvarDespacho} setDespachoPorId={setDespachoPorId} setFotoResolucaoPorId={setFotoResolucaoPorId} setItemEdicao={setItemEdicao} setItemExclusao={setItemExclusao} setItemResolucao={setItemResolucao} setTramitacaoAberta={setTramitacaoAberta} tramitacaoAberta={tramitacaoAberta} />
+          </div>
+          {telaGrande && (
+            <aside className="space-y-3 lg:sticky lg:top-20 min-w-0" aria-label="Mapa e detalhes">
+              <MapaFocosCriticos compacto ocorrenciasComGut={ocorrenciasFiltradasComGut} selecionadaId={selecionadaId} onSelecionar={setSelecionadaId} />
+              <DetalheSelecionada item={ocorrenciasFiltradasComGut.find((i) => i.id === selecionadaId)} carregandoAcao={carregandoAcao} alterarStatusOcorrencia={alterarStatusOcorrencia} />
+            </aside>
           )}
-          <FiltrosGestao filtroOrgao={filtroOrgao} orgaoGestor={orgaoGestor} setFiltroOrgao={setFiltroOrgao} totalAtrasados={prazos.atrasados} totalDenunciados={totalDenunciados} filtroStatus={filtroStatus} ordenarPorGut={ordenarPorGut} setFiltroStatus={setFiltroStatus} setOrdenarPorGut={setOrdenarPorGut} setTermoBusca={setTermoBusca} termoBusca={termoBusca} />
-          {itemEdicao && <FormEdicaoOcorrencia carregandoAcao={carregandoAcao} itemEdicao={itemEdicao} salvarEdicao={salvarEdicao} setItemEdicao={setItemEdicao} />}
-          <ListaOcorrenciasGestor revisarFoto={revisarFoto} acaoEmAndamento={acaoEmAndamento} alterarStatusOcorrencia={alterarStatusOcorrencia} carregandoAcao={carregandoAcao} confirmarResolucao={confirmarResolucao} despachoPorId={despachoPorId} fotoResolucaoPorId={fotoResolucaoPorId} itemResolucao={itemResolucao} ocorrenciasFiltradasComGut={ocorrenciasFiltradasComGut} salvarDespacho={salvarDespacho} setDespachoPorId={setDespachoPorId} setFotoResolucaoPorId={setFotoResolucaoPorId} setItemEdicao={setItemEdicao} setItemExclusao={setItemExclusao} setItemResolucao={setItemResolucao} setTramitacaoAberta={setTramitacaoAberta} tramitacaoAberta={tramitacaoAberta} />
-        </>
+        </div>
       )}
 
       {abaPainel === 'mapa' && <MapaFocosCriticos ocorrenciasComGut={ocorrenciasComGut} />}

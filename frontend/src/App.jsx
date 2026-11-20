@@ -1110,7 +1110,7 @@ export default function App() {
       )}
 
       {/* Conteúdo Central */}
-      <main className="max-w-md w-full mx-auto px-4 py-4 flex-1">
+      <main className={`${abaAtiva === 'gestao' ? 'max-w-md lg:max-w-6xl xl:max-w-7xl' : 'max-w-md'} w-full mx-auto px-4 py-4 flex-1`}>
         {/* MODAL DETALHE COM PARTILHA */}
         {ocorrenciaSelecionada && (
           <ModalDetalheOcorrencia carregarRegistos={carregarRegistos} mostrarAlertaToast={mostrarAlertaToast} ocorrenciaSelecionada={ocorrenciaSelecionada} partilharOcorrencia={partilharOcorrencia} registrarApoio={registrarApoio} setOcorrenciaSelecionada={setOcorrenciaSelecionada} />
