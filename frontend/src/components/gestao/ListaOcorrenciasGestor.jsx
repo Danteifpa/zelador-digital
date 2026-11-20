@@ -26,7 +26,7 @@ const PROXIMOS_PASSOS = {
 const ETAPAS = ['Registrado', 'Em análise', 'Resolvido']
 
 /** Lista priorizada: uma linha por chamado; tocar abre fotos, tramitação e ações. */
-export default function ListaOcorrenciasGestor({ revisarFoto, acaoEmAndamento, alterarStatusOcorrencia, carregandoAcao, confirmarResolucao, despachoPorId, fotoResolucaoPorId, itemResolucao, ocorrenciasFiltradasComGut, salvarDespacho, setDespachoPorId, setFotoResolucaoPorId, setItemEdicao, setItemExclusao, setItemResolucao, setTramitacaoAberta, tramitacaoAberta }) {
+export default function ListaOcorrenciasGestor({ revisarFoto, acaoEmAndamento, alterarStatusOcorrencia, carregandoAcao, confirmarResolucao, despachoPorId, fotoResolucaoPorId, itemResolucao, ocorrenciasFiltradasComGut, salvarDespacho, setDespachoPorId, setFotoResolucaoPorId, setItemEdicao, setItemExclusao, setItemResolucao, setTramitacaoAberta, tramitacaoAberta, selecionadaId = null, onSelecionar }) {
   const [aberto, setAberto] = useState(null)
 
   if (ocorrenciasFiltradasComGut.length === 0) {
@@ -46,11 +46,11 @@ export default function ListaOcorrenciasGestor({ revisarFoto, acaoEmAndamento, a
         const etapaAtual = etapaStatus(item)
 
         return (
-          <li key={item.id} className={`bg-white rounded-2xl border shadow-2xs overflow-hidden ${expandido ? 'border-blue-300' : 'border-slate-200'}`}>
+          <li key={item.id} className={`bg-white rounded-2xl border shadow-2xs overflow-hidden ${expandido ? 'border-blue-300' : 'border-slate-200'} ${selecionadaId === item.id ? 'lg:ring-2 lg:ring-blue-500' : ''}`}>
             {/* Linha resumida */}
             <button
               type="button"
-              onClick={() => setAberto(expandido ? null : item.id)}
+              onClick={() => { setAberto(expandido ? null : item.id); onSelecionar?.(item.id) }}
               aria-expanded={expandido}
               className="w-full flex items-start gap-3 p-3 text-left hover:bg-slate-50 transition-colors cursor-pointer"
             >
