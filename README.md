@@ -153,3 +153,10 @@ As versões publicadas até a v1.1.0 e até o commit anterior a esta mudança (1
 O nome **Zelador Digital** e a identidade visual do projeto não são licenciados: não use a marca para oferecer cópias ou serviços derivados sem autorização.
 
 Projeto independente de iniciativa comunitária, sem vínculo com a Prefeitura de Ananindeua.
+
+<p align="right">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="docs/img/logo-dante-branco.png" />
+    <img src="docs/img/logo-dante-preto.png" alt="Logo de Dante Dias Monteiro" width="36" />
+  </picture>
+</p>
