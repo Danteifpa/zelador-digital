@@ -1,0 +1,54 @@
+{
+  "titulo": "Experimento virtual de 7 dias em Ananindeua-PA (Zelador Digital)",
+  "evento": "VIII SIEPEX",
+  "natureza": "Simulação exploratória com agentes FICTÍCIOS. Não usa dados reais de pessoas nem de ocorrências. Resultados dependem das premissas de 'parametros_modelo' e não são medições de campo.",
+  "semente": 20261120,
+  "dias": 7,
+  "bairros": {
+    "Cidade Nova": { "lat": -1.3560, "lon": -48.3880, "problemas_por_dia": 1.0, "categorias": { "buraco": 3, "lixo": 3, "iluminacao": 2, "calcada": 1, "sinalizacao": 1 } },
+    "Coqueiro (BR-316)": { "lat": -1.3700, "lon": -48.3880, "problemas_por_dia": 1.2, "categorias": { "buraco": 4, "alagamento": 2, "sinalizacao": 2, "lixo": 2 } },
+    "Icuí-Guajará": { "lat": -1.3900, "lon": -48.3700, "problemas_por_dia": 1.1, "categorias": { "esgoto": 4, "alagamento": 3, "lixo": 3, "iluminacao": 1 } },
+    "Paar": { "lat": -1.3620, "lon": -48.3770, "problemas_por_dia": 0.9, "categorias": { "lixo": 3, "iluminacao": 3, "buraco": 2, "arvore": 1 } },
+    "Guanabara": { "lat": -1.3550, "lon": -48.3590, "problemas_por_dia": 0.8, "categorias": { "iluminacao": 3, "calcada": 2, "arvore": 2, "lixo": 2 } },
+    "Águas Lindas": { "lat": -1.3950, "lon": -48.3800, "problemas_por_dia": 1.1, "categorias": { "esgoto": 4, "alagamento": 4, "lixo": 2, "buraco": 1 } }
+  },
+  "cidadaos": [
+    { "id": "C01", "genero": "feminino", "idade": 24, "bairro": "Cidade Nova", "modo_facil": false, "sinal": "4g_estavel" },
+    { "id": "C02", "genero": "masculino", "idade": 27, "bairro": "Coqueiro (BR-316)", "modo_facil": false, "sinal": "4g_instavel" },
+    { "id": "C03", "genero": "feminino", "idade": 22, "bairro": "Icuí-Guajará", "modo_facil": false, "sinal": "3g_instavel" },
+    { "id": "C04", "genero": "masculino", "idade": 29, "bairro": "Paar", "modo_facil": false, "sinal": "4g_estavel" },
+    { "id": "C05", "genero": "feminino", "idade": 34, "bairro": "Guanabara", "modo_facil": false, "sinal": "4g_estavel" },
+    { "id": "C06", "genero": "masculino", "idade": 38, "bairro": "Águas Lindas", "modo_facil": false, "sinal": "3g_instavel" },
+    { "id": "C07", "genero": "feminino", "idade": 41, "bairro": "Cidade Nova", "modo_facil": true, "sinal": "4g_instavel" },
+    { "id": "C08", "genero": "masculino", "idade": 43, "bairro": "Coqueiro (BR-316)", "modo_facil": false, "sinal": "4g_estavel" },
+    { "id": "C09", "genero": "feminino", "idade": 47, "bairro": "Icuí-Guajará", "modo_facil": true, "sinal": "3g_instavel" },
+    { "id": "C10", "genero": "masculino", "idade": 52, "bairro": "Paar", "modo_facil": true, "sinal": "4g_instavel" },
+    { "id": "C11", "genero": "feminino", "idade": 55, "bairro": "Águas Lindas", "modo_facil": true, "sinal": "3g_instavel" },
+    { "id": "C12", "genero": "masculino", "idade": 58, "bairro": "Guanabara", "modo_facil": false, "sinal": "4g_instavel" },
+    { "id": "C13", "genero": "feminino", "idade": 63, "bairro": "Cidade Nova", "modo_facil": true, "sinal": "4g_estavel" },
+    { "id": "C14", "genero": "masculino", "idade": 67, "bairro": "Icuí-Guajará", "modo_facil": true, "sinal": "3g_instavel" },
+    { "id": "C15", "genero": "feminino", "idade": 71, "bairro": "Águas Lindas", "modo_facil": false, "sinal": "4g_estavel" }
+  ],
+  "gestores": [
+    { "id": "G01", "papel": "Gestor comunitário A", "capacidade_resolucao_dia": 1, "capacidade_triagem_dia": 4, "dias_de_trabalho": [1, 2, 3, 4, 5] },
+    { "id": "G02", "papel": "Gestor comunitário B", "capacidade_resolucao_dia": 1, "capacidade_triagem_dia": 3, "dias_de_trabalho": [1, 2, 3, 4, 5, 6] }
+  ],
+  "regras_do_app": {
+    "ReportModal.jsx": "Registro em 4 passos (tipo, foto, localização GPS, revisão). Foto é opcional ('Continuar sem foto'); passo 3 só avança com localização; Modo Fácil fala cada passo em voz alta e usa alvos de toque maiores; protocolo ZD-XXXXXX gerado no celular, mesmo sem internet.",
+    "PainelGestor.jsx": "Prioriza por GUT = gravidade x urgência x tendência (gravidade: esgoto/alagamento 5; buraco/árvore/sinalização 4; calçada/iluminação 3; outros 2. urgência: pendente com 3-7 dias 4, mais de 7 dias 5, senão 3. tendência: 3 ou mais 'Também vi' 5; vizinho a até 500 m ou mês chuvoso (dez-mai) 4; senão 3). Estados: pendente, em análise, resolvido. Criticidade: >=60 crítica, >=30 atenção.",
+    "sw.js": "Registro sem rede entra na fila offline (IndexedDB) e o Background Sync envia quando a rede volta (Chrome/Android); sem Background Sync a fila é enviada ao abrir o app. Foto comprimida no celular (cerca de 1280 px WebP) antes de enviar."
+  },
+  "parametros_modelo": {
+    "NOTA": "Premissas assumidas pelo autor, NÃO calibradas com dados reais. Ajustar e rodar de novo para análise de sensibilidade.",
+    "mes_simulado": 12,
+    "prob_observar_problema_por_dia": 0.35,
+    "prob_decidir_registrar_dado_que_observou": 0.5,
+    "prob_tambem_vi_dado_que_ve_ocorrencia_vizinha": 0.25,
+    "prob_rede_disponivel_no_momento": { "4g_estavel": 0.97, "4g_instavel": 0.75, "3g_instavel": 0.55 },
+    "prob_envio_ok_com_rede_com_foto": { "4g_estavel": 0.98, "4g_instavel": 0.88, "3g_instavel": 0.75 },
+    "prob_abandono_por_passo": { "base_18_59": 0.04, "idade_60_mais": 0.10, "multiplicador_modo_facil": 0.45, "passo_foto_extra": 0.03, "passo_gps_extra_se_sinal_instavel": 0.06 },
+    "prob_sync_fila_por_dia_com_rede_volta": { "background_sync": 0.85, "ao_abrir_app": 0.5 },
+    "prob_foto_incluida": 0.7,
+    "gestao": { "dias_para_resolucao_minimo": 1 }
+  }
+}
