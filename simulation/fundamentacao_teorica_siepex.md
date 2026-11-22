@@ -15,28 +15,29 @@ O aplicativo responde a esse problema com dois mecanismos centrais. O primeiro �
 
 Do ponto de vista da modelagem, a zeladoria urbana participativa envolve três processos acoplados: (i) a geração de demandas pelos moradores, condicionada por fatores sociais e de conectividade; (ii) a transmissão dessas demandas ao sistema, sujeita a restrições de dados móveis (franquia pré-paga esgotada, pontos de sombra e quedas durante temporais); e (iii) a resolução pelas equipes de campo, limitada por capacidade operacional e por uma regra de priorização. Como esses processos são estocásticos e interdependentes, sua análise analítica fechada é pouco tratável. Adotou-se, por isso, uma abordagem computacional em três camadas:
 
-1. **Simulação de Monte Carlo** (METROPOLIS; ULAM, 1949) de uma fila de atendimento com 30 dias de chegadas, comparando duas políticas de priorização;
+1. **Simulação de Monte Carlo** (METROPOLIS; ULAM, 1949) de uma fila de atendimento com 30 dias de chegadas, comparando três cenários: o atendimento atual pelo canal tradicional e duas políticas de priorização no aplicativo;
 2. **Rede neural do tipo perceptron multicamadas** (ROSENBLATT, 1958; RUMELHART; HINTON; WILLIAMS, 1986), treinada como metamodelo do simulador para prever o Tempo Estimado de Resolução (SLA, em horas), com interpretação por importância por permutação (BREIMAN, 2001);
 3. **Grafo multiagente** dos 24 agentes gerados pelo motor MiroFish com memória em grafo Zep, inspirado na arquitetura de agentes generativos com memória episódica (PARK et al., 2023).
 
-A priorização segue a matriz GUT (Gravidade, Urgência e Tendência), associada na literatura de gestão à análise racional de problemas de Kepner e Tregoe (1981), aqui estendida com um peso territorial e com o mecanismo social "Também vi", que operacionaliza o conceito de capital social (PUTNAM, 1993). A vulnerabilidade territorial é representada pelo Índice de Vulnerabilidade Social (IVS) do IPEA (2015), e, como recurso complementar, a tolerância à falta de dados móveis segue os princípios de software *local-first* (KLEPPMANN et al., 2019).
+A priorização segue a matriz GUT (Gravidade, Urgência e Tendência), associada na literatura de gestão à análise racional de problemas de Kepner e Tregoe (1981), aqui estendida com um peso territorial e com o mecanismo social "Também vi", que operacionaliza o conceito de capital social (PUTNAM, 1993). O peso territorial é uma proposta deste estudo: o Painel do Gestor do aplicativo implementa hoje apenas o produto G × U × T. A vulnerabilidade territorial é representada pelo Índice de Vulnerabilidade Social (IVS) do IPEA (2015), e, como recurso complementar, a tolerância à falta de dados móveis segue os princípios de software *local-first* (KLEPPMANN et al., 2019).
 
 ---
 
 ## 2 Parâmetros de controle
 
-Seis parâmetros, ajustados na barra lateral do painel, alimentam simultaneamente o Monte Carlo, a rede neural e o grafo.
+Sete parâmetros, ajustados na barra lateral do painel, alimentam o Monte Carlo; os seis primeiros alimentam também a rede neural e o grafo.
 
 | Símbolo | Parâmetro | Domínio | Papel no modelo |
 |---|---|---|---|
 | $\nu$ | IVS (IPEA) | $[0;\,1]$ | Eleva a taxa de surgimento de problemas e a observação pelos moradores |
-| $\pi$ | Proximidade de UBS/escolas | $[1{,}0;\,2{,}0]$ | Peso territorial multiplicativo no escore GUT |
+| $\pi$ | Proximidade de UBS/escolas | $[1{,}0;\,2{,}0]$ | Peso territorial multiplicativo no escore GUT (proposta; ainda não implementado no aplicativo) |
 | $\kappa$ | Capital social ("Também vi") | $[1{,}0;\,5{,}0]$ | Número esperado de confirmações por vizinhos |
 | $L$ | Letramento digital / apoio de Lideranças Comunitárias | $[0;\,1]$ | Reduz a subnotificação e acelera a sincronização manual |
 | $\iota$ | Restrição de Dados Móveis / Offline | $[0;\,0{,}8]$ | Probabilidade de o registro nascer *offline* por falta de dados móveis |
 | $M$ | Equipes de campo por dia | $\{2, \dots, 20\}$ | Capacidade diária de resolução |
+| $\beta$ | Viés do canal tradicional | $[0;\,1]$ | No cenário Hoje, atrasa na fila os bairros mais vulneráveis |
 
-Constantes fixas do modelo: fator de escala da demanda $E = 4$; produtividade por equipe $\mu_0 = 1{,}5$ resoluções/dia; custo de triagem de duplicata $c_d = 0{,}35$; fração de ocorrências próximas a UBS/escola $f_z = 0{,}30$; probabilidade de envio por *Background Sync* $p_{bg} = 0{,}85$ (valor da semente).
+Constantes fixas do modelo: fator de escala da demanda $E = 4$; produtividade por equipe $\mu_0 = 1{,}5$ resoluções/dia; custo de triagem de duplicata $c_d = 0{,}35$; fração de ocorrências próximas a UBS/escola $f_z = 0{,}30$; probabilidade de envio por *Background Sync* $p_{bg} = 0{,}85$ (valor da semente); atraso máximo de prioridade no canal tradicional $H_\beta = 72$ h; prazo da medida de equidade $T^\ast = 168$ h (7 dias).
 
 ---
 
@@ -63,6 +64,20 @@ N_{b,d} \sim \text{Poisson}(\lambda_b).
 $$
 
 Cada ocorrência $i$ recebe uma categoria sorteada da distribuição categórica de pesos da semente, convertida em gravidade $G_i \in \{2,3,4,5\}$ pela mesma regra do `PainelGestor.jsx` (esgoto e alagamento: 5; buraco, árvore e sinalização: 4; calçada e iluminação: 3; demais: 2). O instante de criação, em horas, é $t^c_i = 24d + U_i$, com $U_i \sim \mathcal{U}(6, 22)$.
+
+**Problemas existentes e subnotificação.** A taxa $\lambda_b$ descreve apenas os problemas que viram registro no aplicativo. O total de problemas que surgem no bairro tem taxa
+
+$$
+\Lambda_b = r_b \cdot E \cdot (0{,}6 + 0{,}8\,\nu_b),
+$$
+
+e o aplicativo capta a fração $a_{\text{app}} = 0{,}5 + 0{,}5L$, de modo que $\lambda_b = a_{\text{app}}\,\Lambda_b$. Pela propriedade de decomposição do processo de Poisson, os problemas não captados pelo aplicativo formam um processo independente de taxa $\Lambda_b\,(1 - a_{\text{app}})$, sorteado depois dos registros do aplicativo para não alterar a sequência aleatória destes. Pelo canal tradicional (presencial ou telefone), cada problema existente vira protocolo com probabilidade
+
+$$
+a_{\text{trad}}(\nu_b) = 0{,}9\,(1 - 0{,}7\,\nu_b),
+$$
+
+que cai com a vulnerabilidade do bairro e expressa as barreiras de deslocamento, tempo e conhecimento institucional. Ambas as probabilidades são premissas do autor.
 
 ### 3.2 Conectividade e fila *offline* (recurso complementar)
 
@@ -112,6 +127,14 @@ $$
 
 e Tendência $T_i = 5$ se $1 + K_i \ge 3$ e $T_i = 4$ caso contrário (o mês simulado é dezembro, período chuvoso, no qual a regra do aplicativo atribui tendência mínima 4). A ordenação é decrescente em $S_i(d)$, com desempate por $t^s_i$. Trata-se da matriz GUT clássica (KEPNER; TREGOE, 1981) acrescida do fator territorial $w_i$ e do componente social $T_i$.
 
+**Política 2 — Hoje (canal tradicional).** Entram na fila apenas os problemas que viraram protocolo pelo canal tradicional. Não há fila *offline* ($t^s_i = t^c_i$) nem agrupamento social ($c_i = 1 + c_d K_i$). A ordem é crescente na chave
+
+$$
+k_i = t^s_i + \beta\,H_\beta\,\nu_{b(i)},
+$$
+
+isto é, um relato de bairro vulnerável é tratado como se tivesse chegado até $\beta H_\beta \nu_b$ horas depois. Com $\beta = 0$, a política reduz-se à FIFO; com $\beta > 0$, representa a vantagem das áreas com mais visibilidade e capacidade de pressão.
+
 ### 3.5 Tempo de resolução e censura
 
 A ocorrência atendida no dia $d$ é resolvida em $t^r_i = 24d + V_i$, $V_i \sim \mathcal{U}(8, 18)$ (turno de trabalho). O indicador é
@@ -124,11 +147,27 @@ Após os 30 dias de chegadas, a simulação prossegue por mais 30 dias sem novas
 
 ### 3.6 Estimadores e números aleatórios comuns
 
-São executadas $R \in \{30, 60, 100, 200\}$ repetições independentes, geradas por `numpy.random.SeedSequence`. Em cada repetição as **mesmas ocorrências** são submetidas às duas políticas (técnica de números aleatórios comuns), de modo que a diferença observada se deve à política e não ao sorteio da demanda. Reportam-se a média amostral, o percentil 90 do SLA, o SLA médio das ocorrências de gravidade 5 e a faixa P10–P90 da fila diária entre repetições. Pela lei dos grandes números, a média amostral converge para a esperança do SLA sob as premissas do modelo, com erro padrão decrescente na ordem de $1/\sqrt{R}$ (METROPOLIS; ULAM, 1949).
+São executadas $R \in \{30, 60, 100, 200\}$ repetições independentes, geradas por `numpy.random.SeedSequence`. Em cada repetição os **mesmos problemas existentes** alimentam os três cenários (técnica de números aleatórios comuns): as duas políticas do aplicativo recebem os mesmos registros, e o cenário Hoje recebe o subconjunto desses problemas que vira protocolo pelo canal tradicional. Assim, a diferença observada se deve à regra de atendimento e ao canal, e não ao sorteio da demanda. Reportam-se a média amostral, o percentil 90 do SLA, o SLA médio das ocorrências de gravidade 5 e a faixa P10–P90 da fila diária entre repetições. Pela lei dos grandes números, a média amostral converge para a esperança do SLA sob as premissas do modelo, com erro padrão decrescente na ordem de $1/\sqrt{R}$ (METROPOLIS; ULAM, 1949).
 
 A dinâmica é governada pela razão de carga $\rho = \sum_b \lambda_b / (\mu_0 M)$: para $\rho < 1$ a fila se estabiliza; para $\rho \ge 1$ ela cresce ao longo do horizonte, o que se observa no painel quando o número de equipes é reduzido.
 
-**Efeito territorial da priorização.** Para avaliar o foco do projeto, compara-se o SLA médio das periferias simuladas de maior vulnerabilidade (Icuí-Guajará e Águas Lindas) com o dos bairros de menor vulnerabilidade no modelo (Guanabara e Cidade Nova). No cenário padrão (IVS 0,45; peso territorial 1,4; capital social 2,5; letramento 50%; restrição de dados 30%; 8 equipes; 60 repetições), a fila FIFO resulta em SLA praticamente igual entre os dois grupos (366 h e 369 h), enquanto a GUT territorializada com "Também vi" reduz o SLA das periferias para 174 h contra 259 h nos bairros de menor vulnerabilidade (razão 0,67). Com 12 equipes, os valores passam a 43 h e 52 h (razão 0,83). O resultado decorre das premissas: as periferias concentram categorias de gravidade 5 (esgoto e alagamento) e recebem o peso territorial, de modo que a regra GUT as atende primeiro.
+**Medida de equidade.** Como o canal tradicional deixa parte dos problemas sem protocolo, o tempo médio até a resolução engana: uma fila menor parece mais rápida, e quem não conseguiu registrar não entra na conta. A medida principal do painel conta todos os problemas existentes no grupo de bairros $g$:
+
+$$
+E_g = \frac{\#\{i \in g : \text{SLA}_i \le T^\ast\}}{\#\{\text{problemas existentes em } g\}}, \qquad T^\ast = 168\ \text{h},
+$$
+
+em que um problema sem registro nunca é resolvido. Comparam-se as periferias simuladas de maior vulnerabilidade (Icuí-Guajará e Águas Lindas) com os bairros de menor vulnerabilidade no modelo (Guanabara e Cidade Nova).
+
+No cenário padrão (IVS 0,45; peso territorial 1,4; capital social 2,5; letramento 50%; restrição de dados 30%; 8 equipes; viés 0,5; 60 repetições):
+
+| Cenário | Periferia: $E_g$ | Centro: $E_g$ | Periferia: SLA médio dos registros | Centro: SLA médio dos registros |
+|---|---|---|---|---|
+| Hoje (canal tradicional) | 18% | 26% | 243 h | 228 h |
+| App + fila FIFO | 16% | 16% | 366 h | 369 h |
+| App + GUT territorializado + Também vi | 57% | 38% | 174 h | 259 h |
+
+Pelo canal tradicional, 54% dos problemas da periferia viram protocolo, contra 75% pelo aplicativo. Três leituras decorrem da tabela. Primeiro, hoje a periferia fica atrás por dois motivos somados: registra menos e é atendida depois; mesmo com $\beta = 0$ a diferença persiste (19% contra 25%), apenas pela menor chance de protocolo. Segundo, o aplicativo sozinho democratiza a denúncia, mas, com fila FIFO e capacidade fixa, a fila cresce e o resultado não melhora. Terceiro, a combinação de aplicativo com GUT territorializada e "Também vi" inverte a desigualdade, porque as periferias concentram categorias de gravidade 5 (esgoto e alagamento) e recebem o peso territorial. Com 12 equipes, os valores de $E_g$ passam a 54% e 69% (Hoje), 54% e 54% (FIFO) e 71% e 71% (GUT).
 
 ---
 
@@ -136,7 +175,7 @@ A dinâmica é governada pela razão de carga $\rho = \sum_b \lambda_b / (\mu_0 
 
 ### 4.1 Conjunto de dados
 
-O simulador é executado em 90 cenários com os seis parâmetros sorteados uniformemente em seus domínios. Para cada cenário e para cada política são registradas todas as ocorrências, das quais se extrai uma amostra aleatória de 12 000 observações. O vetor de entrada tem 11 variáveis:
+O simulador é executado em 90 cenários com os seis primeiros parâmetros sorteados uniformemente em seus domínios. Para cada cenário e para cada uma das duas políticas do aplicativo (o cenário Hoje não entra no treino) são registradas todas as ocorrências, das quais se extrai uma amostra aleatória de 12 000 observações. O vetor de entrada tem 11 variáveis:
 
 $$
 \mathbf{x} = (\nu,\ \pi,\ \kappa,\ L,\ \iota,\ M,\ G,\ Z,\ O,\ K,\ P),
@@ -208,7 +247,7 @@ com $K = 5$ repetições sobre 2 000 observações de teste. No cenário padrão
 
 ---
 
-## 5 Grafo multiagente MiroFish/Zep (aba 3)
+## 5 Grafo multiagente MiroFish/Zep (aba 4, complementar)
 
 ### 5.1 Origem dos agentes
 
@@ -259,8 +298,10 @@ O tamanho do nó é proporcional ao peso de influência; a opacidade e a espessu
 3. A rede neural é um metamodelo do simulador: um $R^2$ elevado indica que ela reproduz bem as premissas, não que as premissas estejam corretas.
 4. A execução do MiroFish que originou os 24 agentes teve 41 ações em 28 de 168 rodadas possíveis, sem repetição; não permite inferência estatística.
 5. O Aurá, citado como exemplo de periferia, não está entre os seis bairros da semente. As "áreas mais centrais" são representadas apenas pelos bairros com menor deslocamento de IVS no modelo (Guanabara e Cidade Nova), também por premissa do autor.
-6. A política FIFO do modelo é neutra entre bairros: ela não reproduz o histórico de atendimento mais lento das periferias. O painel mostra, portanto, o efeito de priorizar por gravidade e território, e não a dimensão da desigualdade real, que exigiria dados de atendimento da Prefeitura.
-7. A comparação entre políticas mostra a redistribuição da espera: a priorização GUT reduz fortemente o SLA das ocorrências graves, mas desloca a espera para as de baixa gravidade; por isso o percentil 90 do SLA quase não se altera entre as políticas no cenário padrão (cerca de 645 h a 650 h).
+6. O cenário Hoje depende de duas premissas não medidas: a chance de protocolo $a_{\text{trad}}(\nu)$ e o viés $\beta$. Elas servem para explorar a sensibilidade do resultado; a dimensão real da desigualdade de atendimento exigiria dados da Prefeitura de Ananindeua.
+7. No aplicativo, a chance de registro $a_{\text{app}}$ é a mesma em todos os bairros para um dado $L$. Na prática, o letramento digital também varia por território, o que reduziria parte da vantagem da periferia.
+8. Os deslocamentos de IVS por bairro ($\delta_b$) podem ser substituídos pelos valores do Atlas da Vulnerabilidade Social por Unidade de Desenvolvimento Humano da Região Metropolitana de Belém (IPEA, 2015), o que é o próximo passo de calibração.
+9. A comparação entre políticas mostra a redistribuição da espera: a priorização GUT reduz fortemente o SLA das ocorrências graves, mas desloca a espera para as de baixa gravidade; por isso o percentil 90 do SLA quase não se altera entre as duas políticas do aplicativo no cenário padrão (cerca de 645 h a 650 h).
 
 ---
 
