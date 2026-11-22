@@ -60,7 +60,7 @@ TEXTO, SUAVE, GRADE, CARTAO = "#E5E7EB", "#9CA3AF", "#2E3545", "#1F2430"
 COR_POL = {POLITICAS[0]: CORAL, POLITICAS[1]: VERDE}
 
 FEATURES = ["IVS", "Proximidade UBS/Escolas", "Capital Social (Também Vi)",
-            "Letramento Digital/ACS", "Intermitência 4G", "Equipes/Dia",
+            "Letramento Digital/Lideranças Comunitárias", "Restrição de Dados Móveis / Offline", "Equipes/Dia",
             "Gravidade", "Perto de UBS/Escola", "Ficou offline", "Relatos 'Também vi'",
             "Política GUT"]
 
@@ -468,11 +468,13 @@ with st.sidebar:
                      help="Multiplica o escore GUT de ocorrências perto de UBS ou escola.")
     capital = st.slider("Capital Social — 'Também Vi'", 1.0, 5.0, 2.5, 0.1,
                         help="Confirmações médias por vizinhos. Sobe a Tendência (T) e agrupa duplicatas.")
-    letramento = st.slider("Letramento Digital / apoio de ACS", 0, 100, 50, 5, format="%d%%",
+    letramento = st.slider("Letramento Digital / apoio de Lideranças Comunitárias", 0, 100, 50, 5, format="%d%%",
                            help="Mais registros (menos subnotificação) e sync mais rápida ao abrir o app.") / 100
     st.subheader(":material/engineering: Operacionais")
-    intermit = st.slider("Intermitência do 4G", 0, 80, 30, 5, format="%d%%",
-                         help="Chance de o relato nascer offline e ir para a fila do IndexedDB.") / 100
+    intermit = st.slider("Restrição de Dados Móveis / Offline", 0, 80, 30, 5, format="%d%%",
+                         help="Chance de o relato nascer offline e ir para a fila do IndexedDB: franquia "
+                              "pré-paga esgotada, pontos de sombra ou quedas durante temporais. A cidade "
+                              "tem cobertura 4G/5G; o limite é o acesso aos dados, não a antena.") / 100
     equipes = st.slider("Equipes de campo por dia", 2, 20, 8)
     st.divider()
     reps = st.select_slider("Repetições Monte Carlo", [30, 60, 100, 200], value=60,
@@ -568,12 +570,12 @@ with aba1:
     with c2, st.container(border=True, height="stretch"):
         st.markdown("**Indicadores do cenário**")
         donuts([("Resolução<br>crítica", res72.get(com, 0), VERDE),
-                ("Apoio<br>ACS", P["letramento"] * 100, CIANO),
+                ("Lideranças<br>Comunitárias", P["letramento"] * 100, CIANO),
                 ("Acurácia<br>R²", ml["r2"] * 100, AMBAR)],
-               "Resolução crítica, apoio ACS e acurácia R² em percentual")
+               "Resolução crítica, apoio de Lideranças Comunitárias e acurácia R² em percentual")
         st.caption(f"**Resolução crítica:** casos graves resolvidos em até 72 h "
                    f"(na FIFO: {num(res72.get(sem, 0))}%). "
-                   "**Apoio ACS:** moradores com letramento digital ou ajuda de agente comunitário de saúde. "
+                   "**Lideranças Comunitárias:** moradores com letramento digital ou ajuda de Lideranças Comunitárias. "
                    "**Acurácia R²:** parte do SLA que a rede neural consegue explicar.")
 
     c1, c2 = st.columns(2)

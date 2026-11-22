@@ -9,7 +9,7 @@
 
 ## 1 Introdução
 
-A zeladoria urbana participativa envolve três processos acoplados: (i) a geração de demandas pelos moradores, condicionada por fatores sociais e de conectividade; (ii) a transmissão dessas demandas ao sistema, sujeita à intermitência da rede móvel; e (iii) a resolução pelas equipes de campo, limitada por capacidade operacional e por uma regra de priorização. Como esses processos são estocásticos e interdependentes, sua análise analítica fechada é pouco tratável. Adotou-se, por isso, uma abordagem computacional em três camadas:
+A zeladoria urbana participativa envolve três processos acoplados: (i) a geração de demandas pelos moradores, condicionada por fatores sociais e de conectividade; (ii) a transmissão dessas demandas ao sistema, sujeita a restrições de dados móveis (franquia pré-paga esgotada, pontos de sombra e quedas durante temporais); e (iii) a resolução pelas equipes de campo, limitada por capacidade operacional e por uma regra de priorização. Como esses processos são estocásticos e interdependentes, sua análise analítica fechada é pouco tratável. Adotou-se, por isso, uma abordagem computacional em três camadas:
 
 1. **Simulação de Monte Carlo** (METROPOLIS; ULAM, 1949) de uma fila de atendimento com 30 dias de chegadas, comparando duas políticas de priorização;
 2. **Rede neural do tipo perceptron multicamadas** (ROSENBLATT, 1958; RUMELHART; HINTON; WILLIAMS, 1986), treinada como metamodelo do simulador para prever o Tempo Estimado de Resolução (SLA, em horas), com interpretação por importância por permutação (BREIMAN, 2001);
@@ -28,8 +28,8 @@ Seis parâmetros, ajustados na barra lateral do painel, alimentam simultaneament
 | $\nu$ | IVS (IPEA) | $[0;\,1]$ | Eleva a taxa de surgimento de problemas e a observação pelos moradores |
 | $\pi$ | Proximidade de UBS/escolas | $[1{,}0;\,2{,}0]$ | Peso territorial multiplicativo no escore GUT |
 | $\kappa$ | Capital social ("Também vi") | $[1{,}0;\,5{,}0]$ | Número esperado de confirmações por vizinhos |
-| $L$ | Letramento digital / apoio de ACS | $[0;\,1]$ | Reduz a subnotificação e acelera a sincronização manual |
-| $\iota$ | Intermitência do 4G | $[0;\,0{,}8]$ | Probabilidade de o registro nascer *offline* |
+| $L$ | Letramento digital / apoio de Lideranças Comunitárias | $[0;\,1]$ | Reduz a subnotificação e acelera a sincronização manual |
+| $\iota$ | Restrição de Dados Móveis / Offline | $[0;\,0{,}8]$ | Probabilidade de o registro nascer *offline* por falta de dados móveis |
 | $M$ | Equipes de campo por dia | $\{2, \dots, 20\}$ | Capacidade diária de resolução |
 
 Constantes fixas do modelo: fator de escala da demanda $E = 4$; produtividade por equipe $\mu_0 = 1{,}5$ resoluções/dia; custo de triagem de duplicata $c_d = 0{,}35$; fração de ocorrências próximas a UBS/escola $f_z = 0{,}30$; probabilidade de envio por *Background Sync* $p_{bg} = 0{,}85$ (valor da semente).
@@ -52,7 +52,7 @@ $$
 \lambda_b = r_b \cdot E \cdot (0{,}6 + 0{,}8\,\nu_b) \cdot (0{,}5 + 0{,}5\,L),
 $$
 
-em que $r_b$ é a taxa de problemas por dia da semente. O fator $(0{,}6 + 0{,}8\nu_b)$ expressa a maior incidência de problemas de infraestrutura em territórios vulneráveis; o fator $(0{,}5 + 0{,}5L)$ expressa que parte dos problemas só chega ao sistema quando o morador tem letramento digital ou apoio de um Agente Comunitário de Saúde (ACS). O número de ocorrências do bairro $b$ no dia $d \in \{0, \dots, 29\}$ é
+em que $r_b$ é a taxa de problemas por dia da semente. O fator $(0{,}6 + 0{,}8\nu_b)$ expressa a maior incidência de problemas de infraestrutura em territórios vulneráveis; o fator $(0{,}5 + 0{,}5L)$ expressa que parte dos problemas só chega ao sistema quando o morador tem letramento digital ou apoio de Lideranças Comunitárias. O número de ocorrências do bairro $b$ no dia $d \in \{0, \dots, 29\}$ é
 
 $$
 N_{b,d} \sim \text{Poisson}(\lambda_b).
@@ -62,7 +62,7 @@ Cada ocorrência $i$ recebe uma categoria sorteada da distribuição categórica
 
 ### 3.2 Conectividade e fila *offline*
 
-A ocorrência nasce *offline* com probabilidade $\iota$: $O_i \sim \text{Bernoulli}(\iota)$. Nesse caso, ela permanece na fila local do IndexedDB até ser sincronizada. Com probabilidade $p_{bg}$ o navegador dispõe de *Background Sync* ($B_i = 1$) e o atraso é curto; caso contrário, o envio só ocorre quando o morador reabre o aplicativo:
+O parâmetro $\iota$ não supõe ausência de cobertura: a área urbana de Ananindeua é atendida por redes 4G/5G. Ele representa a falta de acesso efetivo aos dados móveis no momento do registro, por franquia pré-paga esgotada, pontos de sombra dentro de casas e vielas ou quedas de sinal durante temporais. A ocorrência nasce *offline* com probabilidade $\iota$: $O_i \sim \text{Bernoulli}(\iota)$. Nesse caso, ela permanece na fila local do IndexedDB até ser sincronizada. Com probabilidade $p_{bg}$ o navegador dispõe de *Background Sync* ($B_i = 1$) e o atraso é curto; caso contrário, o envio só ocorre quando o morador reabre o aplicativo:
 
 $$
 \Delta_i \sim
@@ -218,7 +218,7 @@ p^{\text{obs}}_c = 0{,}35\,(0{,}6 + 0{,}8\,\nu_{b(c)}),
 p^{\text{reg}}_c = \min\!\left\{0{,}95,\ \frac{0{,}5\,(0{,}6 + 0{,}8L)\,h_c}{1{,}4}\right\},
 $$
 
-com $h_c = 1 + 0{,}4L$ para idosos ou usuários do Modo Fácil (efeito da mediação por ACS) e $h_c = 1$ nos demais casos. Um registro ocorre com probabilidade $p^{\text{obs}}_c\,p^{\text{reg}}_c$. Ele fica *offline* com probabilidade $\min\{0{,}95,\ \iota f_s\}$, sendo $f_s = 0{,}3$, $1{,}0$ e $1{,}4$ para 4G estável, 4G instável e 3G instável, e é sincronizado no mesmo dia com probabilidade $p_{bg}$ ou no dia seguinte caso contrário.
+com $h_c = 1 + 0{,}4L$ para idosos ou usuários do Modo Fácil (efeito da mediação por Lideranças Comunitárias) e $h_c = 1$ nos demais casos. Um registro ocorre com probabilidade $p^{\text{obs}}_c\,p^{\text{reg}}_c$. Ele fica *offline* com probabilidade $\min\{0{,}95,\ \iota f_s\}$, sendo $f_s = 0{,}3$, $1{,}0$ e $1{,}4$ para os perfis de conexão da semente `4g_estavel`, `4g_instavel` e `3g_instavel` (acesso estável, restrito e muito restrito), e é sincronizado no mesmo dia com probabilidade $p_{bg}$ ou no dia seguinte caso contrário.
 
 Cada vizinho do mesmo bairro confirma o relato ("Também vi") com probabilidade
 
