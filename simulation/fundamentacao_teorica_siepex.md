@@ -9,13 +9,17 @@
 
 ## 1 Introdução
 
-A zeladoria urbana participativa envolve três processos acoplados: (i) a geração de demandas pelos moradores, condicionada por fatores sociais e de conectividade; (ii) a transmissão dessas demandas ao sistema, sujeita a restrições de dados móveis (franquia pré-paga esgotada, pontos de sombra e quedas durante temporais); e (iii) a resolução pelas equipes de campo, limitada por capacidade operacional e por uma regra de priorização. Como esses processos são estocásticos e interdependentes, sua análise analítica fechada é pouco tratável. Adotou-se, por isso, uma abordagem computacional em três camadas:
+O foco principal do Zelador Digital Comunitário é **democratizar a denúncia urbana** e enfrentar a **desigualdade territorial de atendimento** em Ananindeua-PA. Bairros periféricos como Icuí-Guajará, Aurá e Águas Lindas concentram problemas graves de saneamento e drenagem, como esgoto a céu aberto e alagamentos recorrentes, e tendem a receber resposta mais lenta do poder público do que as áreas mais centrais e de maior renda. Parte dessa desigualdade nasce na própria porta de entrada: canais de reclamação que exigem deslocamento, conhecimento institucional ou capital político reproduzem a assimetria entre quem já é ouvido e quem permanece invisível.
+
+O aplicativo responde a esse problema com dois mecanismos centrais. O primeiro é a **validação coletiva** por meio do botão "Também vi": vizinhos confirmam o mesmo relato, convertendo laços comunitários em evidência de recorrência e em prioridade, o que operacionaliza o conceito de capital social (PUTNAM, 1993). O segundo é a **Matriz GUT territorializada**: a prioridade de cada caso depende da gravidade do problema, do tempo de espera, da confirmação coletiva e da proximidade de equipamentos públicos sensíveis, como Unidades Básicas de Saúde (UBS) e escolas, e não da ordem de chegada nem da capacidade de pressão de cada bairro. O suporte *offline* (fila no IndexedDB com *Background Sync*) é um **recurso complementar**: agiliza o envio quando faltam dados móveis, mas não é o centro da proposta.
+
+Do ponto de vista da modelagem, a zeladoria urbana participativa envolve três processos acoplados: (i) a geração de demandas pelos moradores, condicionada por fatores sociais e de conectividade; (ii) a transmissão dessas demandas ao sistema, sujeita a restrições de dados móveis (franquia pré-paga esgotada, pontos de sombra e quedas durante temporais); e (iii) a resolução pelas equipes de campo, limitada por capacidade operacional e por uma regra de priorização. Como esses processos são estocásticos e interdependentes, sua análise analítica fechada é pouco tratável. Adotou-se, por isso, uma abordagem computacional em três camadas:
 
 1. **Simulação de Monte Carlo** (METROPOLIS; ULAM, 1949) de uma fila de atendimento com 30 dias de chegadas, comparando duas políticas de priorização;
 2. **Rede neural do tipo perceptron multicamadas** (ROSENBLATT, 1958; RUMELHART; HINTON; WILLIAMS, 1986), treinada como metamodelo do simulador para prever o Tempo Estimado de Resolução (SLA, em horas), com interpretação por importância por permutação (BREIMAN, 2001);
 3. **Grafo multiagente** dos 24 agentes gerados pelo motor MiroFish com memória em grafo Zep, inspirado na arquitetura de agentes generativos com memória episódica (PARK et al., 2023).
 
-A priorização segue a matriz GUT (Gravidade, Urgência e Tendência), associada na literatura de gestão à análise racional de problemas de Kepner e Tregoe (1981), aqui estendida com um peso territorial e com o mecanismo social "Também vi", que operacionaliza o conceito de capital social (PUTNAM, 1993). A vulnerabilidade territorial é representada pelo Índice de Vulnerabilidade Social (IVS) do IPEA (2015), e a resiliência à falta de conexão segue os princípios de software *local-first* (KLEPPMANN et al., 2019).
+A priorização segue a matriz GUT (Gravidade, Urgência e Tendência), associada na literatura de gestão à análise racional de problemas de Kepner e Tregoe (1981), aqui estendida com um peso territorial e com o mecanismo social "Também vi", que operacionaliza o conceito de capital social (PUTNAM, 1993). A vulnerabilidade territorial é representada pelo Índice de Vulnerabilidade Social (IVS) do IPEA (2015), e, como recurso complementar, a tolerância à falta de dados móveis segue os princípios de software *local-first* (KLEPPMANN et al., 2019).
 
 ---
 
@@ -60,9 +64,9 @@ $$
 
 Cada ocorrência $i$ recebe uma categoria sorteada da distribuição categórica de pesos da semente, convertida em gravidade $G_i \in \{2,3,4,5\}$ pela mesma regra do `PainelGestor.jsx` (esgoto e alagamento: 5; buraco, árvore e sinalização: 4; calçada e iluminação: 3; demais: 2). O instante de criação, em horas, é $t^c_i = 24d + U_i$, com $U_i \sim \mathcal{U}(6, 22)$.
 
-### 3.2 Conectividade e fila *offline*
+### 3.2 Conectividade e fila *offline* (recurso complementar)
 
-O parâmetro $\iota$ não supõe ausência de cobertura: a área urbana de Ananindeua é atendida por redes 4G/5G. Ele representa a falta de acesso efetivo aos dados móveis no momento do registro, por franquia pré-paga esgotada, pontos de sombra dentro de casas e vielas ou quedas de sinal durante temporais. A ocorrência nasce *offline* com probabilidade $\iota$: $O_i \sim \text{Bernoulli}(\iota)$. Nesse caso, ela permanece na fila local do IndexedDB até ser sincronizada. Com probabilidade $p_{bg}$ o navegador dispõe de *Background Sync* ($B_i = 1$) e o atraso é curto; caso contrário, o envio só ocorre quando o morador reabre o aplicativo:
+Este componente não é o objeto central da avaliação: ele mede apenas quanto a falta momentânea de dados móveis atrasa a entrada do relato no sistema. O parâmetro $\iota$ não supõe ausência de cobertura: a área urbana de Ananindeua é atendida por redes 4G/5G. Ele representa a falta de acesso efetivo aos dados móveis no momento do registro, por franquia pré-paga esgotada, pontos de sombra dentro de casas e vielas ou quedas de sinal durante temporais. A ocorrência nasce *offline* com probabilidade $\iota$: $O_i \sim \text{Bernoulli}(\iota)$. Nesse caso, ela permanece na fila local do IndexedDB até ser sincronizada. Com probabilidade $p_{bg}$ o navegador dispõe de *Background Sync* ($B_i = 1$) e o atraso é curto; caso contrário, o envio só ocorre quando o morador reabre o aplicativo:
 
 $$
 \Delta_i \sim
@@ -123,6 +127,8 @@ Após os 30 dias de chegadas, a simulação prossegue por mais 30 dias sem novas
 São executadas $R \in \{30, 60, 100, 200\}$ repetições independentes, geradas por `numpy.random.SeedSequence`. Em cada repetição as **mesmas ocorrências** são submetidas às duas políticas (técnica de números aleatórios comuns), de modo que a diferença observada se deve à política e não ao sorteio da demanda. Reportam-se a média amostral, o percentil 90 do SLA, o SLA médio das ocorrências de gravidade 5 e a faixa P10–P90 da fila diária entre repetições. Pela lei dos grandes números, a média amostral converge para a esperança do SLA sob as premissas do modelo, com erro padrão decrescente na ordem de $1/\sqrt{R}$ (METROPOLIS; ULAM, 1949).
 
 A dinâmica é governada pela razão de carga $\rho = \sum_b \lambda_b / (\mu_0 M)$: para $\rho < 1$ a fila se estabiliza; para $\rho \ge 1$ ela cresce ao longo do horizonte, o que se observa no painel quando o número de equipes é reduzido.
+
+**Efeito territorial da priorização.** Para avaliar o foco do projeto, compara-se o SLA médio das periferias simuladas de maior vulnerabilidade (Icuí-Guajará e Águas Lindas) com o dos bairros de menor vulnerabilidade no modelo (Guanabara e Cidade Nova). No cenário padrão (IVS 0,45; peso territorial 1,4; capital social 2,5; letramento 50%; restrição de dados 30%; 8 equipes; 60 repetições), a fila FIFO resulta em SLA praticamente igual entre os dois grupos (366 h e 369 h), enquanto a GUT territorializada com "Também vi" reduz o SLA das periferias para 174 h contra 259 h nos bairros de menor vulnerabilidade (razão 0,67). Com 12 equipes, os valores passam a 43 h e 52 h (razão 0,83). O resultado decorre das premissas: as periferias concentram categorias de gravidade 5 (esgoto e alagamento) e recebem o peso territorial, de modo que a regra GUT as atende primeiro.
 
 ---
 
@@ -252,7 +258,9 @@ O tamanho do nó é proporcional ao peso de influência; a opacidade e a espessu
 2. O IVS é usado como índice agregado em $[0, 1]$, sem decomposição nas dimensões infraestrutura urbana, capital humano e renda e trabalho (IPEA, 2015).
 3. A rede neural é um metamodelo do simulador: um $R^2$ elevado indica que ela reproduz bem as premissas, não que as premissas estejam corretas.
 4. A execução do MiroFish que originou os 24 agentes teve 41 ações em 28 de 168 rodadas possíveis, sem repetição; não permite inferência estatística.
-5. A comparação entre políticas mostra a redistribuição da espera: a priorização GUT reduz fortemente o SLA das ocorrências graves, mas desloca a espera para as de baixa gravidade; por isso o percentil 90 do SLA quase não se altera entre as políticas no cenário padrão (cerca de 645 h a 650 h).
+5. O Aurá, citado como exemplo de periferia, não está entre os seis bairros da semente. As "áreas mais centrais" são representadas apenas pelos bairros com menor deslocamento de IVS no modelo (Guanabara e Cidade Nova), também por premissa do autor.
+6. A política FIFO do modelo é neutra entre bairros: ela não reproduz o histórico de atendimento mais lento das periferias. O painel mostra, portanto, o efeito de priorizar por gravidade e território, e não a dimensão da desigualdade real, que exigiria dados de atendimento da Prefeitura.
+7. A comparação entre políticas mostra a redistribuição da espera: a priorização GUT reduz fortemente o SLA das ocorrências graves, mas desloca a espera para as de baixa gravidade; por isso o percentil 90 do SLA quase não se altera entre as políticas no cenário padrão (cerca de 645 h a 650 h).
 
 ---
 

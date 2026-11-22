@@ -1,8 +1,13 @@
 """Zelador Digital Comunitário — painel de apoio à decisão (VIII SIEPEX).
 
+Foco: democratizar a denúncia urbana e reduzir a desigualdade de atendimento
+entre as periferias esquecidas de Ananindeua (Icuí-Guajará, Aurá, Águas Lindas)
+e as áreas mais centrais, com validação coletiva ("Também Vi") e Matriz GUT
+territorializada. A fila offline (IndexedDB) é recurso complementar de envio.
+
 Três abas:
   1. Monte Carlo de 30 dias + MLP (metamodelo do SLA em horas).
-  2. Dinâmica temporal: fila offline (IndexedDB/Background Sync) e resolução por bairro.
+  2. Dinâmica temporal: resolução por bairro e fila offline complementar (IndexedDB).
   3. Grafo multiagente dos 24 agentes MiroFish/Zep, Dia 1 a Dia 7.
 
 Todos os números vêm de premissas sintéticas (ver fundamentacao_teorica_siepex.md).
@@ -484,12 +489,19 @@ P = {"ivs": ivs, "prox": prox, "capital": capital, "letramento": letramento,
      "intermit": intermit, "equipes": equipes}
 
 st.title("Zelador Digital Comunitário")
-st.caption(f"Painel de apoio à decisão · VIII SIEPEX · {AUTORIA}")
+st.caption("Democratizar a denúncia urbana e reduzir a desigualdade de atendimento nas periferias "
+           f"de Ananindeua · Painel de apoio à decisão · VIII SIEPEX · {AUTORIA}")
 
 with st.expander("Guia didático: como ler este painel", icon=":material/school:"):
     g1, g2 = st.columns(2)
     with g1:
         st.markdown(
+            "**:material/campaign: Por que este painel existe.** Em Ananindeua, bairros periféricos como "
+            "**Icuí-Guajará, Aurá e Águas Lindas** convivem com esgoto e alagamento, mas costumam ser os "
+            "últimos da fila diante das áreas mais centrais. O Zelador Digital quer **democratizar a "
+            "denúncia urbana**: qualquer morador registra pelo celular, os vizinhos confirmam com "
+            "**\"Também vi\"** e a **Matriz GUT territorializada** coloca na frente o que é mais grave, "
+            "não quem chegou antes ou quem tem mais voz.\n\n"
             "**:material/format_list_numbered: FIFO — a fila comum.** Quem chega primeiro é atendido "
             "primeiro, como fila de banco. Um esgoto a céu aberto espera atrás de um poste apagado "
             "que chegou antes.\n\n"
@@ -497,7 +509,10 @@ with st.expander("Guia didático: como ler este painel", icon=":material/school:
             "**G × U × T**: *Gravidade* (esgoto vale 5, poste vale 3), *Urgência* (sobe com os dias de "
             "espera) e *Tendência* (sobe quando vizinhos marcam **\"Também vi\"**). A nota é multiplicada "
             "por um peso extra quando o problema está perto de **UBS ou escola**. Os casos de nota mais "
-            "alta são atendidos primeiro. É o que o Zelador Digital faz no Painel do Gestor.")
+            "alta são atendidos primeiro. É o que o Zelador Digital faz no Painel do Gestor.\n\n"
+            "**:material/cloud_off: Fila offline (complemento).** Quando faltam dados móveis, o relato "
+            "fica guardado no celular (IndexedDB) e sai sozinho quando a conexão volta. Agiliza o envio, "
+            "mas o centro da proposta é a priorização justa.")
     with g2:
         st.markdown(
             "**:material/casino: Monte Carlo (faixa P10–P90).** O computador sorteia o mês inteiro "
@@ -509,7 +524,8 @@ with st.expander("Guia didático: como ler este painel", icon=":material/school:
             "O **R²** diz quanto da variação do SLA a rede explica (1 = tudo). O **MAE** é o erro médio, "
             "em horas, de cada previsão.")
     st.info("Tudo aqui é simulado com premissas do autor e agentes fictícios. Serve para comparar "
-            "cenários, não para medir Ananindeua. Modelo completo em "
+            "cenários, não para medir Ananindeua. O Aurá não está entre os seis bairros simulados, "
+            "e o modelo não reproduz o histórico de abandono das periferias. Modelo completo em "
             "`simulation/fundamentacao_teorica_siepex.md`.", icon=":material/info:")
 
 mc = monte_carlo(P, reps)
@@ -696,7 +712,8 @@ with aba2:
     ])
 
     with st.container(border=True):
-        st.markdown("**Fila offline no celular (IndexedDB)** · média por hora, primeiros 7 dias")
+        st.markdown("**Fila offline no celular (IndexedDB)** · recurso complementar de envio · "
+                    "média por hora, primeiros 7 dias")
         h = np.arange(7 * 24)
         fig = go.Figure()
         for k, (nome, cor) in enumerate([("Background Sync (Chrome/Android)", CIANO),
@@ -719,7 +736,9 @@ with aba2:
         for b in sorted(BAIRROS, key=lambda b: -pct_b.loc[DIAS_MC - 1, b]):
             v = float(np.clip(pct_b.loc[DIAS_MC - 1, b], 0, 100))
             st.progress(v / 100, text=f"**{b}** — {num(v)}% resolvido · SLA médio {num(sla_b[b])} h")
-        st.caption("Percentual das ocorrências do bairro já resolvidas no 30º dia.")
+        st.caption("Percentual das ocorrências do bairro já resolvidas no 30º dia. Compare as periferias "
+                   "(Icuí-Guajará, Águas Lindas) com os bairros de menor vulnerabilidade no modelo "
+                   "(Guanabara, Cidade Nova) e troque a política acima.")
     with c2, st.container(border=True, height="stretch"):
         st.markdown("**Resolvidos por dia em cada bairro** · média das repetições")
         rb = mc["resolv_b"][pol_k][:, :DIAS_MC, :].mean(0)
