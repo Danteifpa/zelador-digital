@@ -1,0 +1,8 @@
+# Dependências do painel SIEPEX (simulation/dashboard_siepex.py).
+# Usado pelo Streamlit Community Cloud ao publicar o painel.
+streamlit==1.67.0
+scikit-learn==1.9.1
+plotly==7.1.0
+pandas==3.1.1
+networkx==3.6.1
+numpy==2.4.6
