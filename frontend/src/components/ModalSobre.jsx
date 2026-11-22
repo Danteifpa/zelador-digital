@@ -18,7 +18,10 @@ export default function ModalSobre({ setModalSobreAberto, abrirComoUsar }) {
           </button>
         </div>
         <div className="mt-5 space-y-2">
-          <p className="text-base font-black text-slate-800">Dante Dias Monteiro</p>
+          <div className="flex items-center gap-2">
+            <img src="/assinatura-dante.png" alt="Logo de Dante Dias Monteiro" width="27" height="32" className="h-8 w-auto opacity-80" />
+            <p className="text-base font-black text-slate-800">Dante Dias Monteiro</p>
+          </div>
           <p className="text-sm text-slate-600 leading-relaxed">
             Criador e desenvolvedor do Zelador Digital, projeto de iniciativa comunitária independente para mapeamento e acompanhamento de zeladoria urbana em Ananindeua.
           </p>

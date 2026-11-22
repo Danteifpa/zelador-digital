@@ -535,7 +535,11 @@ def carga_rho(p: dict) -> float:
 PRAZO_H = 168  # medida de equidade: resolvido em até 7 dias
 
 with st.sidebar:
-    st.caption(AUTORIA)
+    # assinatura discreta do autor (logo dourado sobre o fundo escuro)
+    with st.container(horizontal=True, vertical_alignment="center", gap="small", wrap=False):
+        st.image(Path(__file__).parent / "assets" / "assinatura-dante.png", width=36,
+                 alt="Logo de Dante Dias Monteiro")
+        st.caption(AUTORIA)
     st.header("Parâmetros do cenário")
     st.caption("Alimentam o Monte Carlo, a rede neural e o grafo.")
     st.subheader(":material/diversity_3: Sociais")

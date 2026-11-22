@@ -1185,6 +1185,17 @@ export default function App() {
             </Suspense>
           </ErrorBoundary>
         )}
+
+        {/* Assinatura discreta do autor */}
+        <button
+          type="button"
+          onClick={() => setModalSobreAberto(true)}
+          className="assinatura-autor mx-auto mt-8 mb-2 flex items-center gap-1.5 opacity-60 hover:opacity-90 transition-opacity cursor-pointer"
+          aria-label="Sobre o desenvolvedor, Dante Dias Monteiro"
+        >
+          <img src="/assinatura-dante.png" alt="" width="17" height="20" className="h-5 w-auto" />
+          <span className="text-[11px] font-semibold text-slate-700">por Dante Dias Monteiro</span>
+        </button>
       </main>
 
       {/* BARRA DE NAVEGAÇÃO INFERIOR */}
