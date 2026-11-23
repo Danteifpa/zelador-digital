@@ -1,16 +1,5 @@
 {
-  "redirects": [
-    {
-      "source": "/siepex",
-      "destination": "/siepex/",
-      "permanent": false
-    }
-  ],
   "rewrites": [
-    {
-      "source": "/siepex/",
-      "destination": "/siepex/index.html"
-    },
     {
       "source": "/(.*)",
       "destination": "/index.html"

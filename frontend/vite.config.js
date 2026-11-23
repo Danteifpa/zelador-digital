@@ -17,9 +17,7 @@ export default defineConfig({
         importScripts: ['push-sw.js', 'sync-sw.js'],
         globPatterns: ['**/*.{js,css,html,ico,png,svg,json}'],
         // Detector de rostos (~1,5 MB): não vai na instalação; baixa no primeiro uso e fica guardado.
-        globIgnores: ['**/face-api*.js', 'modelos/**', 'siepex/**'],
-        // Apresentação do SIEPEX (public/siepex) é página à parte, não o app.
-        navigateFallbackDenylist: [/^\/siepex/],
+        globIgnores: ['**/face-api*.js', 'modelos/**'],
         runtimeCaching: [
           {
             urlPattern: ({ url }) => url.pathname.startsWith('/modelos/') || /\/assets\/face-api[^/]*\.js$/.test(url.pathname),
