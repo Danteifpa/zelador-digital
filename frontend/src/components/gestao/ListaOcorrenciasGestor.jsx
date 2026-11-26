@@ -3,6 +3,7 @@ import { corCriticidade, eResolvida, etapaStatus, formatarData, protocoloCivico,
 import { ESTADOS, normalizarEstado, rotuloDoEstado } from '../../lib/status'
 import Spinner from './Spinner'
 import { rotuloDaCategoria } from '../../lib/categorias'
+import { nomeDoOrgao, orgaoDoChamado } from '../../lib/orgaos'
 import IconeCategoria from '../IconeCategoria'
 import { textoConfirmacoes } from '../../lib/apoios'
 import { estaDenunciada } from '../../lib/moderacao'
@@ -68,6 +69,9 @@ export default function ListaOcorrenciasGestor({ revisarFoto, acaoEmAndamento, a
                 <span className="mt-1 flex flex-wrap items-center gap-1">
                   <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full border ${ESTADOS[status].classeEtiqueta}`}>
                     {rotuloDoEstado(item.status)}
+                  </span>
+                  <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-slate-100 text-slate-600 border border-slate-200">
+                    {nomeDoOrgao(orgaoDoChamado(item))}
                   </span>
                   <span
                     className="text-[10px] font-black px-2 py-0.5 rounded-full text-white"

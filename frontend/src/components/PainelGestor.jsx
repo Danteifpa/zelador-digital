@@ -22,9 +22,10 @@ import ResultadoSus from './gestao/ResultadoSus'
 import SegundaEtapaLogin from './gestao/SegundaEtapaLogin'
 import { rotuloDaCategoria } from '../lib/categorias'
 import { caminhoNoStorage, estaDenunciada } from '../lib/moderacao'
+import { filtrarPorOrgao, orgaoDoChamado } from '../lib/orgaos'
 
 export default function PainelGestor({ ocorrencias = [], onAtualizarDados }) {
-  const { sessao, ehGestor, carregando: aVerificarSessao, erroVerificacao, precisaCodigo, entrar, confirmarCodigo, sair } = useSessaoGestor()
+  const { sessao, ehGestor, orgaoGestor, carregando: aVerificarSessao, erroVerificacao, precisaCodigo, entrar, confirmarCodigo, sair } = useSessaoGestor()
   const [filtroStatus, setFiltroStatus] = useState('todos')
   const [termoBusca, setTermoBusca] = useState('')
   const [itemEdicao, setItemEdicao] = useState(null)
@@ -41,6 +42,9 @@ export default function PainelGestor({ ocorrencias = [], onAtualizarDados }) {
   const [boletimCopiado, setBoletimCopiado] = useState(false)
   const [itemResolucao, setItemResolucao] = useState(null)
   const [fotoResolucaoPorId, setFotoResolucaoPorId] = useState({})
+  // null = ainda não escolheu: gestor de um órgão abre o painel já filtrado no órgão dele.
+  const [escolhaOrgao, setFiltroOrgao] = useState(null)
+  const filtroOrgao = escolhaOrgao ?? (orgaoGestor || 'todos')
 
   // Ao entrar como gestor, recarrega: a vista só mostra fotos ocultas para gestores.
   useEffect(() => {
@@ -190,13 +194,17 @@ export default function PainelGestor({ ocorrencias = [], onAtualizarDados }) {
 
     setCarregandoAcao(true)
     try {
+      const atualizacao = {
+        descricao: itemEdicao.descricao,
+        categoria: itemEdicao.categoria,
+        status: itemEdicao.status
+      }
+      // Só envia o órgão quando o gestor encaminhou para outro.
+      const original = ocorrencias.find((item) => item.id === itemEdicao.id)
+      if (itemEdicao.orgao && itemEdicao.orgao !== orgaoDoChamado(original)) atualizacao.orgao = itemEdicao.orgao
       const { error } = await supabase
         .from('ocorrencias')
-        .update({
-          descricao: itemEdicao.descricao,
-          categoria: itemEdicao.categoria,
-          status: itemEdicao.status
-        })
+        .update(atualizacao)
         .eq('id', itemEdicao.id)
 
       if (error) throw error
@@ -215,7 +223,7 @@ export default function PainelGestor({ ocorrencias = [], onAtualizarDados }) {
   })), [ocorrencias])
 
   const ocorrenciasFiltradasComGut = useMemo(() => {
-    const filtradas = ocorrenciasComGut.filter((item) => {
+    const filtradas = filtrarPorOrgao(ocorrenciasComGut, filtroOrgao).filter((item) => {
       const bateuStatus = filtroStatus === 'todos'
         || (filtroStatus === 'denunciados' ? estaDenunciada(item) : normalizarEstado(item.status) === filtroStatus)
       const busca = termoBusca.toLowerCase()
@@ -229,7 +237,7 @@ export default function PainelGestor({ ocorrencias = [], onAtualizarDados }) {
     })
     if (!ordenarPorGut) return filtradas
     return [...filtradas].sort((a, b) => b.gut.pontuacao - a.gut.pontuacao)
-  }, [ocorrenciasComGut, filtroStatus, termoBusca, ordenarPorGut])
+  }, [ocorrenciasComGut, filtroStatus, filtroOrgao, termoBusca, ordenarPorGut])
 
   const metricas = useMemo(() => {
     const resolvidas = ocorrencias.filter(eResolvida).length
@@ -434,7 +442,7 @@ export default function PainelGestor({ ocorrencias = [], onAtualizarDados }) {
 
       {abaPainel === 'lista' && (
         <>
-          <FiltrosGestao totalDenunciados={totalDenunciados} filtroStatus={filtroStatus} ordenarPorGut={ordenarPorGut} setFiltroStatus={setFiltroStatus} setOrdenarPorGut={setOrdenarPorGut} setTermoBusca={setTermoBusca} termoBusca={termoBusca} />
+          <FiltrosGestao filtroOrgao={filtroOrgao} orgaoGestor={orgaoGestor} setFiltroOrgao={setFiltroOrgao} totalDenunciados={totalDenunciados} filtroStatus={filtroStatus} ordenarPorGut={ordenarPorGut} setFiltroStatus={setFiltroStatus} setOrdenarPorGut={setOrdenarPorGut} setTermoBusca={setTermoBusca} termoBusca={termoBusca} />
           {itemEdicao && <FormEdicaoOcorrencia carregandoAcao={carregandoAcao} itemEdicao={itemEdicao} salvarEdicao={salvarEdicao} setItemEdicao={setItemEdicao} />}
           <ListaOcorrenciasGestor revisarFoto={revisarFoto} acaoEmAndamento={acaoEmAndamento} alterarStatusOcorrencia={alterarStatusOcorrencia} carregandoAcao={carregandoAcao} confirmarResolucao={confirmarResolucao} despachoPorId={despachoPorId} fotoResolucaoPorId={fotoResolucaoPorId} itemResolucao={itemResolucao} ocorrenciasFiltradasComGut={ocorrenciasFiltradasComGut} salvarDespacho={salvarDespacho} setDespachoPorId={setDespachoPorId} setFotoResolucaoPorId={setFotoResolucaoPorId} setItemEdicao={setItemEdicao} setItemExclusao={setItemExclusao} setItemResolucao={setItemResolucao} setTramitacaoAberta={setTramitacaoAberta} tramitacaoAberta={tramitacaoAberta} />
         </>

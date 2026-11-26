@@ -19,6 +19,7 @@ Tudo o que roda no Supabase do Zelador Digital está versionado nesta pasta.
 | [`20261115060000_limpeza_fotos_orfas.sql`](migrations/20261115060000_limpeza_fotos_orfas.sql) | Limpeza semanal (pg_cron, domingo 3h) das fotos sem ocorrência há mais de 7 dias, pela Edge Function `limpar-fotos-orfas` |
 | [`20261115070000_pesquisa_sus.sql`](migrations/20261115070000_pesquisa_sus.sql) | Questionário de usabilidade SUS anônimo (`registrar_pesquisa_sus`, 3 por dia por conexão), lido só por gestores |
 | [`20261115164000_search_path_pontuacao_sus.sql`](migrations/20261115164000_search_path_pontuacao_sus.sql) | `search_path` fixo em `pontuacao_sus` (alerta do linter) |
+| [`20261126120000_orgaos.sql`](migrations/20261126120000_orgaos.sql) | Encaminhamento por órgão: tabela `orgaos`, órgão automático pela categoria, `gestores.orgao` e regra para gestor de órgão só alterar o que é do órgão dele |
 
 Cada arquivo roda numa transação e pode ser aplicado mais de uma vez. Para aplicar: **SQL Editor → New query → colar → Run**.
 
@@ -51,6 +52,8 @@ Contas são criadas só pelo administrador (o registro público está desligado 
 
 | Situação | Como fazer |
 | --- | --- |
+| Ligar o gestor a um órgão | `update public.gestores set orgao = 'iluminacao' where user_id = (select id from auth.users where email = '...');` (ids em `select * from public.orgaos`) |
+| Voltar a gestor geral | `update public.gestores set orgao = null where user_id = ...;` |
 | Gestor esqueceu a senha | Authentication → Users → abrir o usuário → **Reset password** |
 | Retirar o acesso | `delete from public.gestores where user_id = (select id from auth.users where email = '...');` |
 
@@ -60,7 +63,8 @@ Contas são criadas só pelo administrador (o registro público está desligado 
 | --- | --- | --- | --- |
 | Morador (sem login) | sim | sim | não |
 | Conta logada que não é gestora | sim | sim | não |
-| Gestor | sim | sim | sim |
+| Gestor geral (sem órgão) | sim | sim | sim, qualquer chamado |
+| Gestor de um órgão | sim | sim | só os chamados do órgão dele; pode encaminhar para outro órgão |
 
 ## Verificação rápida
 
