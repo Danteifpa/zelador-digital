@@ -18,6 +18,7 @@ import useTelaGrande from '../lib/useTelaGrande'
 import ModalBoletim from './gestao/ModalBoletim'
 import ModalExclusao from './gestao/ModalExclusao'
 import ModalOficio from './gestao/ModalOficio'
+import ModalOrdemServico from './gestao/ModalOrdemServico'
 import ErrosDoApp from './gestao/ErrosDoApp'
 import SegurancaConta from './gestao/SegurancaConta'
 import ResultadoSus from './gestao/ResultadoSus'
@@ -49,6 +50,7 @@ export default function PainelGestor({ ocorrencias = [], onAtualizarDados }) {
   const [escolhaOrgao, setFiltroOrgao] = useState(null)
   const filtroOrgao = escolhaOrgao ?? (orgaoGestor || 'todos')
   const [selecionadaId, setSelecionadaId] = useState(null)
+  const [mostrarOrdem, setMostrarOrdem] = useState(false)
   const telaGrande = useTelaGrande()
 
   // Ao entrar como gestor, recarrega: a vista só mostra fotos ocultas para gestores.
@@ -464,6 +466,13 @@ export default function PainelGestor({ ocorrencias = [], onAtualizarDados }) {
               </div>
             )}
             <FiltrosGestao filtroOrgao={filtroOrgao} orgaoGestor={orgaoGestor} setFiltroOrgao={setFiltroOrgao} totalAtrasados={prazos.atrasados} totalDenunciados={totalDenunciados} filtroStatus={filtroStatus} ordenarPorGut={ordenarPorGut} setFiltroStatus={setFiltroStatus} setOrdenarPorGut={setOrdenarPorGut} setTermoBusca={setTermoBusca} termoBusca={termoBusca} />
+            <button
+              type="button"
+              onClick={() => setMostrarOrdem(true)}
+              className="w-full min-h-11 rounded-2xl border border-slate-300 bg-white text-xs font-black text-slate-800 hover:bg-slate-50 cursor-pointer"
+            >
+              📋 Ordem de serviço para a equipe ({ocorrenciasFiltradasComGut.filter((item) => !eResolvida(item)).length} abertos no filtro)
+            </button>
             {itemEdicao && <FormEdicaoOcorrencia carregandoAcao={carregandoAcao} itemEdicao={itemEdicao} salvarEdicao={salvarEdicao} setItemEdicao={setItemEdicao} />}
             <ListaOcorrenciasGestor selecionadaId={selecionadaId} onSelecionar={setSelecionadaId} revisarFoto={revisarFoto} acaoEmAndamento={acaoEmAndamento} alterarStatusOcorrencia={alterarStatusOcorrencia} carregandoAcao={carregandoAcao} confirmarResolucao={confirmarResolucao} despachoPorId={despachoPorId} fotoResolucaoPorId={fotoResolucaoPorId} itemResolucao={itemResolucao} ocorrenciasFiltradasComGut={ocorrenciasFiltradasComGut} salvarDespacho={salvarDespacho} setDespachoPorId={setDespachoPorId} setFotoResolucaoPorId={setFotoResolucaoPorId} setItemEdicao={setItemEdicao} setItemExclusao={setItemExclusao} setItemResolucao={setItemResolucao} setTramitacaoAberta={setTramitacaoAberta} tramitacaoAberta={tramitacaoAberta} />
           </div>
@@ -499,6 +508,13 @@ export default function PainelGestor({ ocorrencias = [], onAtualizarDados }) {
 
       {mostrarBoletim && <ModalBoletim boletimCopiado={boletimCopiado} copiarBoletim={copiarBoletim} setMostrarBoletim={setMostrarBoletim} textoBoletim={textoBoletim} />}
       {itemExclusao && <ModalExclusao carregandoAcao={carregandoAcao} eliminarOcorrencia={eliminarOcorrencia} itemExclusao={itemExclusao} setItemExclusao={setItemExclusao} />}
+      {mostrarOrdem && (
+        <ModalOrdemServico
+          chamados={ocorrenciasFiltradasComGut.filter((item) => !eResolvida(item))}
+          orgao={filtroOrgao}
+          onFechar={() => setMostrarOrdem(false)}
+        />
+      )}
       {mostrarOficio && <ModalOficio pendentesSelecionadas={pendentesSelecionadas} resolvidasAuditadas={resolvidasAuditadas} setMostrarOficio={setMostrarOficio} />}
     </div>
   )
