@@ -19,6 +19,7 @@ import ModalBoletim from './gestao/ModalBoletim'
 import ModalExclusao from './gestao/ModalExclusao'
 import ModalOficio from './gestao/ModalOficio'
 import ModalOrdemServico from './gestao/ModalOrdemServico'
+import ModalRelatorioMensal from './gestao/ModalRelatorioMensal'
 import ErrosDoApp from './gestao/ErrosDoApp'
 import SegurancaConta from './gestao/SegurancaConta'
 import ResultadoSus from './gestao/ResultadoSus'
@@ -51,6 +52,7 @@ export default function PainelGestor({ ocorrencias = [], onAtualizarDados }) {
   const filtroOrgao = escolhaOrgao ?? (orgaoGestor || 'todos')
   const [selecionadaId, setSelecionadaId] = useState(null)
   const [mostrarOrdem, setMostrarOrdem] = useState(false)
+  const [mostrarRelatorio, setMostrarRelatorio] = useState(false)
   const telaGrande = useTelaGrande()
 
   // Ao entrar como gestor, recarrega: a vista só mostra fotos ocultas para gestores.
@@ -491,6 +493,7 @@ export default function PainelGestor({ ocorrencias = [], onAtualizarDados }) {
         <>
           <AcoesRelatorios
             abrirOficio={abrirOficio}
+            abrirRelatorioMensal={() => setMostrarRelatorio(true)}
             abrirBoletim={() => {
               setBoletimCopiado(false)
               setMostrarBoletim(true)
@@ -508,6 +511,7 @@ export default function PainelGestor({ ocorrencias = [], onAtualizarDados }) {
 
       {mostrarBoletim && <ModalBoletim boletimCopiado={boletimCopiado} copiarBoletim={copiarBoletim} setMostrarBoletim={setMostrarBoletim} textoBoletim={textoBoletim} />}
       {itemExclusao && <ModalExclusao carregandoAcao={carregandoAcao} eliminarOcorrencia={eliminarOcorrencia} itemExclusao={itemExclusao} setItemExclusao={setItemExclusao} />}
+      {mostrarRelatorio && <ModalRelatorioMensal ocorrencias={ocorrencias} nomeApp="Zelador Digital" onFechar={() => setMostrarRelatorio(false)} />}
       {mostrarOrdem && (
         <ModalOrdemServico
           chamados={ocorrenciasFiltradasComGut.filter((item) => !eResolvida(item))}

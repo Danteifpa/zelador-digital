@@ -1,13 +1,14 @@
 /** Documentos e exportações da gestão (aba Relatórios). */
-export default function AcoesRelatorios({ abrirOficio, abrirBoletim, exportarCsv, exportarGeoJson }) {
+export default function AcoesRelatorios({ abrirOficio, abrirBoletim, abrirRelatorioMensal, exportarCsv, exportarGeoJson }) {
   const acoes = [
+    { icone: '🗓️', titulo: 'Relatório mensal', detalhe: 'Números do mês por órgão e bairro', onClick: abrirRelatorioMensal, destaque: 'bg-slate-900 hover:bg-slate-800 text-white border-slate-900' },
     { icone: '📄', titulo: 'Ofício', detalhe: 'Reivindicação ao poder público', onClick: abrirOficio, destaque: 'bg-indigo-600 hover:bg-indigo-700 text-white border-indigo-600' },
     { icone: '📢', titulo: 'Boletim', detalhe: 'Resumo para a comunidade', onClick: abrirBoletim, destaque: 'bg-emerald-600 hover:bg-emerald-700 text-white border-emerald-600' },
     { icone: '📊', titulo: 'Planilha', detalhe: 'Exportar CSV', onClick: exportarCsv },
     { icone: '🗺️', titulo: 'Dados do mapa', detalhe: 'Exportar GeoJSON', onClick: exportarGeoJson }
   ]
   return (
-    <section aria-label="Documentos e exportações" className="grid grid-cols-2 gap-2">
+    <section aria-label="Documentos e exportações" className="grid grid-cols-2 gap-2 [&>button:first-child]:col-span-2">
       {acoes.map((acao) => (
         <button
           key={acao.titulo}
