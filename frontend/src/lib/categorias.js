@@ -4,8 +4,10 @@
 // na restrição ocorrencias_categoria_valida do banco); as telas mostram
 // sempre o rótulo através de rotuloDaCategoria(), nunca o id cru ("Iluminacao").
 
+import { MARCA } from './marca'
+
 // `curto`: rótulo dos filtros do mapa; `cor`: cor do marcador no mapa.
-export const CATEGORIAS = [
+const TODAS_AS_CATEGORIAS = [
   { id: 'lixo', label: 'Lixo / Entulho', curto: 'Lixo', cor: '#d97706', icon: '🗑️', border: 'border-amber-400', activeBg: 'bg-amber-500 text-white', fala: 'Selecionado: Lixo e Entulho' },
   { id: 'iluminacao', label: 'Poste Apagado', curto: 'Postes', cor: '#4f46e5', icon: '💡', border: 'border-indigo-400', activeBg: 'bg-indigo-600 text-white', fala: 'Selecionado: Iluminação ou Poste Apagado' },
   { id: 'buraco', label: 'Buraco na Rua', curto: 'Buracos', cor: '#ea580c', icon: '🕳️', border: 'border-orange-500', activeBg: 'bg-orange-600 text-white', fala: 'Selecionado: Buraco na Rua e Vias' },
@@ -16,10 +18,15 @@ export const CATEGORIAS = [
   { id: 'sinalizacao', label: 'Sinalização', curto: 'Sinalização', cor: '#e11d48', icon: '🚦', border: 'border-rose-400', activeBg: 'bg-rose-600 text-white', fala: 'Selecionado: Sinalização ou semáforo com defeito' }
 ]
 
+// Categorias que o morador vê: todas ou só as ativas na marca (VITE_CATEGORIAS).
+export const CATEGORIAS = MARCA.categorias.length
+  ? TODAS_AS_CATEGORIAS.filter((categoria) => MARCA.categorias.includes(categoria.id))
+  : TODAS_AS_CATEGORIAS
+
 // Só a gestão pode reclassificar uma ocorrência como "Outro".
 export const CATEGORIA_OUTRO = { id: 'outro', label: 'Outro', curto: 'Outro', cor: '#2563eb', icon: '📍' }
 
-const POR_ID = Object.fromEntries([...CATEGORIAS, CATEGORIA_OUTRO].map((categoria) => [categoria.id, categoria]))
+const POR_ID = Object.fromEntries([...TODAS_AS_CATEGORIAS, CATEGORIA_OUTRO].map((categoria) => [categoria.id, categoria]))
 
 export function rotuloDaCategoria(id) {
   if (!id) return 'Não classificado'

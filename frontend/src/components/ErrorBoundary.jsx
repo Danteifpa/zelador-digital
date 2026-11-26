@@ -1,5 +1,6 @@
 import { Component } from 'react'
 import { registrarErro } from '../lib/registroErros'
+import { MARCA } from '../lib/marca'
 
 /**
  * Impede que um erro de renderização deixe o ecrã em branco.
@@ -47,7 +48,7 @@ export default class ErrorBoundary extends Component {
       return (
         <div role="alert" className="min-h-dvh flex items-center justify-center bg-slate-100 p-6">
           <div className="w-full max-w-sm rounded-3xl bg-white p-6 text-center shadow-xl border border-slate-200">
-            <h1 className="text-lg font-black text-slate-800">O Zelador Digital encontrou um erro</h1>
+            <h1 className="text-lg font-black text-slate-800">O {MARCA.nome} encontrou um erro</h1>
             <p className="mt-2 text-sm text-slate-600 leading-relaxed">
               Os registros salvos no celular não se perderam. Recarregue o aplicativo para continuar.
             </p>

@@ -1,9 +1,11 @@
 // Textos fixos do app: passos da apresentação inicial e "Novidades do app".
 
+import { MARCA } from './marca'
+
 export const ETAPAS_ONBOARDING = [
   {
     titulo: 'Voz Ativa no Seu Bairro',
-    descricao: 'O Zelador Digital é uma plataforma comunitária independente para identificar, documentar e transformar a zeladoria urbana.',
+    descricao: `O ${MARCA.nome} é uma plataforma ${MARCA.prefeitura ? `da ${MARCA.prefeitura}` : 'comunitária independente'} para identificar, documentar e transformar a zeladoria urbana.`,
     icone: '🏙️',
     gradiente: 'from-blue-600 to-indigo-600'
   },

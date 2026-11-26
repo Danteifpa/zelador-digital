@@ -1,4 +1,4 @@
-// Conteúdo do mini tutorial "Como usar o Zelador Digital".
+// Conteúdo do mini tutorial "Como usar o app".
 // Linguagem simples, frases curtas, pensado para ser lido em voz alta no Modo Fácil.
 
 export const PASSOS_COMO_USAR = [

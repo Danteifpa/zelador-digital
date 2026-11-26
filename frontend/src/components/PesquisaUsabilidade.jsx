@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { MessageSquareHeart, X } from 'lucide-react'
 import { AFIRMACOES_SUS, ESCALA_SUS, deveConvidarParaPesquisa, enviarPesquisaSus, marcarPesquisa } from '../lib/pesquisaSus'
+import { MARCA } from '../lib/marca'
 
 /**
  * Convite discreto (depois de um registro) para o questionário de usabilidade.
@@ -84,7 +85,7 @@ function Questionario({ grande, onFechar, onConcluir }) {
         </div>
 
         {obrigado ? (
-          <p className="rounded-2xl bg-emerald-50 p-6 text-center text-sm font-black text-emerald-800" role="status">Obrigado! Sua resposta ajuda a melhorar o Zelador Digital.</p>
+          <p className="rounded-2xl bg-emerald-50 p-6 text-center text-sm font-black text-emerald-800" role="status">Obrigado! Sua resposta ajuda a melhorar o {MARCA.nome}.</p>
         ) : (
           <>
             <ol className="space-y-4">

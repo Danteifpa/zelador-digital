@@ -28,6 +28,7 @@ import { rotuloDaCategoria } from '../lib/categorias'
 import { caminhoNoStorage, estaDenunciada } from '../lib/moderacao'
 import { filtrarPorOrgao, nomeDoOrgao, orgaoDoChamado } from '../lib/orgaos'
 import { estaAtrasado, resumoDosPrazos } from '../lib/prazos'
+import { MARCA } from '../lib/marca'
 
 export default function PainelGestor({ ocorrencias = [], onAtualizarDados }) {
   const { sessao, ehGestor, orgaoGestor, carregando: aVerificarSessao, erroVerificacao, precisaCodigo, entrar, confirmarCodigo, sair } = useSessaoGestor()
@@ -377,7 +378,7 @@ export default function PainelGestor({ ocorrencias = [], onAtualizarDados }) {
       : 'Nenhum foco crítico identificado.'
 
     return [
-      '📢 Boletim Mensal de Zeladoria Urbana - Ananindeua',
+      `📢 Boletim Mensal de Zeladoria Urbana - ${MARCA.cidade}`,
       '',
       `📊 Total de chamados levantados pela população: ${metricas.total}`,
       `✅ Taxa de resolução atual: ${metricas.percentualResolucao}%`,
@@ -388,7 +389,7 @@ export default function PainelGestor({ ocorrencias = [], onAtualizarDados }) {
       '📍 Bairros com maior número de focos críticos:',
       linhasBairros,
       '',
-      'Iniciativa cívica independente via Zelador Digital'
+      MARCA.prefeitura ? `${MARCA.nome} · ${MARCA.prefeitura}` : `Iniciativa cívica independente via ${MARCA.nome}`
     ].join('\n')
   }, [analiseCategorias, ocorrenciasComGut, metricas])
 
@@ -511,7 +512,7 @@ export default function PainelGestor({ ocorrencias = [], onAtualizarDados }) {
 
       {mostrarBoletim && <ModalBoletim boletimCopiado={boletimCopiado} copiarBoletim={copiarBoletim} setMostrarBoletim={setMostrarBoletim} textoBoletim={textoBoletim} />}
       {itemExclusao && <ModalExclusao carregandoAcao={carregandoAcao} eliminarOcorrencia={eliminarOcorrencia} itemExclusao={itemExclusao} setItemExclusao={setItemExclusao} />}
-      {mostrarRelatorio && <ModalRelatorioMensal ocorrencias={ocorrencias} nomeApp="Zelador Digital" onFechar={() => setMostrarRelatorio(false)} />}
+      {mostrarRelatorio && <ModalRelatorioMensal ocorrencias={ocorrencias} nomeApp={MARCA.prefeitura ? `${MARCA.nome} · ${MARCA.prefeitura}` : MARCA.nome} onFechar={() => setMostrarRelatorio(false)} />}
       {mostrarOrdem && (
         <ModalOrdemServico
           chamados={ocorrenciasFiltradasComGut.filter((item) => !eResolvida(item))}

@@ -33,6 +33,7 @@ import ModalConsultaProtocolo from './components/ModalConsultaProtocolo'
 import ModalDuplicata from './components/ModalDuplicata'
 import ModalNotificacoes from './components/ModalNotificacoes'
 import ModalSobre from './components/ModalSobre'
+import { MARCA } from './lib/marca'
 
 // Módulos pesados (Leaflet, Painel de Gestão, gerador de QR Code) só são descarregados quando
 // o utilizador os abre: quem só regista ocorrências não paga esse peso no 3G/4G.
@@ -579,7 +580,7 @@ export default function App() {
   const partilharOcorrencia = async (item) => {
     feedbackSensorial.toqueSuave()
     const categoriaLabel = rotuloDaCategoria(item.categoria)
-    const textoPartilha = `📢 *Zelador Digital - Ocorrência Comunitária*\n📍 *Tipo:* ${categoriaLabel}\n📝 *Detalhe:* ${item.descricao || 'Sem descrição'}\n📌 *Status:* ${rotuloDoEstado(item.status)}\n🗺️ *Ver no Mapa:* https://www.google.com/maps/search/?api=1&query=${item.latitude},${item.longitude}`
+    const textoPartilha = `📢 *${MARCA.nome} - Ocorrência Comunitária*\n📍 *Tipo:* ${categoriaLabel}\n📝 *Detalhe:* ${item.descricao || 'Sem descrição'}\n📌 *Status:* ${rotuloDoEstado(item.status)}\n🗺️ *Ver no Mapa:* https://www.google.com/maps/search/?api=1&query=${item.latitude},${item.longitude}`
 
     if (navigator.share) {
       try {
@@ -755,7 +756,7 @@ export default function App() {
     const longitudeValida = localizacao.longitude >= -48.45 && localizacao.longitude <= -48.30
     if (!latitudeValida || !longitudeValida) {
       feedbackSensorial.alertaErro()
-      mostrarAlertaToast('A localização capturada está fora da área aproximada de Ananindeua. Confirme o GPS antes de enviar.')
+      mostrarAlertaToast(`A localização capturada está fora da área aproximada de ${MARCA.cidade}. Confirme o GPS antes de enviar.`)
       return
     }
 
