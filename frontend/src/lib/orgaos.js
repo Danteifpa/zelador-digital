@@ -3,14 +3,15 @@
 // O banco preenche o órgão sozinho pela categoria (função orgao_da_categoria). Esta
 // tabela repete a regra para o app funcionar também com dados antigos, sem a coluna.
 
+// prazoDias: prazo padrão de atendimento (mesmo valor de public.orgaos.prazo_dias).
 export const ORGAOS = [
-  { id: 'iluminacao', nome: 'Iluminação pública' },
-  { id: 'limpeza', nome: 'Limpeza urbana' },
-  { id: 'saneamento', nome: 'Saneamento e drenagem' },
-  { id: 'vias', nome: 'Vias e calçadas' },
-  { id: 'meio_ambiente', nome: 'Meio ambiente e arborização' },
-  { id: 'transito', nome: 'Trânsito e sinalização' },
-  { id: 'triagem', nome: 'Triagem geral' }
+  { id: 'iluminacao', nome: 'Iluminação pública', prazoDias: 7 },
+  { id: 'limpeza', nome: 'Limpeza urbana', prazoDias: 5 },
+  { id: 'saneamento', nome: 'Saneamento e drenagem', prazoDias: 10 },
+  { id: 'vias', nome: 'Vias e calçadas', prazoDias: 15 },
+  { id: 'meio_ambiente', nome: 'Meio ambiente e arborização', prazoDias: 10 },
+  { id: 'transito', nome: 'Trânsito e sinalização', prazoDias: 7 },
+  { id: 'triagem', nome: 'Triagem geral', prazoDias: 3 }
 ]
 
 const ORGAO_POR_CATEGORIA = {
@@ -25,6 +26,7 @@ const ORGAO_POR_CATEGORIA = {
 }
 
 const NOME_POR_ID = Object.fromEntries(ORGAOS.map((o) => [o.id, o.nome]))
+const PRAZO_POR_ID = Object.fromEntries(ORGAOS.map((o) => [o.id, o.prazoDias]))
 
 /** Órgão padrão de uma categoria; o que não tem dono vai para a triagem. */
 export function orgaoDaCategoria(categoria) {
@@ -44,4 +46,9 @@ export function nomeDoOrgao(id) {
 export function filtrarPorOrgao(lista, orgao) {
   if (!orgao || orgao === 'todos') return lista
   return lista.filter((item) => orgaoDoChamado(item) === orgao)
+}
+
+/** Prazo de atendimento do órgão, em dias. */
+export function prazoDoOrgao(id) {
+  return PRAZO_POR_ID[id] ?? PRAZO_POR_ID.triagem
 }

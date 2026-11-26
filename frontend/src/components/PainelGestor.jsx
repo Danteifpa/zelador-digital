@@ -22,7 +22,8 @@ import ResultadoSus from './gestao/ResultadoSus'
 import SegundaEtapaLogin from './gestao/SegundaEtapaLogin'
 import { rotuloDaCategoria } from '../lib/categorias'
 import { caminhoNoStorage, estaDenunciada } from '../lib/moderacao'
-import { filtrarPorOrgao, orgaoDoChamado } from '../lib/orgaos'
+import { filtrarPorOrgao, nomeDoOrgao, orgaoDoChamado } from '../lib/orgaos'
+import { estaAtrasado, resumoDosPrazos } from '../lib/prazos'
 
 export default function PainelGestor({ ocorrencias = [], onAtualizarDados }) {
   const { sessao, ehGestor, orgaoGestor, carregando: aVerificarSessao, erroVerificacao, precisaCodigo, entrar, confirmarCodigo, sair } = useSessaoGestor()
@@ -225,7 +226,9 @@ export default function PainelGestor({ ocorrencias = [], onAtualizarDados }) {
   const ocorrenciasFiltradasComGut = useMemo(() => {
     const filtradas = filtrarPorOrgao(ocorrenciasComGut, filtroOrgao).filter((item) => {
       const bateuStatus = filtroStatus === 'todos'
-        || (filtroStatus === 'denunciados' ? estaDenunciada(item) : normalizarEstado(item.status) === filtroStatus)
+        || (filtroStatus === 'denunciados' ? estaDenunciada(item)
+          : filtroStatus === 'atrasados' ? estaAtrasado(item)
+          : normalizarEstado(item.status) === filtroStatus)
       const busca = termoBusca.toLowerCase()
       const bateuTexto =
         (item.descricao || '').toLowerCase().includes(busca) ||
@@ -293,6 +296,7 @@ export default function PainelGestor({ ocorrencias = [], onAtualizarDados }) {
 
   const pendentes = useMemo(() => ocorrencias.filter((item) => !eResolvida(item)), [ocorrencias])
   const totalDenunciados = useMemo(() => ocorrencias.filter(estaDenunciada).length, [ocorrencias])
+  const prazos = useMemo(() => resumoDosPrazos(filtrarPorOrgao(ocorrencias, filtroOrgao)), [ocorrencias, filtroOrgao])
   const pendentesSelecionadas = pendentes.filter((item) => selecionadasOficio.includes(item.id))
   const resolvidasAuditadas = ocorrencias.filter((item) => eResolvida(item) && item.foto_url && item.foto_resolucao)
   const maxCategoria = Math.max(1, ...analiseCategorias.map(([, quantidade]) => quantidade))
@@ -442,7 +446,19 @@ export default function PainelGestor({ ocorrencias = [], onAtualizarDados }) {
 
       {abaPainel === 'lista' && (
         <>
-          <FiltrosGestao filtroOrgao={filtroOrgao} orgaoGestor={orgaoGestor} setFiltroOrgao={setFiltroOrgao} totalDenunciados={totalDenunciados} filtroStatus={filtroStatus} ordenarPorGut={ordenarPorGut} setFiltroStatus={setFiltroStatus} setOrdenarPorGut={setOrdenarPorGut} setTermoBusca={setTermoBusca} termoBusca={termoBusca} />
+          {(prazos.atrasados > 0 || prazos.venceLogo > 0) && (
+            <div role="status" className="rounded-2xl border border-rose-200 bg-rose-50 p-3 text-xs text-rose-800">
+              <strong>⏰ Prazos{filtroOrgao !== 'todos' ? ` · ${nomeDoOrgao(filtroOrgao)}` : ''}:</strong>{' '}
+              {prazos.atrasados} chamado(s) atrasado(s)
+              {prazos.venceLogo > 0 && ` e ${prazos.venceLogo} vencendo em até 2 dias`}.
+              {prazos.atrasados > 0 && (
+                <button type="button" onClick={() => setFiltroStatus('atrasados')} className="ml-1 font-black underline cursor-pointer">
+                  Ver atrasados
+                </button>
+              )}
+            </div>
+          )}
+          <FiltrosGestao filtroOrgao={filtroOrgao} orgaoGestor={orgaoGestor} setFiltroOrgao={setFiltroOrgao} totalAtrasados={prazos.atrasados} totalDenunciados={totalDenunciados} filtroStatus={filtroStatus} ordenarPorGut={ordenarPorGut} setFiltroStatus={setFiltroStatus} setOrdenarPorGut={setOrdenarPorGut} setTermoBusca={setTermoBusca} termoBusca={termoBusca} />
           {itemEdicao && <FormEdicaoOcorrencia carregandoAcao={carregandoAcao} itemEdicao={itemEdicao} salvarEdicao={salvarEdicao} setItemEdicao={setItemEdicao} />}
           <ListaOcorrenciasGestor revisarFoto={revisarFoto} acaoEmAndamento={acaoEmAndamento} alterarStatusOcorrencia={alterarStatusOcorrencia} carregandoAcao={carregandoAcao} confirmarResolucao={confirmarResolucao} despachoPorId={despachoPorId} fotoResolucaoPorId={fotoResolucaoPorId} itemResolucao={itemResolucao} ocorrenciasFiltradasComGut={ocorrenciasFiltradasComGut} salvarDespacho={salvarDespacho} setDespachoPorId={setDespachoPorId} setFotoResolucaoPorId={setFotoResolucaoPorId} setItemEdicao={setItemEdicao} setItemExclusao={setItemExclusao} setItemResolucao={setItemResolucao} setTramitacaoAberta={setTramitacaoAberta} tramitacaoAberta={tramitacaoAberta} />
         </>

@@ -2,7 +2,7 @@ import { ESTADOS, ORDEM_ESTADOS } from '../../lib/status'
 import { ORGAOS, nomeDoOrgao } from '../../lib/orgaos'
 
 /** Busca, filtros de órgão e de estado e ordenação por prioridade GUT. */
-export default function FiltrosGestao({ filtroOrgao = 'todos', orgaoGestor = null, setFiltroOrgao = () => {}, totalDenunciados = 0, filtroStatus, ordenarPorGut, setFiltroStatus, setOrdenarPorGut, setTermoBusca, termoBusca }) {
+export default function FiltrosGestao({ filtroOrgao = 'todos', orgaoGestor = null, setFiltroOrgao = () => {}, totalAtrasados = 0, totalDenunciados = 0, filtroStatus, ordenarPorGut, setFiltroStatus, setOrdenarPorGut, setTermoBusca, termoBusca }) {
   return (
     <>
     {/* Busca e Filtros */}
@@ -49,6 +49,19 @@ export default function FiltrosGestao({ filtroOrgao = 'todos', orgaoGestor = nul
             {label}
           </button>
         ))}
+        {totalAtrasados > 0 && (
+          <button
+            type="button"
+            onClick={() => setFiltroStatus('atrasados')}
+            className={`px-3 py-1.5 rounded-xl text-[11px] font-bold transition-all shrink-0 cursor-pointer ${
+              filtroStatus === 'atrasados'
+                ? 'bg-rose-600 text-white shadow-2xs'
+                : 'bg-rose-50 border border-rose-200 text-rose-700 hover:bg-rose-100'
+            }`}
+          >
+            ⏰ Atrasados ({totalAtrasados})
+          </button>
+        )}
         {totalDenunciados > 0 && (
           <button
             type="button"

@@ -4,6 +4,13 @@ import { ESTADOS, normalizarEstado, rotuloDoEstado } from '../../lib/status'
 import Spinner from './Spinner'
 import { rotuloDaCategoria } from '../../lib/categorias'
 import { nomeDoOrgao, orgaoDoChamado } from '../../lib/orgaos'
+import { rotuloDoPrazo, situacaoDoPrazo } from '../../lib/prazos'
+
+const COR_PRAZO = {
+  atrasado: 'bg-rose-600 text-white border-rose-600',
+  vence_logo: 'bg-amber-100 text-amber-800 border-amber-300',
+  resolvido_com_atraso: 'bg-slate-100 text-slate-500 border-slate-200'
+}
 import IconeCategoria from '../IconeCategoria'
 import { textoConfirmacoes } from '../../lib/apoios'
 import { estaDenunciada } from '../../lib/moderacao'
@@ -73,6 +80,15 @@ export default function ListaOcorrenciasGestor({ revisarFoto, acaoEmAndamento, a
                   <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-slate-100 text-slate-600 border border-slate-200">
                     {nomeDoOrgao(orgaoDoChamado(item))}
                   </span>
+                  {(() => {
+                    const prazo = situacaoDoPrazo(item)
+                    const rotulo = rotuloDoPrazo(prazo)
+                    return rotulo ? (
+                      <span className={`text-[10px] font-black px-2 py-0.5 rounded-full border ${COR_PRAZO[prazo.estado]}`} title={`Prazo do órgão: ${prazo.prazoDias} dias`}>
+                        ⏰ {rotulo}
+                      </span>
+                    ) : null
+                  })()}
                   <span
                     className="text-[10px] font-black px-2 py-0.5 rounded-full text-white"
                     style={{ backgroundColor: corCriticidade(item.gut.pontuacao) }}

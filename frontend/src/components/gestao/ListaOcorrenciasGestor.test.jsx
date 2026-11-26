@@ -57,6 +57,11 @@ describe('lista do Painel de Gestão', () => {
     expect(screen.getByText('Saneamento e drenagem')).toBeTruthy()
   })
 
+  it('marca o chamado aberto além do prazo do órgão', () => {
+    renderizar({ ...base, status: 'pendente', created_at: '2020-01-01T12:00:00Z' })
+    expect(screen.getByText(/Atrasado/)).toBeTruthy()
+  })
+
   it('avisa quando o filtro não encontra nada', () => {
     renderizar(base, { ocorrenciasFiltradasComGut: [] })
     expect(screen.getByText('Nenhum chamado encontrado para este filtro.')).toBeTruthy()

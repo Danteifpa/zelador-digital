@@ -20,6 +20,7 @@ Tudo o que roda no Supabase do Zelador Digital está versionado nesta pasta.
 | [`20261115070000_pesquisa_sus.sql`](migrations/20261115070000_pesquisa_sus.sql) | Questionário de usabilidade SUS anônimo (`registrar_pesquisa_sus`, 3 por dia por conexão), lido só por gestores |
 | [`20261115164000_search_path_pontuacao_sus.sql`](migrations/20261115164000_search_path_pontuacao_sus.sql) | `search_path` fixo em `pontuacao_sus` (alerta do linter) |
 | [`20261126120000_orgaos.sql`](migrations/20261126120000_orgaos.sql) | Encaminhamento por órgão: tabela `orgaos`, órgão automático pela categoria, `gestores.orgao` e regra para gestor de órgão só alterar o que é do órgão dele |
+| [`20261127090000_prazos_orgaos.sql`](migrations/20261127090000_prazos_orgaos.sql) | Prazo de atendimento (dias) por órgão; ajuste com `update public.orgaos set prazo_dias = ... where id = ...` |
 
 Cada arquivo roda numa transação e pode ser aplicado mais de uma vez. Para aplicar: **SQL Editor → New query → colar → Run**.
 
