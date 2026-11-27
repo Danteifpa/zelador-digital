@@ -138,7 +138,7 @@ zelador-digital/
 │       │   └── gestao/       # Painel de gestão (lista, mapa GUT, ofício, boletim...)
 │       └── lib/              # Regras e serviços (status, fila offline, push, protocolo...)
 ├── supabase/                 # Migrações SQL e Edge Functions
-├── docs/                     # Arquitetura e imagens
+├── docs/                     # Arquitetura, imagens e marca (docs/marca)
 └── .github/                  # CI, modelos de issue e de pull request
 ```
 
@@ -158,7 +158,7 @@ Você pode usar, estudar, modificar e redistribuir o código. Quem oferecer o Ru
 
 As versões publicadas até a v1.1.0 e até o commit anterior a esta mudança (14/11/2026) continuam sob a licença MIT.
 
-O nome **Rua Viva** (antes Zelador Digital e Bora Zelar) e a identidade visual do projeto não são licenciados: não use a marca para oferecer cópias ou serviços derivados sem autorização.
+O nome **Rua Viva** (antes Zelador Digital e Bora Zelar) e a identidade visual do projeto não são licenciados: não use a marca para oferecer cópias ou serviços derivados sem autorização. Autoria, arquivos e situação no INPI: [`docs/marca/MARCA.md`](docs/marca/MARCA.md).
 
 Projeto independente de iniciativa comunitária, sem vínculo com a Prefeitura de Ananindeua.
 
