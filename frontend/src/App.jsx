@@ -22,7 +22,7 @@ import { CENTRO_COMUNITARIO, distanciaMetros, calcularDistanciaKm } from './lib/
 import { feedbackSensorial } from './lib/feedbackSensorial'
 import { extrairGpsExif } from './lib/gpsExif'
 import { NOTIFICACOES_PADRAO } from './lib/conteudoApp'
-import { protocoloDoEndereco, abaDoEndereco } from './lib/endereco'
+import { protocoloDoEndereco, abaDoEndereco, demoNoEndereco } from './lib/endereco'
 import TelaRegistros from './telas/TelaRegistros'
 import TelaRegistrar from './telas/TelaRegistrar'
 import TelaInicio from './telas/TelaInicio'
@@ -38,6 +38,7 @@ import { MARCA } from './lib/marca'
 // Módulos pesados (Leaflet, Painel de Gestão, gerador de QR Code) só são descarregados quando
 // o utilizador os abre: quem só regista ocorrências não paga esse peso no 3G/4G.
 const PainelGestor = lazyComRecarga(() => import('./components/PainelGestor'))
+const DemoGestao = lazyComRecarga(() => import('./components/DemoGestao'))
 const MapaOcorrencias = lazyComRecarga(() => import('./components/MapaOcorrencias'))
 const ModalQRCode = lazyComRecarga(() => import('./components/ModalQRCode'))
 const Transparencia = lazyComRecarga(() => import('./components/Transparencia'))
@@ -55,8 +56,11 @@ function CarregandoSecao({ texto = 'Carregando...' }) {
 
 export default function App() {
   const [modo, setModo] = useState(() => (localStorage.getItem('zelador_modo_interface') === 'facil' ? 'facil' : 'normal'))
-  const [abaAtiva, setAbaAtiva] = useState(() => (['mapa', 'registos', 'gestao', 'transparencia', 'ajuda'].includes(abaDoEndereco()) ? abaDoEndereco() : 'inicio'))
-  const [mostrarOnboarding, setMostrarOnboarding] = useState(() => !localStorage.getItem('zelador_onboarding_concluido'))
+  const [abaAtiva, setAbaAtiva] = useState(() => (demoNoEndereco() ? 'gestao' : ['mapa', 'registos', 'gestao', 'transparencia', 'ajuda'].includes(abaDoEndereco()) ? abaDoEndereco() : 'inicio'))
+  // Painel de Gestão com dados fictícios (/?demo=1 ou botão na tela de login)
+  const [modoDemo, setModoDemo] = useState(() => demoNoEndereco())
+  // No link de demonstração a apresentação não aparece na frente do painel.
+  const [mostrarOnboarding, setMostrarOnboarding] = useState(() => !demoNoEndereco() && !localStorage.getItem('zelador_onboarding_concluido'))
   const [etapaOnboarding, setEtapaOnboarding] = useState(0)
 
   // Modal QR Code
@@ -1182,7 +1186,11 @@ export default function App() {
         {abaAtiva === 'gestao' && (
           <ErrorBoundary nome="Gestão" chaveReset={abaAtiva}>
             <Suspense fallback={<CarregandoSecao texto="Carregando o Painel de Gestão..." />}>
-              <PainelGestor ocorrencias={registos} onAtualizarDados={carregarRegistos} />
+              {modoDemo ? (
+                <DemoGestao onSair={() => setModoDemo(false)} />
+              ) : (
+                <PainelGestor ocorrencias={registos} onAtualizarDados={carregarRegistos} onDemonstracao={() => setModoDemo(true)} />
+              )}
             </Suspense>
           </ErrorBoundary>
         )}

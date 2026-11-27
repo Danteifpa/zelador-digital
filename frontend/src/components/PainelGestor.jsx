@@ -30,8 +30,17 @@ import { filtrarPorOrgao, nomeDoOrgao, orgaoDoChamado } from '../lib/orgaos'
 import { estaAtrasado, resumoDosPrazos } from '../lib/prazos'
 import { MARCA } from '../lib/marca'
 
-export default function PainelGestor({ ocorrencias = [], onAtualizarDados }) {
-  const { sessao, ehGestor, orgaoGestor, carregando: aVerificarSessao, erroVerificacao, precisaCodigo, entrar, confirmarCodigo, sair } = useSessaoGestor()
+// Sessão fictícia do modo demonstração: gestor geral, sem login.
+const SESSAO_DEMO = { sessao: { user: { email: 'demonstracao@exemplo' } }, ehGestor: true, orgaoGestor: null, carregando: false, erroVerificacao: null, precisaCodigo: false }
+
+/**
+ * `demo` (opcional) liga o modo demonstração: { atualizar(id, campos), excluir(id), sair() }.
+ * Nele nada vai para o banco; as alterações ficam só na memória.
+ */
+export default function PainelGestor({ ocorrencias = [], onAtualizarDados, demo = null, onDemonstracao }) {
+  const sessaoReal = useSessaoGestor()
+  const { sessao, ehGestor, orgaoGestor, carregando: aVerificarSessao, erroVerificacao, precisaCodigo, entrar, confirmarCodigo } = demo ? { ...sessaoReal, ...SESSAO_DEMO } : sessaoReal
+  const sair = demo ? demo.sair : sessaoReal.sair
   const [filtroStatus, setFiltroStatus] = useState('todos')
   const [termoBusca, setTermoBusca] = useState('')
   const [itemEdicao, setItemEdicao] = useState(null)
@@ -58,9 +67,24 @@ export default function PainelGestor({ ocorrencias = [], onAtualizarDados }) {
 
   // Ao entrar como gestor, recarrega: a vista só mostra fotos ocultas para gestores.
   useEffect(() => {
-    if (ehGestor) onAtualizarDados?.()
+    if (ehGestor && !demo) onAtualizarDados?.()
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [ehGestor])
+
+  // Únicos pontos que gravam: no modo demonstração vão para a memória, nunca para o banco.
+  const gravar = async (id, campos) => {
+    if (demo) return demo.atualizar(id, campos)
+    const { error } = await supabase.from('ocorrencias').update(campos).eq('id', id)
+    if (error) throw error
+  }
+  const apagar = async (id) => {
+    if (demo) return demo.excluir(id)
+    const { error } = await supabase.from('ocorrencias').delete().eq('id', id)
+    if (error) throw error
+  }
+  const recarregar = async () => {
+    if (!demo && onAtualizarDados) await onAtualizarDados()
+  }
 
   const revisarFoto = async (item, acao) => {
     setCarregandoAcao(true)
@@ -68,16 +92,15 @@ export default function PainelGestor({ ocorrencias = [], onAtualizarDados }) {
     try {
       const atualizacao = { foto_oculta: false, total_denuncias: 0 }
       if (acao === 'remover') {
-        const caminho = caminhoNoStorage(item.foto_url)
+        const caminho = demo ? null : caminhoNoStorage(item.foto_url)
         if (caminho) {
           const { error: erroStorage } = await supabase.storage.from('ocorrencias').remove([caminho])
           if (erroStorage) throw erroStorage
         }
         atualizacao.foto_url = null
       }
-      const { error } = await supabase.from('ocorrencias').update(atualizacao).eq('id', item.id)
-      if (error) throw error
-      if (onAtualizarDados) await onAtualizarDados()
+      await gravar(item.id, atualizacao)
+      await recarregar()
     } catch (err) {
       alert('Erro ao revisar a denúncia: ' + err.message)
     } finally {
@@ -90,16 +113,11 @@ export default function PainelGestor({ ocorrencias = [], onAtualizarDados }) {
     setCarregandoAcao(true)
     setAcaoEmAndamento(`status-${id}`)
     try {
-      const { error } = await supabase
-        .from('ocorrencias')
-        .update({ status: novoStatus, updated_at: new Date().toISOString() })
-        .eq('id', id)
-
-      if (error) throw error
+      await gravar(id, { status: novoStatus, updated_at: new Date().toISOString() })
       if (novoStatus === 'resolvido') {
         dispararAvisoAtualizacao('Ocorrência resolvida', 'A atualização foi registrada no painel comunitário.')
       }
-      if (onAtualizarDados) await onAtualizarDados()
+      await recarregar()
     } catch (err) {
       alert('Erro ao atualizar estado: ' + err.message)
     } finally {
@@ -116,7 +134,9 @@ export default function PainelGestor({ ocorrencias = [], onAtualizarDados }) {
     setAcaoEmAndamento(`status-${id}`)
     try {
       let fotoResolucao = null
-      if (foto) {
+      if (foto && demo) {
+        fotoResolucao = URL.createObjectURL(foto)
+      } else if (foto) {
         const extensao = foto.name.split('.').pop()?.toLowerCase() || 'jpg'
         const caminho = `resolucoes/${id}-${Date.now()}.${extensao}`
         const { error: uploadError } = await supabase.storage
@@ -135,18 +155,13 @@ export default function PainelGestor({ ocorrencias = [], onAtualizarDados }) {
       // Coluna real na tabela; a vista ocorrencias_georreferenciadas expõe-na como foto_resolucao.
       if (fotoResolucao) atualizacao.foto_resolucao_url = fotoResolucao
 
-      const { error } = await supabase
-        .from('ocorrencias')
-        .update(atualizacao)
-        .eq('id', id)
-
-      if (error) throw error
+      await gravar(id, atualizacao)
       if (fotoResolucao) {
         dispararAvisoAtualizacao('Resolução comprovada', 'A foto da intervenção foi anexada ao protocolo.')
       }
       setItemResolucao(null)
       setFotoResolucaoPorId((atuais) => ({ ...atuais, [id]: null }))
-      if (onAtualizarDados) await onAtualizarDados()
+      await recarregar()
     } catch (err) {
       alert('Erro ao registrar resolução: ' + err.message)
     } finally {
@@ -159,18 +174,13 @@ export default function PainelGestor({ ocorrencias = [], onAtualizarDados }) {
     setCarregandoAcao(true)
     setAcaoEmAndamento(`despacho-${item.id}`)
     try {
-      const { error } = await supabase
-        .from('ocorrencias')
-        .update({
-          observacoes: despachoPorId[item.id] ?? item.observacoes ?? '',
-          updated_at: new Date().toISOString()
-        })
-        .eq('id', item.id)
-
-      if (error) throw error
+      await gravar(item.id, {
+        observacoes: despachoPorId[item.id] ?? item.observacoes ?? '',
+        updated_at: new Date().toISOString()
+      })
       dispararAvisoAtualizacao('Despacho registrado', 'A tramitação da ocorrência foi atualizada.')
       setTramitacaoAberta(null)
-      if (onAtualizarDados) await onAtualizarDados()
+      await recarregar()
     } catch (err) {
       alert('Erro ao salvar despacho: ' + err.message)
     } finally {
@@ -183,14 +193,9 @@ export default function PainelGestor({ ocorrencias = [], onAtualizarDados }) {
     if (!itemExclusao) return
     setCarregandoAcao(true)
     try {
-      const { error } = await supabase
-        .from('ocorrencias')
-        .delete()
-        .eq('id', itemExclusao.id)
-
-      if (error) throw error
+      await apagar(itemExclusao.id)
       setItemExclusao(null)
-      if (onAtualizarDados) await onAtualizarDados()
+      await recarregar()
     } catch (err) {
       alert('Erro ao excluir ocorrência: ' + err.message)
     } finally {
@@ -212,14 +217,9 @@ export default function PainelGestor({ ocorrencias = [], onAtualizarDados }) {
       // Só envia o órgão quando o gestor encaminhou para outro.
       const original = ocorrencias.find((item) => item.id === itemEdicao.id)
       if (itemEdicao.orgao && itemEdicao.orgao !== orgaoDoChamado(original)) atualizacao.orgao = itemEdicao.orgao
-      const { error } = await supabase
-        .from('ocorrencias')
-        .update(atualizacao)
-        .eq('id', itemEdicao.id)
-
-      if (error) throw error
+      await gravar(itemEdicao.id, atualizacao)
       setItemEdicao(null)
-      if (onAtualizarDados) await onAtualizarDados()
+      await recarregar()
     } catch (err) {
       alert('Erro ao salvar alterações: ' + err.message)
     } finally {
@@ -418,7 +418,7 @@ export default function PainelGestor({ ocorrencias = [], onAtualizarDados }) {
   }
 
   if (!sessao) {
-    return <LoginGestor onEntrar={entrar} />
+    return <LoginGestor onEntrar={entrar} onDemonstracao={onDemonstracao} />
   }
 
   if (precisaCodigo) {
@@ -450,6 +450,14 @@ export default function PainelGestor({ ocorrencias = [], onAtualizarDados }) {
 
   return (
     <div className="space-y-3 pb-8">
+      {demo && (
+        <div role="status" className="flex flex-wrap items-center justify-between gap-2 rounded-2xl border border-amber-300 bg-amber-50 p-3 text-xs text-amber-900">
+          <span><strong>Demonstração</strong> com chamados fictícios. Pode mexer à vontade: nada é salvo e nada chega ao banco.</span>
+          <button type="button" onClick={demo.sair} className="rounded-xl bg-amber-600 px-3 py-1.5 font-black text-white hover:bg-amber-700 cursor-pointer">
+            Sair da demonstração
+          </button>
+        </div>
+      )}
       <CabecalhoGestor abaPainel={abaPainel} sair={sair} sessao={sessao} setAbaPainel={setAbaPainel} />
       <MetricasGestao filtroStatus={abaPainel === 'lista' ? filtroStatus : null} metricas={metricas} onFiltrar={filtrarPorStatus} />
 
@@ -504,9 +512,13 @@ export default function PainelGestor({ ocorrencias = [], onAtualizarDados }) {
           />
           {pendentes.length > 0 && <SelecaoOficio alternarSelecaoOficio={alternarSelecaoOficio} pendentes={pendentes} selecionadasOficio={selecionadasOficio} setSelecionadasOficio={setSelecionadasOficio} />}
           <IndicadoresGestao analiseCategorias={analiseCategorias} analiseTemporal={analiseTemporal} maxCategoria={maxCategoria} maxTemporal={maxTemporal} metricas={metricas} />
-          <ResultadoSus />
-          <SegurancaConta />
-          <ErrosDoApp />
+          {!demo && (
+            <>
+              <ResultadoSus />
+              <SegurancaConta />
+              <ErrosDoApp />
+            </>
+          )}
         </>
       )}
 

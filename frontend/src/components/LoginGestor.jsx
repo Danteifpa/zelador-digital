@@ -4,7 +4,7 @@ import { useState } from 'react'
  * Ecrã de entrada do Painel de Gestão (email + senha do Supabase Auth).
  * As contas são criadas pelo administrador no painel do Supabase; não há registo público.
  */
-export default function LoginGestor({ onEntrar }) {
+export default function LoginGestor({ onEntrar, onDemonstracao }) {
   const [email, setEmail] = useState('')
   const [senha, setSenha] = useState('')
   const [erro, setErro] = useState(null)
@@ -75,6 +75,19 @@ export default function LoginGestor({ onEntrar }) {
           A sessão fica salva neste aparelho. Esqueceu a senha? Peça ao administrador para redefini-la no Supabase.
         </p>
       </form>
+
+      {onDemonstracao && (
+        <div className="mt-5 border-t border-slate-100 pt-4 text-center">
+          <p className="text-xs text-slate-600">Quer conhecer o painel antes?</p>
+          <button
+            type="button"
+            onClick={onDemonstracao}
+            className="mt-2 w-full min-h-11 rounded-xl border border-blue-200 bg-blue-50 text-sm font-black text-blue-700 hover:bg-blue-100 cursor-pointer"
+          >
+            Ver demonstração com dados fictícios
+          </button>
+        </div>
+      )}
     </div>
   )
 }
