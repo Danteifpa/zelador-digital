@@ -15,7 +15,7 @@ Thumbs.db
 frontend/test-results/
 frontend/playwright-report/
 
-# Simulação experimental (MiroFish): motor clonado e logs brutos não são versionados
+# Pasta local antiga do simulador (removido do repositório): não versionar
 simulation/mirofish-engine/
 simulation/logs/
 simulation/.venv/
