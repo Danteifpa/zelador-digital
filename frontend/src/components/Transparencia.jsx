@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react'
 import { ArrowLeft, Clock, Download, FileJson, Landmark, TriangleAlert } from 'lucide-react'
 import { supabase } from '../lib/supabase'
 import { baixarArquivo, dadosAbertosParaCsv, dadosAbertosParaGeoJson, formatarDias, ordenarBairros, resumirTransparencia } from '../lib/transparencia'
+import PainelEquidade from './PainelEquidade'
 import { MARCA } from '../lib/marca'
 
 /**
@@ -90,6 +91,8 @@ export default function Transparencia({ onVoltar }) {
 
       {erro && <p className="rounded-2xl border border-rose-200 bg-rose-50 p-3 text-xs font-bold text-rose-700" role="alert">{erro}</p>}
       {!bairros && !erro && <p className="p-6 text-center text-xs text-slate-500">Carregando os números...</p>}
+
+      <PainelEquidade />
 
       {bairros && (
         <section className="rounded-3xl border border-slate-200 bg-white p-4 space-y-3">
