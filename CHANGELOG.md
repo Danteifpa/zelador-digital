@@ -12,7 +12,7 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/). 
 - Marca, cidade e categorias configuráveis por prefeitura (variáveis `VITE_MARCA_*` e `VITE_CATEGORIAS`).
 
 ### Alterado
-- Novo nome: **Bora Zelar** (antes Zelador Digital). O símbolo continua; o protocolo segue no formato ZD-XXXXXX.
+- Novo nome: **Rua Viva** (antes Zelador Digital; "Bora Zelar" foi descartado por conflito com a marca ZELAR no INPI). O símbolo vira uma rua em curva com o pino (antes um Z), com ícones e imagem de compartilhamento novos; o protocolo segue no formato ZD-XXXXXX.
 - Nova identidade visual "Rota": símbolo (Z feito de rua com o pino do problema), nome em dois pesos com a fonte Sora (embutida, funciona offline), ícones do app, favicon, imagem de compartilhamento e cartaz atualizados. Cor principal #1D4ED8 e detalhe #F59E0B.
 - Código reorganizado: o App.jsx caiu de ~2.450 para ~1.240 linhas, com telas em `src/telas/`, modais em `src/components/` e funções auxiliares em `src/lib/` (sem mudança de comportamento).
 

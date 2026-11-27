@@ -1,8 +1,8 @@
 <div align="center">
 
-<img src="frontend/public/icon-192.png" alt="Ícone do Bora Zelar" width="96" height="96" />
+<img src="frontend/public/icon-192.png" alt="Ícone do Rua Viva" width="96" height="96" />
 
-# Bora Zelar
+# Rua Viva
 
 **Plataforma cívica para mapear, registrar e acompanhar problemas urbanos em Ananindeua (PA).**
 
@@ -154,11 +154,11 @@ Histórico de versões: [`CHANGELOG.md`](CHANGELOG.md).
 
 [GNU AGPL-3.0](LICENSE) © 2026 Dante Dias Monteiro. Veja também [`NOTICE`](NOTICE).
 
-Você pode usar, estudar, modificar e redistribuir o código. Quem oferecer o Bora Zelar (ou uma versão modificada) a outras pessoas pela internet, por exemplo como serviço para um órgão público, precisa publicar o código-fonte completo dessa versão sob a mesma licença.
+Você pode usar, estudar, modificar e redistribuir o código. Quem oferecer o Rua Viva (ou uma versão modificada) a outras pessoas pela internet, por exemplo como serviço para um órgão público, precisa publicar o código-fonte completo dessa versão sob a mesma licença.
 
 As versões publicadas até a v1.1.0 e até o commit anterior a esta mudança (14/11/2026) continuam sob a licença MIT.
 
-O nome **Bora Zelar** (antes Zelador Digital) e a identidade visual do projeto não são licenciados: não use a marca para oferecer cópias ou serviços derivados sem autorização.
+O nome **Rua Viva** (antes Zelador Digital e Bora Zelar) e a identidade visual do projeto não são licenciados: não use a marca para oferecer cópias ou serviços derivados sem autorização.
 
 Projeto independente de iniciativa comunitária, sem vínculo com a Prefeitura de Ananindeua.
 

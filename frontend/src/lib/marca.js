@@ -14,8 +14,8 @@
 // Este arquivo também é lido pelo vite.config.js para gerar o manifest e o index.html.
 
 export const MARCA_PADRAO = {
-  nome: 'Bora Zelar',
-  nomeCurto: 'Bora Zelar',
+  nome: 'Rua Viva',
+  nomeCurto: 'Rua Viva',
   cidade: 'Ananindeua',
   uf: 'PA',
   prefeitura: '',
