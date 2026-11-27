@@ -13,18 +13,25 @@ import FormEdicaoOcorrencia from './gestao/FormEdicaoOcorrencia'
 import AcoesRelatorios from './gestao/AcoesRelatorios'
 import ListaOcorrenciasGestor from './gestao/ListaOcorrenciasGestor'
 import MapaFocosCriticos from './gestao/MapaFocosCriticos'
+import DetalheSelecionada from './gestao/DetalheSelecionada'
+import useTelaGrande from '../lib/useTelaGrande'
 import ModalBoletim from './gestao/ModalBoletim'
 import ModalExclusao from './gestao/ModalExclusao'
 import ModalOficio from './gestao/ModalOficio'
+import ModalOrdemServico from './gestao/ModalOrdemServico'
+import ModalRelatorioMensal from './gestao/ModalRelatorioMensal'
 import ErrosDoApp from './gestao/ErrosDoApp'
 import SegurancaConta from './gestao/SegurancaConta'
 import ResultadoSus from './gestao/ResultadoSus'
 import SegundaEtapaLogin from './gestao/SegundaEtapaLogin'
 import { rotuloDaCategoria } from '../lib/categorias'
 import { caminhoNoStorage, estaDenunciada } from '../lib/moderacao'
+import { filtrarPorOrgao, nomeDoOrgao, orgaoDoChamado } from '../lib/orgaos'
+import { estaAtrasado, resumoDosPrazos } from '../lib/prazos'
+import { MARCA } from '../lib/marca'
 
 export default function PainelGestor({ ocorrencias = [], onAtualizarDados }) {
-  const { sessao, ehGestor, carregando: aVerificarSessao, erroVerificacao, precisaCodigo, entrar, confirmarCodigo, sair } = useSessaoGestor()
+  const { sessao, ehGestor, orgaoGestor, carregando: aVerificarSessao, erroVerificacao, precisaCodigo, entrar, confirmarCodigo, sair } = useSessaoGestor()
   const [filtroStatus, setFiltroStatus] = useState('todos')
   const [termoBusca, setTermoBusca] = useState('')
   const [itemEdicao, setItemEdicao] = useState(null)
@@ -41,6 +48,13 @@ export default function PainelGestor({ ocorrencias = [], onAtualizarDados }) {
   const [boletimCopiado, setBoletimCopiado] = useState(false)
   const [itemResolucao, setItemResolucao] = useState(null)
   const [fotoResolucaoPorId, setFotoResolucaoPorId] = useState({})
+  // null = ainda não escolheu: gestor de um órgão abre o painel já filtrado no órgão dele.
+  const [escolhaOrgao, setFiltroOrgao] = useState(null)
+  const filtroOrgao = escolhaOrgao ?? (orgaoGestor || 'todos')
+  const [selecionadaId, setSelecionadaId] = useState(null)
+  const [mostrarOrdem, setMostrarOrdem] = useState(false)
+  const [mostrarRelatorio, setMostrarRelatorio] = useState(false)
+  const telaGrande = useTelaGrande()
 
   // Ao entrar como gestor, recarrega: a vista só mostra fotos ocultas para gestores.
   useEffect(() => {
@@ -190,13 +204,17 @@ export default function PainelGestor({ ocorrencias = [], onAtualizarDados }) {
 
     setCarregandoAcao(true)
     try {
+      const atualizacao = {
+        descricao: itemEdicao.descricao,
+        categoria: itemEdicao.categoria,
+        status: itemEdicao.status
+      }
+      // Só envia o órgão quando o gestor encaminhou para outro.
+      const original = ocorrencias.find((item) => item.id === itemEdicao.id)
+      if (itemEdicao.orgao && itemEdicao.orgao !== orgaoDoChamado(original)) atualizacao.orgao = itemEdicao.orgao
       const { error } = await supabase
         .from('ocorrencias')
-        .update({
-          descricao: itemEdicao.descricao,
-          categoria: itemEdicao.categoria,
-          status: itemEdicao.status
-        })
+        .update(atualizacao)
         .eq('id', itemEdicao.id)
 
       if (error) throw error
@@ -215,9 +233,11 @@ export default function PainelGestor({ ocorrencias = [], onAtualizarDados }) {
   })), [ocorrencias])
 
   const ocorrenciasFiltradasComGut = useMemo(() => {
-    const filtradas = ocorrenciasComGut.filter((item) => {
+    const filtradas = filtrarPorOrgao(ocorrenciasComGut, filtroOrgao).filter((item) => {
       const bateuStatus = filtroStatus === 'todos'
-        || (filtroStatus === 'denunciados' ? estaDenunciada(item) : normalizarEstado(item.status) === filtroStatus)
+        || (filtroStatus === 'denunciados' ? estaDenunciada(item)
+          : filtroStatus === 'atrasados' ? estaAtrasado(item)
+          : normalizarEstado(item.status) === filtroStatus)
       const busca = termoBusca.toLowerCase()
       const bateuTexto =
         (item.descricao || '').toLowerCase().includes(busca) ||
@@ -229,7 +249,7 @@ export default function PainelGestor({ ocorrencias = [], onAtualizarDados }) {
     })
     if (!ordenarPorGut) return filtradas
     return [...filtradas].sort((a, b) => b.gut.pontuacao - a.gut.pontuacao)
-  }, [ocorrenciasComGut, filtroStatus, termoBusca, ordenarPorGut])
+  }, [ocorrenciasComGut, filtroStatus, filtroOrgao, termoBusca, ordenarPorGut])
 
   const metricas = useMemo(() => {
     const resolvidas = ocorrencias.filter(eResolvida).length
@@ -285,6 +305,7 @@ export default function PainelGestor({ ocorrencias = [], onAtualizarDados }) {
 
   const pendentes = useMemo(() => ocorrencias.filter((item) => !eResolvida(item)), [ocorrencias])
   const totalDenunciados = useMemo(() => ocorrencias.filter(estaDenunciada).length, [ocorrencias])
+  const prazos = useMemo(() => resumoDosPrazos(filtrarPorOrgao(ocorrencias, filtroOrgao)), [ocorrencias, filtroOrgao])
   const pendentesSelecionadas = pendentes.filter((item) => selecionadasOficio.includes(item.id))
   const resolvidasAuditadas = ocorrencias.filter((item) => eResolvida(item) && item.foto_url && item.foto_resolucao)
   const maxCategoria = Math.max(1, ...analiseCategorias.map(([, quantidade]) => quantidade))
@@ -357,7 +378,7 @@ export default function PainelGestor({ ocorrencias = [], onAtualizarDados }) {
       : 'Nenhum foco crítico identificado.'
 
     return [
-      '📢 Boletim Mensal de Zeladoria Urbana - Ananindeua',
+      `📢 Boletim Mensal de Zeladoria Urbana - ${MARCA.cidade}`,
       '',
       `📊 Total de chamados levantados pela população: ${metricas.total}`,
       `✅ Taxa de resolução atual: ${metricas.percentualResolucao}%`,
@@ -368,7 +389,7 @@ export default function PainelGestor({ ocorrencias = [], onAtualizarDados }) {
       '📍 Bairros com maior número de focos críticos:',
       linhasBairros,
       '',
-      'Iniciativa cívica independente via Zelador Digital'
+      MARCA.prefeitura ? `${MARCA.nome} · ${MARCA.prefeitura}` : `Iniciativa cívica independente via ${MARCA.nome}`
     ].join('\n')
   }, [analiseCategorias, ocorrenciasComGut, metricas])
 
@@ -433,11 +454,38 @@ export default function PainelGestor({ ocorrencias = [], onAtualizarDados }) {
       <MetricasGestao filtroStatus={abaPainel === 'lista' ? filtroStatus : null} metricas={metricas} onFiltrar={filtrarPorStatus} />
 
       {abaPainel === 'lista' && (
-        <>
-          <FiltrosGestao totalDenunciados={totalDenunciados} filtroStatus={filtroStatus} ordenarPorGut={ordenarPorGut} setFiltroStatus={setFiltroStatus} setOrdenarPorGut={setOrdenarPorGut} setTermoBusca={setTermoBusca} termoBusca={termoBusca} />
-          {itemEdicao && <FormEdicaoOcorrencia carregandoAcao={carregandoAcao} itemEdicao={itemEdicao} salvarEdicao={salvarEdicao} setItemEdicao={setItemEdicao} />}
-          <ListaOcorrenciasGestor revisarFoto={revisarFoto} acaoEmAndamento={acaoEmAndamento} alterarStatusOcorrencia={alterarStatusOcorrencia} carregandoAcao={carregandoAcao} confirmarResolucao={confirmarResolucao} despachoPorId={despachoPorId} fotoResolucaoPorId={fotoResolucaoPorId} itemResolucao={itemResolucao} ocorrenciasFiltradasComGut={ocorrenciasFiltradasComGut} salvarDespacho={salvarDespacho} setDespachoPorId={setDespachoPorId} setFotoResolucaoPorId={setFotoResolucaoPorId} setItemEdicao={setItemEdicao} setItemExclusao={setItemExclusao} setItemResolucao={setItemResolucao} setTramitacaoAberta={setTramitacaoAberta} tramitacaoAberta={tramitacaoAberta} />
-        </>
+        <div className="space-y-3 lg:grid lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)] lg:items-start lg:gap-5 lg:space-y-0">
+          <div className="space-y-3 min-w-0">
+            {(prazos.atrasados > 0 || prazos.venceLogo > 0) && (
+              <div role="status" className="rounded-2xl border border-rose-200 bg-rose-50 p-3 text-xs text-rose-800">
+                <strong>⏰ Prazos{filtroOrgao !== 'todos' ? ` · ${nomeDoOrgao(filtroOrgao)}` : ''}:</strong>{' '}
+                {prazos.atrasados} chamado(s) atrasado(s)
+                {prazos.venceLogo > 0 && ` e ${prazos.venceLogo} vencendo em até 2 dias`}.
+                {prazos.atrasados > 0 && (
+                  <button type="button" onClick={() => setFiltroStatus('atrasados')} className="ml-1 font-black underline cursor-pointer">
+                    Ver atrasados
+                  </button>
+                )}
+              </div>
+            )}
+            <FiltrosGestao filtroOrgao={filtroOrgao} orgaoGestor={orgaoGestor} setFiltroOrgao={setFiltroOrgao} totalAtrasados={prazos.atrasados} totalDenunciados={totalDenunciados} filtroStatus={filtroStatus} ordenarPorGut={ordenarPorGut} setFiltroStatus={setFiltroStatus} setOrdenarPorGut={setOrdenarPorGut} setTermoBusca={setTermoBusca} termoBusca={termoBusca} />
+            <button
+              type="button"
+              onClick={() => setMostrarOrdem(true)}
+              className="w-full min-h-11 rounded-2xl border border-slate-300 bg-white text-xs font-black text-slate-800 hover:bg-slate-50 cursor-pointer"
+            >
+              📋 Ordem de serviço para a equipe ({ocorrenciasFiltradasComGut.filter((item) => !eResolvida(item)).length} abertos no filtro)
+            </button>
+            {itemEdicao && <FormEdicaoOcorrencia carregandoAcao={carregandoAcao} itemEdicao={itemEdicao} salvarEdicao={salvarEdicao} setItemEdicao={setItemEdicao} />}
+            <ListaOcorrenciasGestor selecionadaId={selecionadaId} onSelecionar={setSelecionadaId} revisarFoto={revisarFoto} acaoEmAndamento={acaoEmAndamento} alterarStatusOcorrencia={alterarStatusOcorrencia} carregandoAcao={carregandoAcao} confirmarResolucao={confirmarResolucao} despachoPorId={despachoPorId} fotoResolucaoPorId={fotoResolucaoPorId} itemResolucao={itemResolucao} ocorrenciasFiltradasComGut={ocorrenciasFiltradasComGut} salvarDespacho={salvarDespacho} setDespachoPorId={setDespachoPorId} setFotoResolucaoPorId={setFotoResolucaoPorId} setItemEdicao={setItemEdicao} setItemExclusao={setItemExclusao} setItemResolucao={setItemResolucao} setTramitacaoAberta={setTramitacaoAberta} tramitacaoAberta={tramitacaoAberta} />
+          </div>
+          {telaGrande && (
+            <aside className="space-y-3 lg:sticky lg:top-20 min-w-0" aria-label="Mapa e detalhes">
+              <MapaFocosCriticos compacto ocorrenciasComGut={ocorrenciasFiltradasComGut} selecionadaId={selecionadaId} onSelecionar={setSelecionadaId} />
+              <DetalheSelecionada item={ocorrenciasFiltradasComGut.find((i) => i.id === selecionadaId)} carregandoAcao={carregandoAcao} alterarStatusOcorrencia={alterarStatusOcorrencia} />
+            </aside>
+          )}
+        </div>
       )}
 
       {abaPainel === 'mapa' && <MapaFocosCriticos ocorrenciasComGut={ocorrenciasComGut} />}
@@ -446,6 +494,7 @@ export default function PainelGestor({ ocorrencias = [], onAtualizarDados }) {
         <>
           <AcoesRelatorios
             abrirOficio={abrirOficio}
+            abrirRelatorioMensal={() => setMostrarRelatorio(true)}
             abrirBoletim={() => {
               setBoletimCopiado(false)
               setMostrarBoletim(true)
@@ -463,6 +512,14 @@ export default function PainelGestor({ ocorrencias = [], onAtualizarDados }) {
 
       {mostrarBoletim && <ModalBoletim boletimCopiado={boletimCopiado} copiarBoletim={copiarBoletim} setMostrarBoletim={setMostrarBoletim} textoBoletim={textoBoletim} />}
       {itemExclusao && <ModalExclusao carregandoAcao={carregandoAcao} eliminarOcorrencia={eliminarOcorrencia} itemExclusao={itemExclusao} setItemExclusao={setItemExclusao} />}
+      {mostrarRelatorio && <ModalRelatorioMensal ocorrencias={ocorrencias} nomeApp={MARCA.prefeitura ? `${MARCA.nome} · ${MARCA.prefeitura}` : MARCA.nome} onFechar={() => setMostrarRelatorio(false)} />}
+      {mostrarOrdem && (
+        <ModalOrdemServico
+          chamados={ocorrenciasFiltradasComGut.filter((item) => !eResolvida(item))}
+          orgao={filtroOrgao}
+          onFechar={() => setMostrarOrdem(false)}
+        />
+      )}
       {mostrarOficio && <ModalOficio pendentesSelecionadas={pendentesSelecionadas} resolvidasAuditadas={resolvidasAuditadas} setMostrarOficio={setMostrarOficio} />}
     </div>
   )

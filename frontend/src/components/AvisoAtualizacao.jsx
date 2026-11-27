@@ -1,4 +1,5 @@
 import { useRegisterSW } from 'virtual:pwa-register/react'
+import { MARCA } from '../lib/marca'
 
 const UMA_HORA = 60 * 60 * 1000
 
@@ -28,7 +29,7 @@ export default function AvisoAtualizacao() {
       className="fixed left-4 right-4 bottom-[calc(5.5rem+env(safe-area-inset-bottom))] z-[55] max-w-md mx-auto rounded-2xl bg-slate-900 text-white shadow-xl border border-slate-700 p-3.5 flex items-center justify-between gap-3"
     >
       <p className="text-sm font-bold leading-snug">
-        {haVersaoNova ? 'Há uma versão nova do Zelador Digital.' : 'O app já funciona sem internet.'}
+        {haVersaoNova ? `Há uma versão nova do ${MARCA.nome}.` : 'O app já funciona sem internet.'}
       </p>
       <div className="flex shrink-0 gap-2">
         {haVersaoNova && (

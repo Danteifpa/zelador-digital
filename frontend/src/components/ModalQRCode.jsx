@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { createPortal } from 'react-dom'
 import { QRCodeSVG } from 'qrcode.react'
 import Logotipo from './Logotipo'
+import { MARCA } from '../lib/marca'
 
 // QR Code com a identidade do app (public/qr-zelador.svg), gerado para https://zeladordigital.vercel.app.
 // Se o endereço oficial mudar, gere de novo; o QR simples (QRCodeSVG) segue como reserva para outros endereços.
@@ -55,13 +56,13 @@ export default function ModalQRCode({ url, onClose, imprimirAoAbrir = false }) {
           </button>
           <div className="mb-5">
             <Logotipo size={30} escuro className="justify-center" />
-            <h2 id="titulo-modal-qr" className="mt-3 text-lg font-black">Divulgue o Zelador Digital</h2>
+            <h2 id="titulo-modal-qr" className="mt-3 text-lg font-black">Divulgue o {MARCA.nome}</h2>
             <p className="mt-2 text-xs leading-relaxed text-slate-300">
-              Leve a fiscalização cidadã para a sua rua em Ananindeua
+              Leve a fiscalização cidadã para a sua rua em {MARCA.cidade}
             </p>
           </div>
           <div className="mx-auto inline-block rounded-3xl bg-white p-4 shadow-inner">
-            <img src={QR_PERSONALIZADO} alt="QR Code para abrir o Zelador Digital" width="200" height="200" className="block h-[200px] w-[200px]" />
+            <img src={QR_PERSONALIZADO} alt={`QR Code para abrir o ${MARCA.nome}`} width="200" height="200" className="block h-[200px] w-[200px]" />
           </div>
           <p className="mt-3 truncate text-[10px] text-slate-400">{url}</p>
           <div className="mt-4 grid grid-cols-2 gap-2">
@@ -88,16 +89,16 @@ export default function ModalQRCode({ url, onClose, imprimirAoAbrir = false }) {
       <div className="cartaz-qr-impressao hidden print:block">
         <div className="flex h-[297mm] w-[210mm] flex-col overflow-hidden bg-[#F6F7F2] text-[#14213D]">
           <div className="flex flex-col gap-[4mm] bg-[#1D4ED8] px-[16mm] pb-[13mm] pt-[16mm] text-[#F6F7F2]">
-            <p className="text-[11pt] font-black uppercase tracking-[0.25em] text-[#FFE08A]">Ananindeua · zeladoria comunitária</p>
+            <p className="text-[11pt] font-black uppercase tracking-[0.25em] text-[#FFE08A]">{MARCA.cidade} · zeladoria comunitária</p>
             <h1 className="font-marca text-[52pt] font-extrabold leading-[0.98] tracking-tight">Quem vai consertar a sua rua?</h1>
             <p className="max-w-[150mm] text-[15pt] leading-snug text-[#E4EAF5]">A resposta começa com uma foto. Aponte a câmera aqui.</p>
           </div>
           <div className="flex flex-1 flex-col items-center justify-center gap-[5mm]">
             <div className="rounded-[8mm] bg-white p-[3mm] shadow-[0_0_0_2.5mm_#ffffff]">
               {url === URL_OFICIAL ? (
-                <img src={QR_PERSONALIZADO} alt="QR Code para abrir o Zelador Digital" className="block h-[100mm] w-[100mm]" />
+                <img src={QR_PERSONALIZADO} alt={`QR Code para abrir o ${MARCA.nome}`} className="block h-[100mm] w-[100mm]" />
               ) : (
-                <QRCodeSVG value={url} size={378} bgColor="#ffffff" fgColor="#14213D" level="M" includeMargin title="QR Code para abrir o Zelador Digital" />
+                <QRCodeSVG value={url} size={378} bgColor="#ffffff" fgColor="#14213D" level="M" includeMargin title={`QR Code para abrir o ${MARCA.nome}`} />
               )}
             </div>
             <p className="text-[13pt] font-black uppercase tracking-[0.08em] text-[#EA580C]">Escaneie com a câmera</p>

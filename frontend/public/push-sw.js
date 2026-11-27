@@ -1,4 +1,4 @@
-// Avisos push do Zelador Digital.
+// Avisos push do app.
 // Carregado dentro do service worker gerado pelo Workbox (vite.config.js → workbox.importScripts).
 
 self.addEventListener('push', (evento) => {
@@ -6,11 +6,11 @@ self.addEventListener('push', (evento) => {
   try {
     dados = evento.data ? evento.data.json() : {}
   } catch {
-    dados = { titulo: 'Zelador Digital', corpo: evento.data ? evento.data.text() : '' }
+    dados = { titulo: 'Atualização do seu chamado', corpo: evento.data ? evento.data.text() : '' }
   }
 
   evento.waitUntil(
-    self.registration.showNotification(dados.titulo || 'Zelador Digital', {
+    self.registration.showNotification(dados.titulo || 'Atualização do seu chamado', {
       body: dados.corpo || 'Há uma atualização no seu protocolo.',
       icon: '/icon-192.png',
       badge: '/icon-192.png',

@@ -1,4 +1,5 @@
 import { QrCode } from 'lucide-react'
+import { MARCA } from '../lib/marca'
 
 /**
  * Cartão inferior de divulgação comunitária: abrir QR Code ou imprimir cartaz A4.
@@ -13,7 +14,7 @@ export default function CommunityAlert({ onAbrirQrCode, onImprimirCartaz }) {
         <div>
           <h2 className="text-sm font-semibold text-slate-800">Divulgação Comunitária &amp; Fiscalização</h2>
           <p className="mt-0.5 line-clamp-1 text-xs leading-relaxed text-slate-600">
-            Ajude a fortalecer a fiscalização cívica em Ananindeua. Compartilhe o acesso direto ou gere o cartaz oficial para impressão.
+            Ajude a fortalecer a fiscalização cívica em {MARCA.cidade}. Compartilhe o acesso direto ou gere o cartaz oficial para impressão.
           </p>
         </div>
       </div>

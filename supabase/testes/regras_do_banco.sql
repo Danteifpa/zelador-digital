@@ -160,4 +160,57 @@ begin
   reset role;
 end $t$;
 
+-- 9) Encaminhamento por órgão ----------------------------------------------------------
+do $t$
+declare
+  luz uuid := gen_random_uuid(); geral uuid := gen_random_uuid();
+  da_luz uuid := gen_random_uuid(); do_lixo uuid := gen_random_uuid();
+  alterados int; o text;
+begin
+  -- Morador: o órgão vem da categoria, mesmo que tente escolher outro.
+  perform set_config('request.headers', '{"x-forwarded-for":"203.0.113.60"}', true);
+  perform set_config('request.jwt.claims', '{"role":"anon"}', true);
+  set local role anon;
+  insert into public.ocorrencias (id, categoria, descricao, status, localizacao, orgao)
+  values (da_luz, 'iluminacao', 'teste orgao', 'pendente', 'SRID=4326;POINT(-48.39 -1.365)', 'vias'),
+         (do_lixo, 'lixo', 'teste orgao', 'pendente', 'SRID=4326;POINT(-48.39 -1.365)', null);
+  reset role;
+  select orgao into o from public.ocorrencias where id = da_luz;
+  perform pg_temp.verificar(o = 'iluminacao', 'morador não escolhe o órgão: vem da categoria');
+  perform pg_temp.verificar((select count(*) from public.ocorrencias where orgao is null) = 0, 'toda ocorrência tem órgão');
+
+  insert into auth.users (id, instance_id, aud, role, email) values
+    (luz, '00000000-0000-0000-0000-000000000000', 'authenticated', 'authenticated', 'luz@exemplo.invalid'),
+    (geral, '00000000-0000-0000-0000-000000000000', 'authenticated', 'authenticated', 'geral@exemplo.invalid');
+  insert into public.gestores (user_id, nome, orgao) values (luz, 'Gestor da iluminação', 'iluminacao'), (geral, 'Gestor geral', null);
+
+  -- Gestor da iluminação: não altera o que é da limpeza.
+  perform set_config('request.jwt.claims', json_build_object('sub', luz, 'role', 'authenticated', 'aal', 'aal1')::text, true);
+  set local role authenticated;
+  update public.ocorrencias set status = 'em_analise' where id = do_lixo;
+  get diagnostics alterados = row_count;
+  perform pg_temp.verificar(alterados = 0, 'gestor de órgão não altera chamado de outro órgão');
+  update public.ocorrencias set status = 'em_analise' where id = da_luz;
+  get diagnostics alterados = row_count;
+  perform pg_temp.verificar(alterados = 1, 'gestor de órgão altera chamado do próprio órgão');
+  -- Encaminha para outro órgão e deixa de poder alterar.
+  update public.ocorrencias set orgao = 'vias' where id = da_luz;
+  get diagnostics alterados = row_count;
+  perform pg_temp.verificar(alterados = 1, 'gestor encaminha chamado para outro órgão');
+  update public.ocorrencias set status = 'pendente' where id = da_luz;
+  get diagnostics alterados = row_count;
+  perform pg_temp.verificar(alterados = 0, 'depois de encaminhar, o chamado sai da alçada dele');
+  reset role;
+
+  -- Gestor geral: altera qualquer chamado; trocar a categoria troca o órgão.
+  perform set_config('request.jwt.claims', json_build_object('sub', geral, 'role', 'authenticated', 'aal', 'aal1')::text, true);
+  set local role authenticated;
+  update public.ocorrencias set categoria = 'arvore' where id = do_lixo;
+  get diagnostics alterados = row_count;
+  reset role;
+  perform pg_temp.verificar(alterados = 1, 'gestor geral altera qualquer chamado');
+  select orgao into o from public.ocorrencias where id = do_lixo;
+  perform pg_temp.verificar(o = 'meio_ambiente', 'nova categoria leva ao órgão dela');
+end $t$;
+
 rollback;

@@ -3,6 +3,14 @@ import { corCriticidade, eResolvida, etapaStatus, formatarData, protocoloCivico,
 import { ESTADOS, normalizarEstado, rotuloDoEstado } from '../../lib/status'
 import Spinner from './Spinner'
 import { rotuloDaCategoria } from '../../lib/categorias'
+import { nomeDoOrgao, orgaoDoChamado } from '../../lib/orgaos'
+import { rotuloDoPrazo, situacaoDoPrazo } from '../../lib/prazos'
+
+const COR_PRAZO = {
+  atrasado: 'bg-rose-600 text-white border-rose-600',
+  vence_logo: 'bg-amber-100 text-amber-800 border-amber-300',
+  resolvido_com_atraso: 'bg-slate-100 text-slate-500 border-slate-200'
+}
 import IconeCategoria from '../IconeCategoria'
 import { textoConfirmacoes } from '../../lib/apoios'
 import { estaDenunciada } from '../../lib/moderacao'
@@ -26,7 +34,7 @@ const PROXIMOS_PASSOS = {
 const ETAPAS = ['Registrado', 'Em análise', 'Resolvido']
 
 /** Lista priorizada: uma linha por chamado; tocar abre fotos, tramitação e ações. */
-export default function ListaOcorrenciasGestor({ revisarFoto, acaoEmAndamento, alterarStatusOcorrencia, carregandoAcao, confirmarResolucao, despachoPorId, fotoResolucaoPorId, itemResolucao, ocorrenciasFiltradasComGut, salvarDespacho, setDespachoPorId, setFotoResolucaoPorId, setItemEdicao, setItemExclusao, setItemResolucao, setTramitacaoAberta, tramitacaoAberta }) {
+export default function ListaOcorrenciasGestor({ revisarFoto, acaoEmAndamento, alterarStatusOcorrencia, carregandoAcao, confirmarResolucao, despachoPorId, fotoResolucaoPorId, itemResolucao, ocorrenciasFiltradasComGut, salvarDespacho, setDespachoPorId, setFotoResolucaoPorId, setItemEdicao, setItemExclusao, setItemResolucao, setTramitacaoAberta, tramitacaoAberta, selecionadaId = null, onSelecionar }) {
   const [aberto, setAberto] = useState(null)
 
   if (ocorrenciasFiltradasComGut.length === 0) {
@@ -46,11 +54,11 @@ export default function ListaOcorrenciasGestor({ revisarFoto, acaoEmAndamento, a
         const etapaAtual = etapaStatus(item)
 
         return (
-          <li key={item.id} className={`bg-white rounded-2xl border shadow-2xs overflow-hidden ${expandido ? 'border-blue-300' : 'border-slate-200'}`}>
+          <li key={item.id} className={`bg-white rounded-2xl border shadow-2xs overflow-hidden ${expandido ? 'border-blue-300' : 'border-slate-200'} ${selecionadaId === item.id ? 'lg:ring-2 lg:ring-blue-500' : ''}`}>
             {/* Linha resumida */}
             <button
               type="button"
-              onClick={() => setAberto(expandido ? null : item.id)}
+              onClick={() => { setAberto(expandido ? null : item.id); onSelecionar?.(item.id) }}
               aria-expanded={expandido}
               className="w-full flex items-start gap-3 p-3 text-left hover:bg-slate-50 transition-colors cursor-pointer"
             >
@@ -69,6 +77,18 @@ export default function ListaOcorrenciasGestor({ revisarFoto, acaoEmAndamento, a
                   <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full border ${ESTADOS[status].classeEtiqueta}`}>
                     {rotuloDoEstado(item.status)}
                   </span>
+                  <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-slate-100 text-slate-600 border border-slate-200">
+                    {nomeDoOrgao(orgaoDoChamado(item))}
+                  </span>
+                  {(() => {
+                    const prazo = situacaoDoPrazo(item)
+                    const rotulo = rotuloDoPrazo(prazo)
+                    return rotulo ? (
+                      <span className={`text-[10px] font-black px-2 py-0.5 rounded-full border ${COR_PRAZO[prazo.estado]}`} title={`Prazo do órgão: ${prazo.prazoDias} dias`}>
+                        ⏰ {rotulo}
+                      </span>
+                    ) : null
+                  })()}
                   <span
                     className="text-[10px] font-black px-2 py-0.5 rounded-full text-white"
                     style={{ backgroundColor: corCriticidade(item.gut.pontuacao) }}

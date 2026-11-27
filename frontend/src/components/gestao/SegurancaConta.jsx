@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { ShieldAlert, ShieldCheck } from 'lucide-react'
 import { supabase } from '../../lib/supabase'
+import { MARCA } from '../../lib/marca'
 
 /**
  * Cartão no Painel para ativar a verificação em duas etapas (app autenticador, TOTP).
@@ -31,7 +32,7 @@ export default function SegurancaConta() {
     for (const f of fatores?.all || []) {
       if (f.status !== 'verified') await supabase.auth.mfa.unenroll({ factorId: f.id })
     }
-    const { data, error } = await supabase.auth.mfa.enroll({ factorType: 'totp', friendlyName: `Zelador Digital ${new Date().toLocaleDateString('pt-BR')}` })
+    const { data, error } = await supabase.auth.mfa.enroll({ factorType: 'totp', friendlyName: `${MARCA.nome} ${new Date().toLocaleDateString('pt-BR')}` })
     setOcupado(false)
     if (error) {
       setErro('Não foi possível começar agora. Tente novamente em instantes.')

@@ -1,4 +1,5 @@
 import Logotipo from './Logotipo'
+import { MARCA } from '../lib/marca'
 export default function ModalSobre({ setModalSobreAberto, abrirComoUsar }) {
   return (
     <div className="fixed inset-0 z-50 bg-slate-950/70 backdrop-blur-xs flex items-end sm:items-center justify-center p-0 sm:p-4">
@@ -23,7 +24,7 @@ export default function ModalSobre({ setModalSobreAberto, abrirComoUsar }) {
             <p className="text-base font-black text-slate-800">Dante Dias Monteiro</p>
           </div>
           <p className="text-sm text-slate-600 leading-relaxed">
-            Criador e desenvolvedor do Zelador Digital, projeto de iniciativa comunitária independente para mapeamento e acompanhamento de zeladoria urbana em Ananindeua.
+            Criador e desenvolvedor do {MARCA.nome}, projeto de iniciativa comunitária independente para mapeamento e acompanhamento de zeladoria urbana em {MARCA.cidade}.
           </p>
           <p className="text-xs text-slate-500 leading-relaxed">
             Software livre sob a licença AGPL-3.0.{' '}
@@ -35,7 +36,7 @@ export default function ModalSobre({ setModalSobreAberto, abrirComoUsar }) {
             >
               Ver código-fonte
             </a>
-            . O nome e a marca Zelador Digital não fazem parte da licença.
+            . O nome e a marca {MARCA.nome} não fazem parte da licença.
           </p>
         </div>
         {abrirComoUsar && (

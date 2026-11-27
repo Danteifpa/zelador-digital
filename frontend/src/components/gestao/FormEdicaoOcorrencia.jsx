@@ -1,8 +1,9 @@
 import { protocoloCivico } from '../../lib/protocolo'
 import { ESTADOS, ORDEM_ESTADOS, normalizarEstado } from '../../lib/status'
 import { CATEGORIAS, CATEGORIA_OUTRO } from '../../lib/categorias'
+import { ORGAOS, orgaoDaCategoria, orgaoDoChamado } from '../../lib/orgaos'
 
-/** Formulário para editar descrição, categoria e estado de uma ocorrência. */
+/** Formulário para editar descrição, categoria, órgão e estado de uma ocorrência. */
 export default function FormEdicaoOcorrencia({ carregandoAcao, itemEdicao, salvarEdicao, setItemEdicao }) {
   return (
     <>
@@ -23,13 +24,27 @@ export default function FormEdicaoOcorrencia({ carregandoAcao, itemEdicao, salva
           <label className="text-[11px] font-bold text-slate-700 block mb-1">Categoria:</label>
           <select
             value={itemEdicao.categoria}
-            onChange={(e) => setItemEdicao({ ...itemEdicao, categoria: e.target.value })}
+            onChange={(e) => setItemEdicao({ ...itemEdicao, categoria: e.target.value, orgao: orgaoDaCategoria(e.target.value) })}
             className="w-full bg-white border border-slate-300 rounded-xl px-3 py-2 text-xs font-bold"
           >
             {[...CATEGORIAS, CATEGORIA_OUTRO].map((categoria) => (
               <option key={categoria.id} value={categoria.id}>
                 {categoria.icon} {categoria.label}
               </option>
+            ))}
+          </select>
+        </div>
+
+        <div>
+          <label htmlFor="orgao-edicao" className="text-[11px] font-bold text-slate-700 block mb-1">Órgão responsável (encaminhar para):</label>
+          <select
+            id="orgao-edicao"
+            value={orgaoDoChamado(itemEdicao)}
+            onChange={(e) => setItemEdicao({ ...itemEdicao, orgao: e.target.value })}
+            className="w-full bg-white border border-slate-300 rounded-xl px-3 py-2 text-xs font-bold"
+          >
+            {ORGAOS.map((o) => (
+              <option key={o.id} value={o.id}>{o.nome}</option>
             ))}
           </select>
         </div>

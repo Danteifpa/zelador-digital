@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { ArrowLeft, ChevronLeft, ChevronRight, Share2, Volume2 } from 'lucide-react'
 import { PASSOS_COMO_USAR, textoDoPasso } from '../lib/comoUsar'
 import { feedbackSensorial } from '../lib/feedbackSensorial'
+import { MARCA } from '../lib/marca'
 
 const URL_TUTORIAL = 'https://zeladordigital.vercel.app/?aba=ajuda'
 
@@ -25,9 +26,9 @@ export default function ComoUsar({ onVoltar, onIr, falarTexto, modoFacil = false
   }
 
   const compartilhar = async () => {
-    const texto = 'Aprenda a usar o Zelador Digital, o app para registrar problemas da sua rua em Ananindeua:'
+    const texto = `Aprenda a usar o ${MARCA.nome}, o app para registrar problemas da sua rua em ${MARCA.cidade}:`
     try {
-      if (navigator.share) await navigator.share({ title: 'Como usar o Zelador Digital', text: texto, url: URL_TUTORIAL })
+      if (navigator.share) await navigator.share({ title: `Como usar o ${MARCA.nome}`, text: texto, url: URL_TUTORIAL })
       else {
         await navigator.clipboard.writeText(`${texto} ${URL_TUTORIAL}`)
         falarTexto?.('Link copiado.')
@@ -40,7 +41,7 @@ export default function ComoUsar({ onVoltar, onIr, falarTexto, modoFacil = false
   const base = modoFacil ? 'text-base' : 'text-sm'
 
   return (
-    <div className="flex flex-col gap-3 px-2.5 py-2 max-w-lg mx-auto w-full" aria-label="Como usar o Zelador Digital">
+    <div className="flex flex-col gap-3 px-2.5 py-2 max-w-lg mx-auto w-full" aria-label={`Como usar o ${MARCA.nome}`}>
       <div className="flex items-center justify-between">
         <button type="button" onClick={onVoltar} className="inline-flex items-center gap-1.5 rounded-xl px-2 py-1.5 text-xs font-bold text-slate-600 hover:bg-slate-100 cursor-pointer">
           <ArrowLeft size={16} aria-hidden="true" /> Início
