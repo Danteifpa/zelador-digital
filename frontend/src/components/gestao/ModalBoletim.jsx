@@ -7,7 +7,7 @@ export default function ModalBoletim({ boletimCopiado, copiarBoletim, setMostrar
         <div className="flex items-start justify-between gap-3">
           <div>
             <h2 id="titulo-boletim" className="text-base font-black">Boletim Comunitário</h2>
-            <p className="text-[10px] text-slate-400 mt-1">Resumo pronto para compartilhar no WhatsApp.</p>
+            <p className="text-[10px] text-slate-500 mt-1">Resumo pronto para compartilhar no WhatsApp.</p>
           </div>
           <button
             type="button"

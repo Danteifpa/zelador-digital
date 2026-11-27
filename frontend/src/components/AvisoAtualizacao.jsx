@@ -48,7 +48,7 @@ export default function AvisoAtualizacao() {
             setProntoOffline(false)
           }}
           className="min-h-11 rounded-xl bg-slate-700 hover:bg-slate-600 px-3 text-sm font-bold cursor-pointer"
-          aria-label="Fechar aviso"
+          aria-label={haVersaoNova ? 'Depois, fechar aviso' : 'OK, fechar aviso'}
         >
           {haVersaoNova ? 'Depois' : 'OK'}
         </button>

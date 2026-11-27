@@ -35,7 +35,7 @@ export default function MapaFocosCriticos({ ocorrenciasComGut, selecionadaId = n
       <div className="flex items-center justify-between rounded-2xl bg-slate-900 px-4 py-3 text-white">
         <div>
           <h3 className="text-xs font-black">Onde estão os chamados</h3>
-          <p className="text-[10px] text-slate-400 mt-1">Quanto maior o círculo, mais urgente.</p>
+          <p className="text-[10px] text-slate-500 mt-1">Quanto maior o círculo, mais urgente.</p>
         </div>
         <div className="flex gap-2 text-[9px] font-bold">
           <span className="text-rose-300">● Crítica</span>

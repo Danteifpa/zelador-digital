@@ -1,0 +1,7 @@
+# Rua Viva
+
+> App comunitário e gratuito para registrar, mapear e acompanhar problemas urbanos (buracos, lixo, postes apagados, esgoto, alagamento) em Ananindeua (PA).
+
+- [Página inicial](/): registrar um problema, ver o mapa e consultar protocolo.
+- [Transparência](/?aba=transparencia): números por bairro, Painel de Equidade e dados abertos (CSV e GeoJSON).
+- [Código-fonte](https://github.com/Danteifpa/zelador-digital): licença AGPL-3.0.

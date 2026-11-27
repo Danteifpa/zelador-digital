@@ -8,7 +8,7 @@ export default function Onboarding({ concluirOnboarding, etapaOnboarding, setEta
         <div className="flex justify-end w-full">
           <button
             onClick={concluirOnboarding}
-            className="text-xs font-bold text-slate-400 hover:text-slate-600 transition-colors cursor-pointer"
+            className="text-xs font-bold text-slate-500 hover:text-slate-700 transition-colors cursor-pointer"
           >
             Pular apresentação ✕
           </button>

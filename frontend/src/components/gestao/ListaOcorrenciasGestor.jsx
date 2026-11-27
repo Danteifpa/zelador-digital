@@ -70,7 +70,7 @@ export default function ListaOcorrenciasGestor({ revisarFoto, acaoEmAndamento, a
               <span className="min-w-0 flex-1">
                 <span className="flex items-center justify-between gap-2">
                   <span className="text-[10px] font-black uppercase tracking-wide text-slate-500">{protocoloCivico(item.id)}</span>
-                  <span className="text-[10px] text-slate-400">{item.created_at ? new Date(item.created_at).toLocaleDateString('pt-BR') : ''}</span>
+                  <span className="text-[10px] text-slate-500">{item.created_at ? new Date(item.created_at).toLocaleDateString('pt-BR') : ''}</span>
                 </span>
                 <span className="block text-sm font-black text-slate-800 truncate">{rotuloDaCategoria(item.categoria)}</span>
                 <span className="mt-1 flex flex-wrap items-center gap-1">

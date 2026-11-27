@@ -1191,8 +1191,8 @@ export default function App() {
         <button
           type="button"
           onClick={() => setModalSobreAberto(true)}
-          className="assinatura-autor mx-auto mt-8 mb-2 flex items-center gap-1.5 opacity-60 hover:opacity-90 transition-opacity cursor-pointer"
-          aria-label="Sobre o desenvolvedor, Dante Dias Monteiro"
+          className="assinatura-autor mx-auto mt-8 mb-2 flex items-center gap-1.5 opacity-80 hover:opacity-100 transition-opacity cursor-pointer"
+          aria-label="por Dante Dias Monteiro: sobre o desenvolvedor"
         >
           <img src="/assinatura-dante.png" alt="" width="17" height="20" className="h-5 w-auto" />
           <span className="text-[11px] font-semibold text-slate-700">por Dante Dias Monteiro</span>
@@ -1209,7 +1209,7 @@ export default function App() {
               setOcorrenciaSelecionada(null)
             }}
             className={`flex flex-col items-center justify-center space-y-1 transition-colors cursor-pointer ${
-              abaAtiva === 'inicio' ? 'text-blue-600' : 'text-slate-400 hover:text-slate-700'
+              abaAtiva === 'inicio' ? 'text-blue-600' : 'text-slate-500 hover:text-slate-700'
             }`}
           >
             <span aria-hidden="true"><House size={22} strokeWidth={2.1} /></span>
@@ -1223,7 +1223,7 @@ export default function App() {
               setOcorrenciaSelecionada(null)
             }}
             className={`flex flex-col items-center justify-center space-y-1 transition-colors cursor-pointer ${
-              abaAtiva === 'mapa' ? 'text-blue-600' : 'text-slate-400 hover:text-slate-700'
+              abaAtiva === 'mapa' ? 'text-blue-600' : 'text-slate-500 hover:text-slate-700'
             }`}
           >
             <span aria-hidden="true"><IconeMapa size={22} strokeWidth={2.1} /></span>
@@ -1250,7 +1250,7 @@ export default function App() {
               setOcorrenciaSelecionada(null)
             }}
             className={`flex flex-col items-center justify-center space-y-1 transition-colors cursor-pointer ${
-              abaAtiva === 'registos' ? 'text-blue-600' : 'text-slate-400 hover:text-slate-700'
+              abaAtiva === 'registos' ? 'text-blue-600' : 'text-slate-500 hover:text-slate-700'
             }`}
           >
             <span aria-hidden="true"><ClipboardList size={22} strokeWidth={2.1} /></span>
@@ -1264,7 +1264,7 @@ export default function App() {
               setOcorrenciaSelecionada(null)
             }}
             className={`flex flex-col items-center justify-center space-y-1 transition-colors cursor-pointer ${
-              abaAtiva === 'gestao' ? 'text-blue-600' : 'text-slate-400 hover:text-slate-700'
+              abaAtiva === 'gestao' ? 'text-blue-600' : 'text-slate-500 hover:text-slate-700'
             }`}
           >
             <span aria-hidden="true"><LayoutDashboard size={22} strokeWidth={2.1} /></span>
