@@ -165,7 +165,7 @@ export default function TelaRegistros({ TAMANHO_PAGINA_LISTA, buscaTexto, carreg
                   </div>
                   <p className="text-xs text-slate-600 mt-1 line-clamp-1">{reg.descricao}</p>
                   <div className="flex items-center space-x-2 mt-1">
-                    <span className="text-[10px] text-slate-400">
+                    <span className="text-[10px] text-slate-500">
                       {reg.created_at ? new Date(reg.created_at).toLocaleDateString('pt-BR') : ''}
                     </span>
                     {distPonto !== null && (

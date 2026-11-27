@@ -79,7 +79,7 @@ export default function Header({
               onClick={onAbrirNotificacoes}
               className="relative flex h-10 w-10 items-center justify-center rounded-full border border-slate-200 bg-slate-100 text-slate-700 transition-colors hover:bg-slate-200 cursor-pointer"
               title="Avisos e Notificações"
-              aria-label="Avisos e notificações"
+              aria-label={notificacoesNaoLidas > 0 ? `${notificacoesNaoLidas} avisos e notificações não lidos` : 'Avisos e notificações'}
             >
               <Bell size={18} strokeWidth={2.25} />
               {notificacoesNaoLidas > 0 && (

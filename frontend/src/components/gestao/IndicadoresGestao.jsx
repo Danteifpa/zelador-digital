@@ -27,7 +27,7 @@ export default function IndicadoresGestao({ analiseCategorias, analiseTemporal, 
       <div className="bg-slate-900 rounded-3xl p-4 text-white">
         <div className="flex items-center justify-between mb-4">
           <h3 className="text-xs font-black">Chamados por tipo</h3>
-          <span className="text-[10px] text-slate-400">Do maior para o menor</span>
+          <span className="text-[10px] text-slate-500">Do maior para o menor</span>
         </div>
         <div className="space-y-3">
           {analiseCategorias.length === 0 ? (
@@ -48,7 +48,7 @@ export default function IndicadoresGestao({ analiseCategorias, analiseTemporal, 
       <div className="bg-white border border-slate-200 rounded-3xl p-4">
         <div className="flex items-center justify-between mb-2">
           <h3 className="text-xs font-black text-slate-800">Novos chamados por semana</h3>
-          <span className="text-[10px] text-slate-400">Últimas 4 semanas</span>
+          <span className="text-[10px] text-slate-500">Últimas 4 semanas</span>
         </div>
         <svg viewBox="0 0 320 130" className="w-full h-36" role="img" aria-label="Ocorrências nas últimas quatro semanas">
           <line x1="20" y1="105" x2="305" y2="105" stroke="#cbd5e1" strokeWidth="1" />

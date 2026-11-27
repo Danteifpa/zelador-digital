@@ -10,7 +10,7 @@ export default function TelaInicio({ bannerPwaIgnorado, imprimirCartazA4, instal
       <StatsOverview total={totalRegistos} resolvidos={totalResolvidos} pendentes={totalPendentes} />
 
       <div>
-        <h2 className="mb-1.5 text-xs font-bold text-slate-500 uppercase tracking-wider px-1">Ações Rápidas</h2>
+        <h2 className="mb-1.5 text-xs font-bold text-slate-600 uppercase tracking-wider px-1">Ações Rápidas</h2>
 
         <RegisterButton
           onClick={() => {
@@ -32,7 +32,7 @@ export default function TelaInicio({ bannerPwaIgnorado, imprimirCartazA4, instal
               <ClipboardList size={17} strokeWidth={2.25} aria-hidden="true" />
             </div>
             <span className="text-xs font-black text-slate-800">Registros</span>
-            <span className="text-[10px] text-slate-400 mt-0.5">Histórico</span>
+            <span className="text-[10px] text-slate-500 mt-0.5">Histórico</span>
           </button>
 
           <button
@@ -46,7 +46,7 @@ export default function TelaInicio({ bannerPwaIgnorado, imprimirCartazA4, instal
               <IconeMapa size={17} strokeWidth={2.25} aria-hidden="true" />
             </div>
             <span className="text-xs font-black text-slate-800">Ver Mapa</span>
-            <span className="text-[10px] text-slate-400 mt-0.5">Pontos e calor</span>
+            <span className="text-[10px] text-slate-500 mt-0.5">Pontos e calor</span>
           </button>
 
           <button
@@ -64,7 +64,7 @@ export default function TelaInicio({ bannerPwaIgnorado, imprimirCartazA4, instal
               <Search size={17} strokeWidth={2.25} aria-hidden="true" />
             </div>
             <span className="text-xs font-black text-slate-800">Consultar</span>
-            <span className="text-[10px] text-slate-400 mt-0.5">Protocolo</span>
+            <span className="text-[10px] text-slate-500 mt-0.5">Protocolo</span>
           </button>
         </div>
 
@@ -81,7 +81,7 @@ export default function TelaInicio({ bannerPwaIgnorado, imprimirCartazA4, instal
           </span>
           <span className="flex-1 min-w-0">
             <span className="block text-xs font-black text-slate-800">Transparência por bairro</span>
-            <span className="block text-[10px] text-slate-400">Quanto está em aberto, quanto foi resolvido e dados abertos</span>
+            <span className="block text-[10px] text-slate-500">Quanto está em aberto, quanto foi resolvido e dados abertos</span>
           </span>
           <ChevronRight size={18} className="text-slate-400" aria-hidden="true" />
         </button>
