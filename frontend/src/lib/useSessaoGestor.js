@@ -11,6 +11,8 @@ export default function useSessaoGestor() {
   const [erroVerificacao, setErroVerificacao] = useState(null)
   // Verificação em duas etapas: a conta tem app autenticador e esta sessão ainda não digitou o código.
   const [precisaCodigo, setPrecisaCodigo] = useState(false)
+  // Órgão do gestor (null = gestor geral, vê tudo).
+  const [orgaoGestor, setOrgaoGestor] = useState(null)
 
   useEffect(() => {
     let ativo = true
@@ -21,6 +23,7 @@ export default function useSessaoGestor() {
       setErroVerificacao(null)
       if (!novaSessao) {
         setEhGestor(false)
+        setOrgaoGestor(null)
         setPrecisaCodigo(false)
         setCarregando(false)
         return
@@ -42,6 +45,16 @@ export default function useSessaoGestor() {
         setEhGestor(false)
       } else {
         setEhGestor(data === true)
+        if (data === true) {
+          // Antes da migração de órgãos a coluna não existe: segue como gestor geral.
+          const { data: gestor, error: erroOrgao } = await supabase
+            .from('gestores')
+            .select('orgao')
+            .eq('user_id', novaSessao.user.id)
+            .maybeSingle()
+          if (!ativo) return
+          setOrgaoGestor(erroOrgao ? null : gestor?.orgao ?? null)
+        }
       }
       setCarregando(false)
     }
@@ -85,5 +98,5 @@ export default function useSessaoGestor() {
     await supabase.auth.signOut()
   }, [])
 
-  return { sessao, ehGestor, carregando, erroVerificacao, precisaCodigo, entrar, confirmarCodigo, sair }
+  return { sessao, ehGestor, orgaoGestor, carregando, erroVerificacao, precisaCodigo, entrar, confirmarCodigo, sair }
 }

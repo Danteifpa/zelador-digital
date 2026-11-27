@@ -6,14 +6,10 @@ import { Flame, LoaderCircle, LocateFixed, MapPin } from 'lucide-react'
 import { CATEGORIAS, rotuloDaCategoria } from '../lib/categorias'
 import { SVG_MARCADOR } from '../lib/iconesSvg'
 import IconeCategoria from './IconeCategoria'
+import { CENTRO_COMUNITARIO as CENTRO_DA_MARCA } from '../lib/geo'
 
-// Centro territorial de Ananindeua
-const CENTRO_COMUNITARIO = {
-  latitude: -1.365000,
-  longitude: -48.375000,
-  raioMetros: 18000,
-  nome: 'Ananindeua'
-}
+// Centro territorial da cidade (da marca)
+const CENTRO_COMUNITARIO = { ...CENTRO_DA_MARCA, raioMetros: CENTRO_DA_MARCA.raioMaximoKm * 1000 }
 
 // Criação segura de ícones
 const criarIcone = (svg, bgCor) => {

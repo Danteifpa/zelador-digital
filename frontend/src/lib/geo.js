@@ -1,11 +1,12 @@
-// Geografia do app: centro comunitário de Ananindeua e distâncias.
+// Geografia do app: centro da cidade (da marca, ver lib/marca.js) e distâncias.
 
-// Coordenadas centrais comunitárias (Ananindeua)
+import { MARCA } from './marca'
+
 export const CENTRO_COMUNITARIO = {
-  latitude: -1.365000,
-  longitude: -48.375000,
-  raioMaximoKm: 18.0,
-  nome: 'Ananindeua'
+  latitude: MARCA.latitude,
+  longitude: MARCA.longitude,
+  raioMaximoKm: MARCA.raioKm,
+  nome: MARCA.cidade
 }
 
 export function distanciaMetros(a, b) {

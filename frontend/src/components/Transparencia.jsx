@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react'
 import { ArrowLeft, Clock, Download, FileJson, Landmark, TriangleAlert } from 'lucide-react'
 import { supabase } from '../lib/supabase'
 import { baixarArquivo, dadosAbertosParaCsv, dadosAbertosParaGeoJson, formatarDias, ordenarBairros, resumirTransparencia } from '../lib/transparencia'
+import { MARCA } from '../lib/marca'
 
 /**
  * Página pública de transparência: como cada bairro está, e download dos dados abertos.
@@ -62,8 +63,8 @@ export default function Transparencia({ onVoltar }) {
         <p className="flex items-center gap-2 text-[11px] font-black uppercase tracking-wider text-sky-300">
           <Landmark size={14} aria-hidden="true" /> Transparência
         </p>
-        <h2 className="mt-1 text-xl font-black leading-tight">Como está cada bairro de Ananindeua</h2>
-        <p className="mt-1 text-xs text-slate-300">Números de todos os registros feitos pelos moradores no Zelador Digital.</p>
+        <h2 className="mt-1 text-xl font-black leading-tight">Como está cada bairro de {MARCA.cidade}</h2>
+        <p className="mt-1 text-xs text-slate-300">Números de todos os registros feitos pelos moradores no {MARCA.nome}.</p>
         {bairros && (
           <dl className="mt-4 grid grid-cols-3 gap-2 text-center">
             <div className="rounded-2xl bg-white/10 p-2.5">
@@ -153,7 +154,7 @@ export default function Transparencia({ onVoltar }) {
           </button>
         </div>
         <p className="text-[10px] text-slate-400 leading-relaxed">
-          Dados sob licença CC BY 4.0: cite "Zelador Digital". Limites dos bairros © colaboradores do OpenStreetMap (ODbL).
+          Dados sob licença CC BY 4.0: cite "{MARCA.nome}". Limites dos bairros © colaboradores do OpenStreetMap (ODbL).
         </p>
       </section>
     </div>

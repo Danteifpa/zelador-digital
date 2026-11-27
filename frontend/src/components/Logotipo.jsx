@@ -1,5 +1,7 @@
+import { MARCA } from '../lib/marca'
+
 /**
- * Marca "Zelador Digital", direção Rota: símbolo (Z feito de rua, com o pino) + nome em dois pesos.
+ * Marca "Bora Zelar" (nome vem de lib/marca.js), direção Rota: símbolo (Z feito de rua, com o pino) + nome em dois pesos.
  * O símbolo é SVG inline para ficar nítido em qualquer tamanho e funcionar offline.
  */
 export function SimboloMarca({ size = 32, className = '', fundo = '#1D4ED8', traco = '#FFFFFF', acento = '#F59E0B', titulo }) {
@@ -25,12 +27,16 @@ export function SimboloMarca({ size = 32, className = '', fundo = '#1D4ED8', tra
 /** Logotipo horizontal. `escuro` para uso sobre fundo escuro. */
 export default function Logotipo({ size = 30, escuro = false, className = '', compacto = false }) {
   const texto = Math.round(size * 0.78)
+  const palavras = MARCA.nome.split(' ')
+  const fim = palavras.pop()
+  const inicio = palavras.join(' ')
   return (
     <span className={`inline-flex items-center gap-2 ${className}`}>
       <SimboloMarca size={size} fundo={escuro ? '#FFFFFF' : '#1D4ED8'} traco={escuro ? '#1D4ED8' : '#FFFFFF'} />
       <span className="font-marca leading-none tracking-tight whitespace-nowrap" style={{ fontSize: texto }}>
-        <span className={`font-extrabold ${escuro ? 'text-white' : 'text-blue-700'}`}>Zelador</span>{' '}
-        <span className={`font-normal ${escuro ? 'text-white' : 'text-slate-900'} ${compacto ? 'hidden min-[360px]:inline' : ''}`}>Digital</span>
+        {/* Palavras iniciais em peso normal; a última em destaque (ex.: Bora **Zelar**). */}
+        <span className={`font-normal ${escuro ? 'text-white' : 'text-slate-900'} ${compacto ? 'hidden min-[360px]:inline' : ''}`}>{inicio}</span>{inicio ? ' ' : ''}
+        <span className={`font-extrabold ${escuro ? 'text-white' : 'text-blue-700'}`}>{fim}</span>
       </span>
     </span>
   )

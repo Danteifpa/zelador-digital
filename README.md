@@ -1,8 +1,8 @@
 <div align="center">
 
-<img src="frontend/public/icon-192.png" alt="Ícone do Zelador Digital" width="96" height="96" />
+<img src="frontend/public/icon-192.png" alt="Ícone do Bora Zelar" width="96" height="96" />
 
-# Zelador Digital
+# Bora Zelar
 
 **Plataforma cívica para mapear, registrar e acompanhar problemas urbanos em Ananindeua (PA).**
 
@@ -42,6 +42,14 @@ O morador fotografa um buraco, um poste apagado, lixo acumulado ou um vazamento 
 - Painel com login (Supabase Auth), priorização **GUT** (Gravidade × Urgência × Tendência) e mapa de focos críticos.
 - Tramitação com despachos públicos e foto de resolução (antes/depois).
 - Ofício em A4 pronto para imprimir, boletim para WhatsApp e exportação **CSV** e **GeoJSON**.
+- **Encaminhamento por órgão** (iluminação, limpeza, saneamento, vias...): cada chamado vai sozinho para o órgão da categoria; gestor de um órgão só altera o que é dele e pode encaminhar para outro.
+- **Prazos por órgão** com aviso de atraso e filtro "Atrasados".
+- **Ordem de serviço** para a equipe de campo (A4 ou WhatsApp, com rota de cada ponto) e **relatório mensal** por órgão e bairro.
+- Tela de **computador** em duas colunas: lista à esquerda, mapa e detalhes à direita.
+
+**Para prefeituras**
+
+- Nome, cidade, prefeitura, centro do mapa e categorias configuráveis por variáveis de ambiente (veja `frontend/.env.example` e `frontend/src/lib/marca.js`), sem mexer no código.
 
 ## Tecnologias
 
@@ -146,11 +154,11 @@ Histórico de versões: [`CHANGELOG.md`](CHANGELOG.md).
 
 [GNU AGPL-3.0](LICENSE) © 2026 Dante Dias Monteiro. Veja também [`NOTICE`](NOTICE).
 
-Você pode usar, estudar, modificar e redistribuir o código. Quem oferecer o Zelador Digital (ou uma versão modificada) a outras pessoas pela internet, por exemplo como serviço para um órgão público, precisa publicar o código-fonte completo dessa versão sob a mesma licença.
+Você pode usar, estudar, modificar e redistribuir o código. Quem oferecer o Bora Zelar (ou uma versão modificada) a outras pessoas pela internet, por exemplo como serviço para um órgão público, precisa publicar o código-fonte completo dessa versão sob a mesma licença.
 
 As versões publicadas até a v1.1.0 e até o commit anterior a esta mudança (14/11/2026) continuam sob a licença MIT.
 
-O nome **Zelador Digital** e a identidade visual do projeto não são licenciados: não use a marca para oferecer cópias ou serviços derivados sem autorização.
+O nome **Bora Zelar** (antes Zelador Digital) e a identidade visual do projeto não são licenciados: não use a marca para oferecer cópias ou serviços derivados sem autorização.
 
 Projeto independente de iniciativa comunitária, sem vínculo com a Prefeitura de Ananindeua.
 

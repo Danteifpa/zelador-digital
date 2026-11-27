@@ -47,6 +47,21 @@ describe('lista do Painel de Gestão', () => {
     expect(screen.queryByRole('button', { name: /Marcar como resolvido/ })).toBeNull()
   })
 
+  it('mostra o órgão responsável: o do banco ou, sem ele, o da categoria', () => {
+    renderizar({ ...base, status: 'pendente' })
+    expect(screen.getByText('Vias e calçadas')).toBeTruthy()
+  })
+
+  it('mostra o órgão para onde o chamado foi encaminhado', () => {
+    renderizar({ ...base, status: 'pendente', orgao: 'saneamento' })
+    expect(screen.getByText('Saneamento e drenagem')).toBeTruthy()
+  })
+
+  it('marca o chamado aberto além do prazo do órgão', () => {
+    renderizar({ ...base, status: 'pendente', created_at: '2020-01-01T12:00:00Z' })
+    expect(screen.getByText(/Atrasado/)).toBeTruthy()
+  })
+
   it('avisa quando o filtro não encontra nada', () => {
     renderizar(base, { ocorrenciasFiltradasComGut: [] })
     expect(screen.getByText('Nenhum chamado encontrado para este filtro.')).toBeTruthy()
