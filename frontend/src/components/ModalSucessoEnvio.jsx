@@ -1,3 +1,4 @@
+import { MapPin, Share2 } from 'lucide-react'
 import { rotuloDaCategoria } from '../lib/categorias'
 import { feedbackSensorial } from '../lib/feedbackSensorial'
 import { protocoloCivico } from '../lib/protocolo'
@@ -12,7 +13,7 @@ export default function ModalSucessoEnvio({ abrirAbaRegistar, ativarAvisos, esta
         </div>
 
         <div>
-          <h3 className="text-lg font-black text-slate-900">Registro Confirmado!</h3>
+          <h3 className="text-lg font-black text-slate-900">Registro enviado</h3>
           <p className="text-xs text-slate-500 mt-1 leading-relaxed">
             {estaOnline
               ? 'Sua ocorrência foi georreferenciada e salva no banco comunitário.'
@@ -28,8 +29,8 @@ export default function ModalSucessoEnvio({ abrirAbaRegistar, ativarAvisos, esta
               className="w-12 h-12 rounded-xl object-cover shrink-0 border border-slate-200"
             />
           ) : (
-            <div className="w-12 h-12 rounded-xl bg-blue-100 text-blue-600 flex items-center justify-center text-xl shrink-0">
-              📍
+            <div className="w-12 h-12 rounded-xl bg-blue-100 text-blue-600 flex items-center justify-center shrink-0">
+              <MapPin size={22} strokeWidth={2.25} aria-hidden="true" />
             </div>
           )}
           <div className="overflow-hidden">
@@ -43,7 +44,7 @@ export default function ModalSucessoEnvio({ abrirAbaRegistar, ativarAvisos, esta
         </div>
         {sucessoEnvio.id && (
           <div className="rounded-2xl border border-blue-200 bg-blue-50 p-3 text-left">
-            <p className="text-[10px] font-black uppercase tracking-wider text-blue-600">Seu protocolo</p>
+            <p className="text-[10px] font-black text-blue-600">Seu protocolo</p>
             <p className="mt-1 text-sm font-black text-blue-900">{protocoloCivico(sucessoEnvio.id)}</p>
           </div>
         )}
@@ -53,10 +54,10 @@ export default function ModalSucessoEnvio({ abrirAbaRegistar, ativarAvisos, esta
           <button
             type="button"
             onClick={() => partilharOcorrencia(sucessoEnvio)}
-            className="w-full py-3 bg-emerald-50 hover:bg-emerald-100 border border-emerald-200 text-emerald-800 rounded-2xl font-black text-xs uppercase tracking-wider flex items-center justify-center gap-1.5 transition-all cursor-pointer"
+            className="w-full py-3 bg-emerald-50 hover:bg-emerald-100 border border-emerald-200 text-emerald-800 rounded-2xl font-black text-xs flex items-center justify-center gap-1.5 transition-all cursor-pointer"
           >
-            <span>📢</span>
-            <span>Compartilhar no WhatsApp / Redes</span>
+            <Share2 size={15} strokeWidth={2.25} aria-hidden="true" />
+            <span>Compartilhar no WhatsApp</span>
           </button>
 
           <button
@@ -66,9 +67,9 @@ export default function ModalSucessoEnvio({ abrirAbaRegistar, ativarAvisos, esta
               setSucessoEnvio(null)
               setAbaAtiva('registos')
             }}
-            className="w-full py-3.5 bg-blue-600 hover:bg-blue-700 text-white rounded-2xl font-black text-xs uppercase tracking-wider shadow-md transition-all active:scale-[0.99] cursor-pointer"
+            className="w-full py-3.5 bg-blue-600 hover:bg-blue-700 text-white rounded-2xl font-black text-xs shadow-md transition-all active:scale-[0.99] cursor-pointer"
           >
-            Acompanhar na Lista de Registros 📋
+            Ver nos registros
           </button>
           <button
             type="button"
@@ -79,7 +80,7 @@ export default function ModalSucessoEnvio({ abrirAbaRegistar, ativarAvisos, esta
             }}
             className="w-full py-3 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-2xl font-bold text-xs transition-all cursor-pointer"
           >
-            Fazer Outro Registro ➕
+            Registrar outro problema
           </button>
         </div>
       </div>

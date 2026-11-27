@@ -1,4 +1,4 @@
-import { Accessibility, Bell, Info } from 'lucide-react'
+import { Accessibility, Bell, Info, TriangleAlert } from 'lucide-react'
 import Logotipo from './Logotipo'
 import { MARCA } from '../lib/marca'
 
@@ -18,14 +18,15 @@ export default function Header({
   onAbrirNotificacoes,
   onAbrirSobre,
   modoFacil,
-  onAlternarModoFacil
+  onAlternarModoFacil,
+  largo = false
 }) {
   return (
     <>
       {/* AVISO OFFLINE */}
       {!estaOnline && (
-        <div className="bg-amber-500 text-white text-[11px] font-black py-1.5 px-4 text-center tracking-wide sticky top-0 z-50 flex items-center justify-center gap-1.5 shadow-xs">
-          <span>⚠️</span>
+        <div className="bg-amber-800 text-white text-[11px] font-black py-1.5 px-4 text-center tracking-wide sticky top-0 z-50 flex items-center justify-center gap-1.5 shadow-xs">
+          <TriangleAlert size={14} strokeWidth={2.5} aria-hidden="true" />
           <span>Modo offline: os registros serão sincronizados quando a internet voltar</span>
         </div>
       )}
@@ -43,16 +44,16 @@ export default function Header({
           <button
             onClick={onSincronizar}
             disabled={sincronizandoFila}
-            className="bg-white text-blue-700 px-2 py-0.5 rounded-lg text-[10px] font-black uppercase cursor-pointer"
+            className="bg-white text-blue-700 px-2 py-0.5 rounded-lg text-[11px] font-bold cursor-pointer"
           >
-            {sincronizandoFila ? 'Sincronizando...' : 'Sincronizar Agora 🔄'}
+            {sincronizandoFila ? 'Sincronizando...' : 'Sincronizar agora'}
           </button>
         </div>
       )}
 
       {/* TOPO / NAVBAR MINIMALISTA */}
-      <header className="bg-white/90 backdrop-blur-md border-b border-slate-200 sticky top-0 z-40 shadow-xs pt-[env(safe-area-inset-top)]">
-        <div className="max-w-md mx-auto px-4 h-16 flex items-center justify-between">
+      <header className="bg-white border-b border-asfalto/10 sticky top-0 z-40 pt-[env(safe-area-inset-top)]">
+        <div className={`${largo ? 'max-w-md lg:max-w-6xl xl:max-w-7xl' : 'max-w-md'} mx-auto px-4 h-16 flex items-center justify-between`}>
           <button
             onClick={onIrParaInicio}
             className="text-left focus:outline-none cursor-pointer"

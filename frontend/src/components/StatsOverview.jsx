@@ -1,35 +1,37 @@
-import { MapPin } from 'lucide-react'
+import { MARCA } from '../lib/marca'
 
 /**
- * Cartão "Visão Geral" com os 3 indicadores: Total, Resolvidos e Pendentes.
+ * Topo da tela inicial: uma placa de rua com o nome da cidade e, logo abaixo,
+ * os três números da comunidade (registros, resolvidos e em aberto).
  */
 export default function StatsOverview({ total, resolvidos, pendentes }) {
-  const indicadores = [
-    { rotulo: 'Total', valor: total },
-    { rotulo: 'Resolvidos', valor: resolvidos },
-    { rotulo: 'Pendentes', valor: pendentes }
+  const numeros = [
+    { rotulo: 'registros', valor: total, cor: 'text-asfalto' },
+    { rotulo: 'resolvidos', valor: resolvidos, cor: 'text-mangueira' },
+    { rotulo: 'em aberto', valor: pendentes, cor: 'text-asfalto' }
   ]
 
   return (
-    <div className="w-full rounded-3xl bg-gradient-to-br from-blue-600 via-sky-600 to-emerald-500 p-3.5 text-white shadow-md relative overflow-hidden">
-      <div className="flex items-center justify-between mb-3">
-        <div>
-          <span className="text-[11px] uppercase tracking-wider text-sky-100 font-bold">Monitoramento Cívico</span>
-          <h1 className="text-xl font-black mt-0.5">Visão Geral</h1>
-        </div>
-        <div className="w-9 h-9 rounded-2xl bg-white/20 backdrop-blur-md flex items-center justify-center shadow-inner" aria-hidden="true">
-          <MapPin size={20} strokeWidth={2.25} />
+    <section aria-labelledby="titulo-cidade">
+      <div className="rounded-md bg-placa p-1.5 shadow-[0_2px_0_#163e7e]">
+        <div className="rounded-[3px] border-2 border-white/90 px-4 pt-2.5 pb-3 text-white">
+          <p className="text-[11px] font-semibold text-white/80">Você está cuidando de</p>
+          <h1 id="titulo-cidade" className="font-marca text-[1.75rem] leading-tight font-extrabold tracking-tight">
+            {MARCA.cidade}
+            <span className="ml-2 align-middle text-sm font-semibold text-white/75">{MARCA.uf}</span>
+          </h1>
         </div>
       </div>
 
-      <div className="grid grid-cols-3 gap-2 text-center">
-        {indicadores.map(({ rotulo, valor }) => (
-          <div key={rotulo} className="bg-white/15 backdrop-blur-sm rounded-2xl p-3 border border-white/20">
-            <span className="text-2xl font-bold block leading-none">{valor}</span>
-            <span className="text-xs font-semibold text-sky-100 mt-1 block">{rotulo}</span>
+      <dl className="mt-3 grid grid-cols-3 divide-x divide-asfalto/15">
+        {numeros.map(({ rotulo, valor, cor }) => (
+          // dt antes de dd (regra do HTML); a ordem visual inverte para o número ficar em cima.
+          <div key={rotulo} className="flex flex-col-reverse px-3 first:pl-1">
+            <dt className="mt-1 text-xs font-semibold text-slate-600">{rotulo}</dt>
+            <dd className={`font-marca text-2xl font-extrabold leading-none ${cor}`}>{valor}</dd>
           </div>
         ))}
-      </div>
-    </div>
+      </dl>
+    </section>
   )
 }

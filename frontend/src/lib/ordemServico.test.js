@@ -30,7 +30,7 @@ describe('ordem de serviço', () => {
     const texto = textoDaOrdem(itens, { numero: 'OS-1', equipe: 'Equipe 2', agora: AGORA })
     expect(texto).toContain('Ordem de serviço OS-1')
     expect(texto).toContain('Equipe: Equipe 2')
-    expect(texto).toContain('1. Lixo / Entulho · Protocolo ZD-838037 · Atrasado 4 dias')
+    expect(texto).toContain('1. Lixo e entulho · Protocolo ZD-838037 · Atrasado 4 dias')
     expect(texto).toContain('Icuí-Guajará · Limpeza urbana')
     expect(texto).toContain('Rota: https://www.google.com/maps/dir/?api=1&destination=-1.360000,-48.370000')
     expect(texto).toContain('foto do depois')

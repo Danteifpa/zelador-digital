@@ -71,7 +71,7 @@ export default function ModalQRCode({ url, onClose, imprimirAoAbrir = false }) {
               onClick={copiarLink}
               className="rounded-2xl bg-blue-600 py-3 text-xs font-black text-white transition-colors hover:bg-blue-700 cursor-pointer"
             >
-              {copiado ? '✓ Link copiado!' : 'Copiar Link'}
+              {copiado ? '✓ Link copiado!' : 'Copiar link'}
             </button>
             <button
               type="button"

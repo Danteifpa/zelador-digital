@@ -7,7 +7,7 @@ export default function ModalSobre({ setModalSobreAberto, abrirComoUsar }) {
         <div className="flex items-start justify-between gap-4">
           <div>
             <Logotipo size={26} />
-            <h2 className="text-lg font-black text-slate-800 mt-1">Sobre o Desenvolvedor</h2>
+            <h2 className="text-lg font-black text-slate-800 mt-1">Sobre o desenvolvedor</h2>
           </div>
           <button
             type="button"

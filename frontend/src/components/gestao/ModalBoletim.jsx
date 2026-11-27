@@ -6,7 +6,7 @@ export default function ModalBoletim({ boletimCopiado, copiarBoletim, setMostrar
       <div className="w-full max-w-lg rounded-3xl bg-slate-900 border border-slate-700 p-5 text-white shadow-2xl">
         <div className="flex items-start justify-between gap-3">
           <div>
-            <h2 id="titulo-boletim" className="text-base font-black">Boletim Comunitário</h2>
+            <h2 id="titulo-boletim" className="text-base font-black">Boletim para a comunidade</h2>
             <p className="text-[10px] text-slate-500 mt-1">Resumo pronto para compartilhar no WhatsApp.</p>
           </div>
           <button
@@ -26,7 +26,7 @@ export default function ModalBoletim({ boletimCopiado, copiarBoletim, setMostrar
             onClick={copiarBoletim}
             className="rounded-xl bg-emerald-600 px-4 py-2.5 text-xs font-black text-white hover:bg-emerald-700 cursor-pointer"
           >
-            {boletimCopiado ? '✓ Texto copiado!' : 'Copiar Texto'}
+            {boletimCopiado ? '✓ Texto copiado!' : 'Copiar texto'}
           </button>
         </div>
       </div>

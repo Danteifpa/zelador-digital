@@ -5,16 +5,16 @@ import { feedbackSensorial } from '../lib/feedbackSensorial'
 import { CENTRO_COMUNITARIO, calcularDistanciaKm } from '../lib/geo'
 import { formatarKm } from '../lib/gestao'
 import { classeEtiquetaDoEstado, rotuloDoEstado } from '../lib/status'
-import { RefreshCw } from 'lucide-react'
+import { RefreshCw, Search, Users } from 'lucide-react'
 
 export default function TelaRegistros({ TAMANHO_PAGINA_LISTA, buscaTexto, carregandoRegistos, carregarRegistos, chaveFiltrosLista, filtroCategoria, filtroStatus, limiteLista, registos, registosFiltrados, registosVisiveis, setBuscaTexto, setFiltroCategoria, setFiltroStatus, setOcorrenciaSelecionada, setPaginaLista, totalPendentes, totalResolvidos }) {
   return (
-    <div className="bg-white rounded-3xl p-5 border border-slate-200 shadow-xs space-y-4">
+    <div className="space-y-4">
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-base font-bold text-slate-800">Ocorrências Comunitárias</h2>
-          <p className="text-[11px] text-slate-400">
-            Exibindo {registosFiltrados.length} de {registos.length} registros
+          <h2 className="text-lg font-extrabold text-asfalto">Registros da comunidade</h2>
+          <p className="text-xs text-slate-600">
+            Mostrando {registosFiltrados.length} de {registos.length}
           </p>
         </div>
         <button
@@ -34,16 +34,17 @@ export default function TelaRegistros({ TAMANHO_PAGINA_LISTA, buscaTexto, carreg
           placeholder="Buscar por descrição ou referência..."
           value={buscaTexto}
           onChange={(e) => setBuscaTexto(e.target.value)}
-          className="w-full px-3.5 py-2.5 pl-9 rounded-xl border border-slate-200 bg-slate-50 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 text-xs text-slate-800"
+          className="w-full px-3.5 py-2.5 pl-9 rounded-xl border border-asfalto/15 bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 text-xs text-slate-800"
         />
-        <span className="absolute left-3 top-2.5 text-slate-400 text-xs">🔍</span>
+        <Search size={15} className="absolute left-3 top-2.5 text-slate-500" aria-hidden="true" />
         {buscaTexto && (
           <button
             onClick={() => {
               feedbackSensorial.toqueSuave()
               setBuscaTexto('')
             }}
-            className="absolute right-3 top-2.5 text-slate-400 hover:text-slate-600 text-xs font-bold cursor-pointer"
+            aria-label="Limpar busca"
+            className="absolute right-3 top-2.5 text-slate-500 hover:text-asfalto text-xs font-bold cursor-pointer"
           >
             ✕
           </button>
@@ -58,8 +59,8 @@ export default function TelaRegistros({ TAMANHO_PAGINA_LISTA, buscaTexto, carreg
           }}
           className={`px-3 py-1.5 rounded-xl font-bold transition-all shrink-0 cursor-pointer ${
             filtroStatus === 'todos'
-              ? 'bg-slate-900 text-white'
-              : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+              ? 'bg-asfalto text-white'
+              : 'bg-white border border-asfalto/15 text-slate-600 hover:bg-calcada'
           }`}
         >
           Todos
@@ -71,7 +72,7 @@ export default function TelaRegistros({ TAMANHO_PAGINA_LISTA, buscaTexto, carreg
           }}
           className={`px-3 py-1.5 rounded-xl font-bold transition-all shrink-0 cursor-pointer ${
             filtroStatus === 'pendente'
-              ? 'bg-amber-500 text-white'
+              ? 'bg-amber-700 text-white'
               : 'bg-amber-50 text-amber-700 border border-amber-200 hover:bg-amber-100'
           }`}
         >
@@ -84,7 +85,7 @@ export default function TelaRegistros({ TAMANHO_PAGINA_LISTA, buscaTexto, carreg
           }}
           className={`px-3 py-1.5 rounded-xl font-bold transition-all shrink-0 cursor-pointer ${
             filtroStatus === 'resolvido'
-              ? 'bg-emerald-600 text-white'
+              ? 'bg-mangueira text-white'
               : 'bg-emerald-50 text-emerald-700 border border-emerald-200 hover:bg-emerald-100'
           }`}
         >
@@ -101,7 +102,7 @@ export default function TelaRegistros({ TAMANHO_PAGINA_LISTA, buscaTexto, carreg
           className={`px-2.5 py-1 rounded-lg text-[11px] font-semibold transition-all shrink-0 cursor-pointer ${
             filtroCategoria === 'todas'
               ? 'bg-blue-600 text-white'
-              : 'bg-slate-100 text-slate-500 hover:bg-slate-200'
+              : 'bg-white border border-asfalto/10 text-slate-600 hover:bg-calcada'
           }`}
         >
           Todos os tipos
@@ -116,7 +117,7 @@ export default function TelaRegistros({ TAMANHO_PAGINA_LISTA, buscaTexto, carreg
             className={`px-2.5 py-1 rounded-lg text-[11px] font-semibold flex items-center gap-1 transition-all shrink-0 cursor-pointer ${
               filtroCategoria === cat.id
                 ? 'bg-blue-600 text-white'
-                : 'bg-slate-100 text-slate-500 hover:bg-slate-200'
+                : 'bg-white border border-asfalto/10 text-slate-600 hover:bg-calcada'
             }`}
           >
             <IconeCategoria categoria={cat.id} size={14} colorido={filtroCategoria !== cat.id} />
@@ -126,14 +127,15 @@ export default function TelaRegistros({ TAMANHO_PAGINA_LISTA, buscaTexto, carreg
       </div>
 
       {carregandoRegistos ? (
-        <div className="py-16 text-center text-xs text-slate-400">Carregando ocorrências...</div>
+        <div className="py-16 text-center text-xs text-slate-600">Carregando registros...</div>
       ) : registosFiltrados.length === 0 ? (
-        <div className="py-12 text-center text-xs text-slate-400 space-y-1">
-          <p className="font-bold">Nenhum registro encontrado com estes filtros.</p>
-          <p className="text-[11px]">Tente limpar a pesquisa ou selecionar outro filtro.</p>
+        <div className="rounded-3xl border border-asfalto/10 bg-white py-12 text-center text-xs text-slate-600 space-y-1">
+          <p className="font-bold text-asfalto">Nenhum registro com estes filtros.</p>
+          <p className="text-[11px]">Limpe a busca ou escolha outro filtro.</p>
         </div>
       ) : (
         <div className="space-y-3">
+          <ul className="rounded-3xl border border-asfalto/10 bg-white divide-y divide-asfalto/10 overflow-hidden">
           {registosVisiveis.map((reg) => {
             const distPonto =
               reg.latitude && reg.longitude
@@ -146,17 +148,18 @@ export default function TelaRegistros({ TAMANHO_PAGINA_LISTA, buscaTexto, carreg
                 : null
 
             return (
-              <div
-                key={reg.id}
+              <li key={reg.id}>
+              <button
+                type="button"
                 onClick={() => {
                   feedbackSensorial.toqueSuave()
                   setOcorrenciaSelecionada(reg)
                 }}
-                className="p-3.5 rounded-2xl border border-slate-200 bg-white shadow-2xs flex justify-between items-start gap-3 hover:border-blue-400 transition-colors cursor-pointer group"
+                className="w-full p-3.5 flex justify-between items-start gap-3 text-left hover:bg-calcada/70 transition-colors cursor-pointer group focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-placa"
               >
-                <div>
+                <div className="min-w-0">
                   <div className="flex items-center space-x-2">
-                    <span className="font-bold text-xs text-slate-800 group-hover:text-blue-600 transition-colors">
+                    <span className="font-bold text-sm text-asfalto">
                       {rotuloDaCategoria(reg.categoria)}
                     </span>
                     <span className={`text-[10px] px-2 py-0.5 rounded-full font-semibold border ${classeEtiquetaDoEstado(reg.status)}`}>
@@ -164,32 +167,34 @@ export default function TelaRegistros({ TAMANHO_PAGINA_LISTA, buscaTexto, carreg
                     </span>
                   </div>
                   <p className="text-xs text-slate-600 mt-1 line-clamp-1">{reg.descricao}</p>
-                  <div className="flex items-center space-x-2 mt-1">
+                  <div className="flex flex-wrap items-center gap-x-3 gap-y-0.5 mt-1">
                     <span className="text-[10px] text-slate-500">
                       {reg.created_at ? new Date(reg.created_at).toLocaleDateString('pt-BR') : ''}
                     </span>
                     {distPonto !== null && (
                       <span className="text-[10px] text-slate-500">
-                        • {formatarKm(distPonto)} do centro
+                        {formatarKm(distPonto)} do centro
                       </span>
                     )}
                     {textoConfirmacoes(reg.total_apoios) && (
-                      <span className="text-[10px] font-bold text-blue-700">👥 {textoConfirmacoes(reg.total_apoios)}</span>
+                      <span className="inline-flex items-center gap-1 text-[10px] font-bold text-blue-700"><Users size={12} aria-hidden="true" /> {textoConfirmacoes(reg.total_apoios)}</span>
                     )}
                   </div>
                 </div>
 
                 {reg.foto_url && (
-                  <img src={reg.foto_url} alt="Comprovante" loading="lazy" decoding="async" width="56" height="56" className="w-14 h-14 rounded-xl object-cover shrink-0 border border-slate-200" />
+                  <img src={reg.foto_url} alt="" loading="lazy" decoding="async" width="56" height="56" className="w-14 h-14 rounded-xl object-cover shrink-0 border border-slate-200" />
                 )}
-              </div>
+              </button>
+              </li>
             )
           })}
+          </ul>
           {registosFiltrados.length > limiteLista && (
             <button
               type="button"
               onClick={() => setPaginaLista({ chave: chaveFiltrosLista, limite: limiteLista + TAMANHO_PAGINA_LISTA })}
-              className="w-full min-h-12 rounded-2xl border border-slate-200 bg-white hover:bg-slate-50 text-sm font-bold text-blue-700 cursor-pointer"
+              className="w-full min-h-12 rounded-2xl border border-asfalto/10 bg-white hover:bg-calcada text-sm font-bold text-blue-700 cursor-pointer"
             >
               Mostrar mais ({registosFiltrados.length - limiteLista} restantes)
             </button>

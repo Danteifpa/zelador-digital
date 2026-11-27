@@ -34,7 +34,7 @@ export default function PainelEquidade() {
   return (
     <section className="rounded-3xl border border-slate-200 bg-white p-4 space-y-3" aria-labelledby="titulo-equidade">
       <div>
-        <p className="flex items-center gap-2 text-[11px] font-black uppercase tracking-wider text-emerald-700">
+        <p className="flex items-center gap-2 text-[11px] font-black text-emerald-700">
           <Scale size={14} aria-hidden="true" /> Painel de Equidade
         </p>
         <h3 id="titulo-equidade" className="mt-1 text-sm font-black text-slate-800">

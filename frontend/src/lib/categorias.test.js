@@ -7,8 +7,8 @@ import { SVG_MARCADOR } from './iconesSvg'
 
 describe('categorias', () => {
   it('mostra o nome amigável das categorias conhecidas', () => {
-    expect(rotuloDaCategoria('buraco')).toBe('Buraco na Rua')
-    expect(rotuloDaCategoria(' LIXO ')).toBe('Lixo / Entulho')
+    expect(rotuloDaCategoria('buraco')).toBe('Buraco na rua')
+    expect(rotuloDaCategoria(' LIXO ')).toBe('Lixo e entulho')
     expect(rotuloDaCategoria('outro')).toBe('Outro')
   })
 

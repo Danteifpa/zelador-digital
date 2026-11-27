@@ -1,3 +1,4 @@
+import { LockKeyhole } from 'lucide-react'
 import { useState } from 'react'
 
 /**
@@ -26,8 +27,8 @@ export default function LoginGestor({ onEntrar, onDemonstracao }) {
   return (
     <div className="bg-white rounded-3xl p-6 border border-slate-200 shadow-sm max-w-sm mx-auto my-6">
       <div className="text-center">
-        <div className="w-14 h-14 bg-blue-50 border border-blue-200 text-blue-600 rounded-2xl flex items-center justify-center text-2xl mx-auto mb-4" aria-hidden="true">
-          🔐
+        <div className="w-14 h-14 bg-blue-50 border border-blue-200 text-blue-600 rounded-2xl flex items-center justify-center mx-auto mb-4" aria-hidden="true">
+          <LockKeyhole size={26} strokeWidth={2.25} />
         </div>
         <h2 className="text-lg font-black text-slate-800">Painel de Gestão</h2>
         <p className="text-sm text-slate-500 mt-1 mb-5">Acesso reservado aos gestores comunitários.</p>

@@ -1,3 +1,4 @@
+import { AlarmClock, Flag, Users } from 'lucide-react'
 import { useState } from 'react'
 import { corCriticidade, eResolvida, etapaStatus, formatarData, protocoloCivico, rotuloCriticidade } from '../../lib/gestao'
 import { ESTADOS, normalizarEstado, rotuloDoEstado } from '../../lib/status'
@@ -69,7 +70,7 @@ export default function ListaOcorrenciasGestor({ revisarFoto, acaoEmAndamento, a
               )}
               <span className="min-w-0 flex-1">
                 <span className="flex items-center justify-between gap-2">
-                  <span className="text-[10px] font-black uppercase tracking-wide text-slate-500">{protocoloCivico(item.id)}</span>
+                  <span className="text-[10px] font-black text-slate-500">{protocoloCivico(item.id)}</span>
                   <span className="text-[10px] text-slate-500">{item.created_at ? new Date(item.created_at).toLocaleDateString('pt-BR') : ''}</span>
                 </span>
                 <span className="block text-sm font-black text-slate-800 truncate">{rotuloDaCategoria(item.categoria)}</span>
@@ -84,8 +85,8 @@ export default function ListaOcorrenciasGestor({ revisarFoto, acaoEmAndamento, a
                     const prazo = situacaoDoPrazo(item)
                     const rotulo = rotuloDoPrazo(prazo)
                     return rotulo ? (
-                      <span className={`text-[10px] font-black px-2 py-0.5 rounded-full border ${COR_PRAZO[prazo.estado]}`} title={`Prazo do órgão: ${prazo.prazoDias} dias`}>
-                        ⏰ {rotulo}
+                      <span className={`text-[10px] font-black px-2 py-0.5 rounded-full border inline-flex items-center gap-1 ${COR_PRAZO[prazo.estado]}`} title={`Prazo do órgão: ${prazo.prazoDias} dias`}>
+                        <AlarmClock size={11} strokeWidth={2.5} aria-hidden="true" /> {rotulo}
                       </span>
                     ) : null
                   })()}
@@ -97,13 +98,13 @@ export default function ListaOcorrenciasGestor({ revisarFoto, acaoEmAndamento, a
                     {rotuloCriticidade(item.gut.pontuacao)}
                   </span>
                   {estaDenunciada(item) && (
-                    <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-rose-50 text-rose-700 border border-rose-200">
-                      🚩 {item.total_denuncias}{item.foto_oculta ? ' · oculta' : ''}
+                    <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-rose-50 text-rose-700 border border-rose-200 inline-flex items-center gap-1">
+                      <Flag size={11} strokeWidth={2.5} aria-label="Denúncias" /> {item.total_denuncias}{item.foto_oculta ? ' · oculta' : ''}
                     </span>
                   )}
                   {textoConfirmacoes(item.total_apoios) && (
-                    <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-blue-50 text-blue-700 border border-blue-200">
-                      👥 {item.total_apoios}
+                    <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-blue-50 text-blue-700 border border-blue-200 inline-flex items-center gap-1">
+                      <Users size={11} strokeWidth={2.5} aria-label="Confirmações" /> {item.total_apoios}
                     </span>
                   )}
                 </span>
@@ -135,7 +136,7 @@ export default function ListaOcorrenciasGestor({ revisarFoto, acaoEmAndamento, a
 
                 <p className="text-sm text-slate-700 leading-relaxed">{item.descricao || 'Sem descrição registrada.'}</p>
                 {textoConfirmacoes(item.total_apoios) && (
-                  <p className="text-xs font-bold text-blue-700">👥 {textoConfirmacoes(item.total_apoios)} este problema.</p>
+                  <p className="inline-flex items-center gap-1.5 text-xs font-bold text-blue-700"><Users size={14} aria-hidden="true" /> {textoConfirmacoes(item.total_apoios)} este problema.</p>
                 )}
 
                 {/* Andamento */}
@@ -176,7 +177,7 @@ export default function ListaOcorrenciasGestor({ revisarFoto, acaoEmAndamento, a
                     }}
                     className="mt-2 text-xs font-black text-indigo-600 hover:text-indigo-800 cursor-pointer"
                   >
-                    📋 {tramitacaoAberta === item.id ? 'Fechar despacho' : item.observacoes ? 'Editar despacho' : 'Escrever despacho'}
+                    {tramitacaoAberta === item.id ? 'Fechar despacho' : item.observacoes ? 'Editar despacho' : 'Escrever despacho'}
                   </button>
                   {tramitacaoAberta === item.id && (
                     <div className="mt-2 space-y-2">
@@ -203,7 +204,7 @@ export default function ListaOcorrenciasGestor({ revisarFoto, acaoEmAndamento, a
                 {/* Resolver com foto do "depois" */}
                 {itemResolucao?.id === item.id && (
                   <div className="rounded-2xl border border-emerald-200 bg-emerald-50/70 p-3">
-                    <p className="text-xs font-black text-emerald-900">📸 Foto da solução (opcional)</p>
+                    <p className="text-xs font-black text-emerald-900">Foto da solução (opcional)</p>
                     <p className="mt-0.5 text-[11px] text-emerald-800">O morador verá o antes e o depois.</p>
                     <input
                       type="file"
@@ -272,7 +273,7 @@ export default function ListaOcorrenciasGestor({ revisarFoto, acaoEmAndamento, a
                     onClick={() => setItemEdicao({ ...item, status })}
                     className="min-h-9 px-2 text-xs font-bold text-blue-700 hover:underline cursor-pointer"
                   >
-                    ✏️ Editar dados
+                    Editar dados
                   </button>
                   <button
                     type="button"

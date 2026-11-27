@@ -5,10 +5,10 @@ export const PASSOS_COMO_USAR = [
   {
     id: 'registrar',
     titulo: 'Viu um problema na rua? Registre',
-    resumo: 'Toque no botão azul grande "Registrar Nova Ocorrência" e escolha o tipo: lixo, poste apagado, buraco, esgoto, alagamento, árvore, calçada ou sinalização.',
+    resumo: 'Toque no botão amarelo "Registrar um problema" e escolha o tipo: lixo, poste apagado, buraco, esgoto, alagamento, árvore, calçada ou sinalização.',
     dica: 'Leva menos de um minuto e não precisa de cadastro.',
     icone: '📍',
-    cor: 'from-blue-600 to-blue-500',
+    cor: 'bg-placa',
     acao: { rotulo: 'Registrar agora', destino: 'registrar' }
   },
   {
@@ -17,7 +17,7 @@ export const PASSOS_COMO_USAR = [
     resumo: 'Fotografe o problema, não pessoas nem placas de carro. O app borra rostos sozinho e você pode borrar outras partes com o botão "Borrar área".',
     dica: 'A foto fica pública no mapa, por isso o cuidado.',
     icone: '📷',
-    cor: 'from-amber-500 to-orange-500'
+    cor: 'bg-amber-700'
   },
   {
     id: 'local',
@@ -25,7 +25,7 @@ export const PASSOS_COMO_USAR = [
     resumo: 'O app pega sua localização pelo GPS. Se precisar, ajuste o ponto no mapa e escreva uma referência, como "em frente à padaria".',
     dica: 'O bairro é preenchido automaticamente.',
     icone: '🗺️',
-    cor: 'from-emerald-500 to-teal-500'
+    cor: 'bg-mangueira'
   },
   {
     id: 'protocolo',
@@ -33,7 +33,7 @@ export const PASSOS_COMO_USAR = [
     resumo: 'Ao enviar, você recebe um código como ZD-1A2B3C. Com ele você acompanha o andamento em "Consultar", na tela inicial.',
     dica: 'Ative os avisos para receber uma notificação quando o status mudar.',
     icone: '🧾',
-    cor: 'from-indigo-500 to-violet-500',
+    cor: 'bg-placa-escura',
     acao: { rotulo: 'Consultar um protocolo', destino: 'consultar' }
   },
   {
@@ -42,7 +42,7 @@ export const PASSOS_COMO_USAR = [
     resumo: 'O registro fica guardado no celular e é enviado sozinho quando a internet voltar. O protocolo já vale na hora.',
     dica: 'Instale o app na tela inicial para abrir mais rápido.',
     icone: '📶',
-    cor: 'from-slate-700 to-slate-500'
+    cor: 'bg-asfalto'
   },
   {
     id: 'apoiar',
@@ -50,7 +50,7 @@ export const PASSOS_COMO_USAR = [
     resumo: 'Antes de registrar de novo, veja em "Registros" ou no mapa. Se o problema já está lá, toque em "Também vi este problema". Quanto mais apoios, mais prioridade.',
     dica: 'Registros repetidos atrapalham, apoios ajudam.',
     icone: '👥',
-    cor: 'from-sky-500 to-blue-500',
+    cor: 'bg-placa',
     acao: { rotulo: 'Ver registros', destino: 'registos' }
   },
   {
@@ -59,7 +59,7 @@ export const PASSOS_COMO_USAR = [
     resumo: 'Abra o registro e toque em "Denunciar foto ou registro". Com 3 denúncias a foto some até a gestão revisar.',
     dica: 'Cada celular denuncia uma vez por registro.',
     icone: '🚩',
-    cor: 'from-rose-500 to-red-500'
+    cor: 'bg-alerta'
   },
   {
     id: 'transparencia',
@@ -67,7 +67,7 @@ export const PASSOS_COMO_USAR = [
     resumo: 'Em "Transparência por bairro" você vê quantos problemas estão em aberto, quantos foram resolvidos e em quanto tempo. Dá para baixar todos os dados.',
     dica: 'Use esses números para cobrar melhorias.',
     icone: '🏛️',
-    cor: 'from-slate-900 to-slate-700',
+    cor: 'bg-asfalto',
     acao: { rotulo: 'Abrir transparência', destino: 'transparencia' }
   },
   {
@@ -76,7 +76,7 @@ export const PASSOS_COMO_USAR = [
     resumo: 'Toque no ícone de acessibilidade no topo da tela. Os botões ficam maiores, o contraste aumenta e o app lê os passos em voz alta.',
     dica: 'Bom para quem tem dificuldade de enxergar ou de ler.',
     icone: '🔊',
-    cor: 'from-fuchsia-500 to-pink-500'
+    cor: 'bg-placa-escura'
   }
 ]
 

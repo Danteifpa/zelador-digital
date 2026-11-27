@@ -1,3 +1,4 @@
+import { Bell } from 'lucide-react'
 import { NOTIFICACOES_PADRAO } from '../lib/conteudoApp'
 import { feedbackSensorial } from '../lib/feedbackSensorial'
 
@@ -7,7 +8,7 @@ export default function ModalNotificacoes({ marcarNotificacaoComoLida, marcarTod
       <div className="bg-white w-full max-w-md rounded-t-3xl sm:rounded-3xl p-6 border border-slate-200 shadow-2xl max-h-[85vh] overflow-y-auto space-y-4">
         <div className="flex items-center justify-between border-b border-slate-100 pb-3">
           <div className="flex items-center space-x-2">
-            <span className="text-xl">🔔</span>
+            <Bell size={20} strokeWidth={2.25} className="text-placa" aria-hidden="true" />
             <h3 className="font-black text-slate-800 text-sm">Novidades do app</h3>
           </div>
           <div className="flex items-center space-x-2">

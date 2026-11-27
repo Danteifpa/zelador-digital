@@ -453,7 +453,7 @@ export default function PainelGestor({ ocorrencias = [], onAtualizarDados, demo 
       {demo && (
         <div role="status" className="flex flex-wrap items-center justify-between gap-2 rounded-2xl border border-amber-300 bg-amber-50 p-3 text-xs text-amber-900">
           <span><strong>Demonstração</strong> com chamados fictícios. Pode mexer à vontade: nada é salvo e nada chega ao banco.</span>
-          <button type="button" onClick={demo.sair} className="rounded-xl bg-amber-600 px-3 py-1.5 font-black text-white hover:bg-amber-700 cursor-pointer">
+          <button type="button" onClick={demo.sair} className="rounded-xl bg-amber-800 px-3 py-1.5 font-black text-white hover:bg-amber-900 cursor-pointer">
             Sair da demonstração
           </button>
         </div>
@@ -466,7 +466,7 @@ export default function PainelGestor({ ocorrencias = [], onAtualizarDados, demo 
           <div className="space-y-3 min-w-0">
             {(prazos.atrasados > 0 || prazos.venceLogo > 0) && (
               <div role="status" className="rounded-2xl border border-rose-200 bg-rose-50 p-3 text-xs text-rose-800">
-                <strong>⏰ Prazos{filtroOrgao !== 'todos' ? ` · ${nomeDoOrgao(filtroOrgao)}` : ''}:</strong>{' '}
+                <strong>Prazos{filtroOrgao !== 'todos' ? ` · ${nomeDoOrgao(filtroOrgao)}` : ''}:</strong>{' '}
                 {prazos.atrasados} chamado(s) atrasado(s)
                 {prazos.venceLogo > 0 && ` e ${prazos.venceLogo} vencendo em até 2 dias`}.
                 {prazos.atrasados > 0 && (
@@ -482,7 +482,7 @@ export default function PainelGestor({ ocorrencias = [], onAtualizarDados, demo 
               onClick={() => setMostrarOrdem(true)}
               className="w-full min-h-11 rounded-2xl border border-slate-300 bg-white text-xs font-black text-slate-800 hover:bg-slate-50 cursor-pointer"
             >
-              📋 Ordem de serviço para a equipe ({ocorrenciasFiltradasComGut.filter((item) => !eResolvida(item)).length} abertos no filtro)
+              Ordem de serviço para a equipe ({ocorrenciasFiltradasComGut.filter((item) => !eResolvida(item)).length} abertos no filtro)
             </button>
             {itemEdicao && <FormEdicaoOcorrencia carregandoAcao={carregandoAcao} itemEdicao={itemEdicao} salvarEdicao={salvarEdicao} setItemEdicao={setItemEdicao} />}
             <ListaOcorrenciasGestor selecionadaId={selecionadaId} onSelecionar={setSelecionadaId} revisarFoto={revisarFoto} acaoEmAndamento={acaoEmAndamento} alterarStatusOcorrencia={alterarStatusOcorrencia} carregandoAcao={carregandoAcao} confirmarResolucao={confirmarResolucao} despachoPorId={despachoPorId} fotoResolucaoPorId={fotoResolucaoPorId} itemResolucao={itemResolucao} ocorrenciasFiltradasComGut={ocorrenciasFiltradasComGut} salvarDespacho={salvarDespacho} setDespachoPorId={setDespachoPorId} setFotoResolucaoPorId={setFotoResolucaoPorId} setItemEdicao={setItemEdicao} setItemExclusao={setItemExclusao} setItemResolucao={setItemResolucao} setTramitacaoAberta={setTramitacaoAberta} tramitacaoAberta={tramitacaoAberta} />

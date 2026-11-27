@@ -75,7 +75,7 @@ function Questionario({ grande, onFechar, onConcluir }) {
       <div className="bg-white w-full max-w-md max-h-[92vh] overflow-y-auto rounded-t-3xl sm:rounded-3xl p-5 space-y-4">
         <div className="flex items-start justify-between gap-3">
           <div>
-            <p className="text-[10px] font-black uppercase tracking-wider text-violet-600">Pesquisa anônima</p>
+            <p className="text-[10px] font-black text-violet-600">Pesquisa anônima</p>
             <h2 className="text-lg font-black text-slate-800">O que você achou do app?</h2>
             <p className="text-xs text-slate-500">Marque o quanto você concorda com cada frase.</p>
           </div>

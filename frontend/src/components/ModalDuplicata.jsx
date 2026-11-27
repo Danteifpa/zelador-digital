@@ -1,3 +1,4 @@
+import { TriangleAlert } from 'lucide-react'
 import { protocoloCivico } from '../lib/protocolo'
 import BotaoApoio from './BotaoApoio'
 
@@ -5,7 +6,7 @@ export default function ModalDuplicata({ duplicataEncontrada, handleSubmit, regi
   return (
     <div className="fixed inset-0 z-[70] bg-slate-950/75 backdrop-blur-sm flex items-center justify-center p-4">
       <div className="w-full max-w-sm rounded-3xl bg-white p-6 shadow-2xl border border-slate-200">
-        <div className="w-12 h-12 rounded-2xl bg-amber-100 text-amber-700 flex items-center justify-center text-xl mb-4">⚠️</div>
+        <div className="w-12 h-12 rounded-2xl bg-amber-100 text-amber-700 flex items-center justify-center mb-4"><TriangleAlert size={24} strokeWidth={2.25} aria-hidden="true" /></div>
         <h2 className="text-base font-black text-slate-900">Alguém já registrou este problema aqui</h2>
         <p className="mt-2 text-sm leading-relaxed text-slate-600">
           Existe um chamado em aberto a menos de 50 m (Protocolo {protocoloCivico(duplicataEncontrada.id)}
