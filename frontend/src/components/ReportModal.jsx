@@ -134,7 +134,7 @@ export default function ReportModal({ onFechar, modo, falarTexto, estaOnline, ca
         {/* Cabeçalho */}
         <div className="flex items-start justify-between gap-3 px-5 pt-5 pb-3 border-b border-slate-100">
           <div className="min-w-0">
-            <p id={idDescricao} className="text-[11px] font-black uppercase tracking-wider text-blue-600">
+            <p id={idDescricao} className="text-[11px] font-black text-blue-600">
               {resultado ? 'Registro concluído' : `Nova ocorrência · Passo ${passo + 1} de ${PASSOS.length}`}
             </p>
             <h2 id={idTitulo} ref={tituloRef} tabIndex={-1} className="text-lg font-black text-slate-800 mt-0.5 focus:outline-none">
@@ -390,8 +390,8 @@ export default function ReportModal({ onFechar, modo, falarTexto, estaOnline, ca
                   type="button"
                   onClick={acoes.enviar}
                   disabled={form.enviando || form.processandoFoto || !form.localizacao}
-                  className={`flex-1 rounded-2xl font-black uppercase tracking-wider text-white shadow-md ${tamanhoBotao} ${
-                    form.enviando || !form.localizacao ? 'bg-blue-400 cursor-not-allowed' : 'bg-blue-600 hover:bg-blue-700 active:scale-[0.99] cursor-pointer'
+                  className={`flex-1 rounded-2xl font-black text-asfalto shadow-[0_3px_0_#e0b200] ${tamanhoBotao} ${
+                    form.enviando || !form.localizacao ? 'bg-faixa/50 text-asfalto/60 shadow-none cursor-not-allowed' : 'bg-faixa hover:bg-faixa-escura active:translate-y-px cursor-pointer'
                   }`}
                 >
                   {form.enviando ? 'Enviando...' : estaOnline ? 'Enviar registro' : 'Salvar no celular'}
@@ -419,7 +419,7 @@ function LinhaResumo({ rotulo, onAlterar, children }) {
   return (
     <div className="flex items-center justify-between gap-3 p-3">
       <div className="min-w-0">
-        <dt className="text-[11px] font-black uppercase tracking-wider text-slate-400">{rotulo}</dt>
+        <dt className="text-[11px] font-black text-slate-400">{rotulo}</dt>
         <dd className="text-sm font-bold text-slate-800 mt-0.5 break-words">{children}</dd>
       </div>
       <button
@@ -442,7 +442,7 @@ function PassoProtocolo({ resultado, estaOnline, categoria, copiado, onCopiar, e
         <Check size={32} strokeWidth={3} />
       </div>
       <div>
-        <p className="text-xs font-black uppercase tracking-wider text-slate-500">O seu protocolo</p>
+        <p className="text-xs font-black text-slate-500">O seu protocolo</p>
         <p className="mt-1 text-3xl font-black tracking-wider text-blue-900" aria-live="polite">{codigo}</p>
         <button
           type="button"

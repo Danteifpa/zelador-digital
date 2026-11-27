@@ -10,12 +10,12 @@ export default function Onboarding({ concluirOnboarding, etapaOnboarding, setEta
             onClick={concluirOnboarding}
             className="text-xs font-bold text-slate-500 hover:text-slate-700 transition-colors cursor-pointer"
           >
-            Pular apresentação ✕
+            Pular apresentação
           </button>
         </div>
 
         <div className="space-y-4">
-          <div className={`w-20 h-20 mx-auto rounded-3xl bg-gradient-to-tr ${ETAPAS_ONBOARDING[etapaOnboarding].gradiente} flex items-center justify-center text-4xl shadow-md`}>
+          <div className={`w-20 h-20 mx-auto rounded-3xl ${ETAPAS_ONBOARDING[etapaOnboarding].gradiente} flex items-center justify-center text-4xl shadow-md`}>
             {ETAPAS_ONBOARDING[etapaOnboarding].icone}
           </div>
 
@@ -48,7 +48,7 @@ export default function Onboarding({ concluirOnboarding, etapaOnboarding, setEta
                 feedbackSensorial.toqueSuave()
                 setEtapaOnboarding((prev) => prev + 1)
               }}
-              className="w-full py-3.5 bg-blue-600 hover:bg-blue-700 text-white rounded-2xl font-black text-xs uppercase tracking-wider shadow-md transition-all active:scale-[0.99] cursor-pointer"
+              className="w-full py-3.5 bg-blue-600 hover:bg-blue-700 text-white rounded-2xl font-black text-xs shadow-md transition-all active:scale-[0.99] cursor-pointer"
             >
               Continuar →
             </button>
@@ -56,9 +56,9 @@ export default function Onboarding({ concluirOnboarding, etapaOnboarding, setEta
             <button
               type="button"
               onClick={concluirOnboarding}
-              className="w-full py-3.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-2xl font-black text-xs uppercase tracking-wider shadow-md transition-all active:scale-[0.99] cursor-pointer"
+              className="w-full py-3.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-2xl font-black text-xs shadow-md transition-all active:scale-[0.99] cursor-pointer"
             >
-              Começar a usar 🚀
+              Começar a usar
             </button>
           )}
           {abrirComoUsar && (

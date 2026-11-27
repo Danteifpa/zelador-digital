@@ -77,7 +77,7 @@ export default function FormEdicaoOcorrencia({ carregandoAcao, itemEdicao, salva
           disabled={carregandoAcao}
           className="w-full bg-amber-600 hover:bg-amber-700 text-white font-black py-2.5 rounded-xl text-xs transition-colors shadow-2xs cursor-pointer"
         >
-          {carregandoAcao ? 'Salvando...' : 'Salvar Alterações'}
+          {carregandoAcao ? 'Salvando...' : 'Salvar alterações'}
         </button>
       </form>
     </div>

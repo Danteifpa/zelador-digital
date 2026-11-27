@@ -21,7 +21,7 @@ describe('edição do chamado', () => {
 
   it('trocar a categoria sugere o órgão da nova categoria', () => {
     const setItemEdicao = renderizar()
-    fireEvent.change(screen.getByDisplayValue(/Buraco na Rua/), { target: { value: 'iluminacao' } })
+    fireEvent.change(screen.getByDisplayValue(/Buraco na rua/), { target: { value: 'iluminacao' } })
     expect(setItemEdicao).toHaveBeenCalledWith({ ...item, categoria: 'iluminacao', orgao: 'iluminacao' })
   })
 })

@@ -1,3 +1,4 @@
+import { Share2 } from 'lucide-react'
 import { rotuloDaCategoria } from '../lib/categorias'
 import { feedbackSensorial } from '../lib/feedbackSensorial'
 import { protocoloCivico } from '../lib/protocolo'
@@ -27,9 +28,9 @@ export default function ModalDetalheOcorrencia({ carregarRegistos, mostrarAlerta
             <button
               onClick={() => partilharOcorrencia(ocorrenciaSelecionada)}
               className="p-2 rounded-xl bg-blue-50 text-blue-600 hover:bg-blue-100 border border-blue-200 text-xs font-bold flex items-center gap-1 cursor-pointer"
-              title="Compartilhar Ocorrência"
+              title="Compartilhar registro"
             >
-              <span>📢</span>
+              <Share2 size={14} strokeWidth={2.25} aria-hidden="true" />
               <span>Compartilhar</span>
             </button>
             <button
@@ -59,7 +60,7 @@ export default function ModalDetalheOcorrencia({ carregarRegistos, mostrarAlerta
         ) : null}
 
         <div className="bg-slate-50 rounded-2xl p-4 border border-slate-200/80 space-y-3">
-          <h4 className="text-xs font-black text-slate-500 uppercase tracking-wider">Acompanhamento do Chamado</h4>
+          <h4 className="text-xs font-black text-slate-500">Andamento do registro</h4>
 
           <div className="relative border-l-2 border-slate-200 ml-3 space-y-4 py-1">
             <div className="relative pl-6">
@@ -97,7 +98,7 @@ export default function ModalDetalheOcorrencia({ carregarRegistos, mostrarAlerta
         </div>
 
         <div>
-          <span className="text-[10px] font-bold uppercase text-slate-400 block mb-0.5">Descrição / ponto de referência</span>
+          <span className="text-[10px] font-bold text-slate-400 block mb-0.5">Descrição / ponto de referência</span>
           <p className="text-xs text-slate-700 bg-slate-50 p-3 rounded-xl border border-slate-200">
             {ocorrenciaSelecionada.descricao || 'Sem descrição detalhada fornecida.'}
           </p>

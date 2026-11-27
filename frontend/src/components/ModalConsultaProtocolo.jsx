@@ -9,8 +9,8 @@ export default function ModalConsultaProtocolo({ ativarAvisos, consultandoProtoc
       <div className="bg-white w-full max-w-md rounded-3xl p-5 shadow-2xl border border-slate-200 max-h-[90vh] overflow-y-auto">
         <div className="flex items-start justify-between gap-3">
           <div>
-            <span className="text-[10px] font-black uppercase tracking-wider text-blue-600">Acompanhamento cidadão</span>
-            <h2 className="text-lg font-black text-slate-800 mt-1">Consultar Protocolo</h2>
+            <span className="text-[10px] font-black text-blue-600">Acompanhamento cidadão</span>
+            <h2 className="text-lg font-black text-slate-800 mt-1">Consultar protocolo</h2>
           </div>
           <button type="button" onClick={() => setMostrarConsultaProtocolo(false)} className="text-slate-400 hover:text-slate-700 font-bold cursor-pointer">✕</button>
         </div>
@@ -31,7 +31,7 @@ export default function ModalConsultaProtocolo({ ativarAvisos, consultandoProtoc
         {resultadoProtocolo && (
           <div className="mt-5 space-y-3">
             <div className="rounded-2xl bg-slate-900 p-4 text-white">
-              <p className="text-[10px] font-black uppercase tracking-wider text-blue-300">{protocoloCivico(resultadoProtocolo.id)}</p>
+              <p className="text-[10px] font-black text-blue-300">{protocoloCivico(resultadoProtocolo.id)}</p>
               <h3 className="mt-1 text-base font-black">{rotuloDaCategoria(resultadoProtocolo.categoria)}</h3>
               <p className="mt-1 text-[11px] text-slate-300">{resultadoProtocolo.bairro || resultadoProtocolo.endereco || resultadoProtocolo.morada || 'Bairro não informado'}</p>
               <p className="mt-1 text-[10px] text-slate-400">Aberta em {resultadoProtocolo.created_at ? new Date(resultadoProtocolo.created_at).toLocaleDateString('pt-BR') : 'data não informada'}</p>
@@ -65,7 +65,7 @@ export default function ModalConsultaProtocolo({ ativarAvisos, consultandoProtoc
             )}
             {estaResolvido(resultadoProtocolo.status) && resultadoProtocolo.foto_url && resultadoProtocolo.foto_resolucao && (
               <div className="rounded-2xl border border-emerald-200 bg-emerald-50 p-3">
-                <span className="rounded-full bg-emerald-600 px-2 py-1 text-[9px] font-black text-white">Comprovado por Auditoria Visual</span>
+                <span className="rounded-full bg-emerald-600 px-2 py-1 text-[9px] font-black text-white">Foto de antes e depois</span>
                 <div className="mt-2 grid grid-cols-2 gap-2">
                   <img src={resultadoProtocolo.foto_url} alt="Antes: registro inicial" loading="lazy" decoding="async" className="h-28 w-full rounded-xl object-cover" />
                   <img src={resultadoProtocolo.foto_resolucao} alt="Depois: intervenção concluída" loading="lazy" decoding="async" className="h-28 w-full rounded-xl object-cover" />

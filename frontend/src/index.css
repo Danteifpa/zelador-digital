@@ -1,5 +1,69 @@
 @import "tailwindcss";
 
+/* Cores da rua: placa azul, faixa amarela, asfalto, calçada, mangueira e alerta. */
+@theme {
+  --color-placa: #1d4e9e;
+  --color-placa-escura: #163e7e;
+  --color-faixa: #f5c400;
+  --color-faixa-escura: #e0b200;
+  --color-asfalto: #2b2f36;
+  --color-calcada: #eef0ec;
+  --color-mangueira: #2e7d4f;
+  --color-alerta: #c8372d;
+
+  /* Cantos: só três tamanhos no app. Caixas 16px, peças dentro delas 12px, botões pequenos 8px. */
+  --radius-3xl: 1rem;
+  --radius-2xl: 0.75rem;
+  --radius-xl: 0.625rem;
+
+  /* Cinzas: fundos claros puxam para calçada; os escuros viram asfalto (em vez de azul-marinho). */
+  --color-slate-50: #f6f7f4;
+  --color-slate-100: #eceee9;
+  --color-slate-800: #363b43;
+  --color-slate-900: #2b2f36;
+  --color-slate-950: #1f2227;
+
+  /* Azul, índigo e céu do Tailwind viram a mesma escala da placa: o app inteiro fala uma cor só. */
+  --color-blue-50: #eef3fa;
+  --color-blue-100: #d9e4f3;
+  --color-blue-200: #b5c9e6;
+  --color-blue-300: #87a6d3;
+  --color-blue-400: #5a83be;
+  --color-blue-500: #3466ad;
+  --color-blue-600: #1d4e9e;
+  --color-blue-700: #163e7e;
+  --color-blue-800: #12346a;
+  --color-blue-900: #0f2a55;
+  --color-blue-950: #0a1b38;
+  --color-indigo-50: #eef3fa;
+  --color-indigo-100: #d9e4f3;
+  --color-indigo-200: #b5c9e6;
+  --color-indigo-300: #87a6d3;
+  --color-indigo-400: #5a83be;
+  --color-indigo-500: #3466ad;
+  --color-indigo-600: #1d4e9e;
+  --color-indigo-700: #163e7e;
+  --color-indigo-800: #12346a;
+  --color-indigo-900: #0f2a55;
+  --color-indigo-950: #0a1b38;
+  --color-sky-50: #eef3fa;
+  --color-sky-100: #d9e4f3;
+  --color-sky-200: #b5c9e6;
+  --color-sky-300: #87a6d3;
+  --color-sky-400: #5a83be;
+  --color-sky-500: #3466ad;
+  --color-sky-600: #1d4e9e;
+  --color-sky-700: #163e7e;
+  --color-sky-800: #12346a;
+  --color-sky-900: #0f2a55;
+  --color-sky-950: #0a1b38;
+}
+
+/* Títulos com a fonte da marca. Classes nos elementos ainda podem trocar. */
+@layer base {
+  h1, h2, h3 { font-family: 'Sora', system-ui, sans-serif; }
+}
+
 /* Fonte da marca (Sora), embutida para funcionar offline. Só títulos e logotipo usam. */
 @font-face { font-family: 'Sora'; font-style: normal; font-weight: 400; font-display: swap; src: url('./assets/sora-latin-400-normal.woff2') format('woff2'); }
 @font-face { font-family: 'Sora'; font-style: normal; font-weight: 600; font-display: swap; src: url('./assets/sora-latin-600-normal.woff2') format('woff2'); }
@@ -11,7 +75,7 @@ html, body {
   width: 100%;
   min-height: 100%;
   font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
-  background-color: #f8fafc;
+  background-color: #f3f4f1;
 }
 
 /* O Leaflet usa z-index 400+ nas camadas do mapa. Isolando o contêiner, o mapa fica
@@ -26,6 +90,20 @@ html, body {
 }
 .sem-barra-rolagem::-webkit-scrollbar {
   display: none;
+}
+
+/* Aba ativa da barra de baixo: um traço amarelo em cima, como faixa pintada no asfalto. */
+.aba-ativa { position: relative; }
+.aba-ativa::before {
+  content: '';
+  position: absolute;
+  top: -0.65rem;
+  left: 50%;
+  width: 1.5rem;
+  height: 3px;
+  border-radius: 2px;
+  background: var(--color-faixa);
+  transform: translateX(-50%);
 }
 
 /* ---------- Modo Fácil (classe colocada no <html> pelo App) ---------- */

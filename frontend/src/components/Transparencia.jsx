@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
-import { ArrowLeft, Clock, Download, FileJson, Landmark, TriangleAlert } from 'lucide-react'
+import { ArrowLeft, Clock, Download, FileJson, Landmark, TriangleAlert, Users } from 'lucide-react'
 import { supabase } from '../lib/supabase'
 import { baixarArquivo, dadosAbertosParaCsv, dadosAbertosParaGeoJson, formatarDias, ordenarBairros, resumirTransparencia } from '../lib/transparencia'
 import PainelEquidade from './PainelEquidade'
@@ -61,7 +61,7 @@ export default function Transparencia({ onVoltar }) {
       </button>
 
       <section className="rounded-3xl bg-slate-900 p-5 text-white">
-        <p className="flex items-center gap-2 text-[11px] font-black uppercase tracking-wider text-sky-300">
+        <p className="flex items-center gap-2 text-[11px] font-black text-sky-300">
           <Landmark size={14} aria-hidden="true" /> Transparência
         </p>
         <h2 className="mt-1 text-xl font-black leading-tight">Como está cada bairro de {MARCA.cidade}</h2>
@@ -124,7 +124,7 @@ export default function Transparencia({ onVoltar }) {
                 <p className="mt-1 flex flex-wrap gap-x-3 text-[10px] text-slate-500">
                   <span className="inline-flex items-center gap-1"><Clock size={11} aria-hidden="true" /> Resolve em {formatarDias(b.dias_medios_resolucao)}</span>
                   {b.abertos_mais_30_dias > 0 && <span className="font-bold text-rose-600">{b.abertos_mais_30_dias} esperando há +30 dias</span>}
-                  {b.apoios > 0 && <span>👥 {b.apoios} confirmações de vizinhos</span>}
+                  {b.apoios > 0 && <span className="inline-flex items-center gap-1"><Users size={11} aria-hidden="true" /> {b.apoios} confirmações de vizinhos</span>}
                 </p>
               </li>
             ))}

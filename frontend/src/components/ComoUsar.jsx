@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { ArrowLeft, ChevronLeft, ChevronRight, Share2, Volume2 } from 'lucide-react'
+import { ArrowLeft, ChevronLeft, ChevronRight, Share2, Volume2, Lightbulb } from 'lucide-react'
 import { PASSOS_COMO_USAR, textoDoPasso } from '../lib/comoUsar'
 import { feedbackSensorial } from '../lib/feedbackSensorial'
 import { MARCA } from '../lib/marca'
@@ -52,8 +52,8 @@ export default function ComoUsar({ onVoltar, onIr, falarTexto, modoFacil = false
       </div>
 
       <section className="rounded-3xl border border-slate-200 bg-white overflow-hidden shadow-sm" aria-live="polite">
-        <div className={`bg-gradient-to-br ${passo.cor} p-6 text-white`}>
-          <p className="text-[11px] font-black uppercase tracking-wider text-white/80">Como usar · passo {indice + 1} de {total}</p>
+        <div className={`${passo.cor} p-6 text-white`}>
+          <p className="text-[11px] font-black text-white/80">Passo {indice + 1} de {total}</p>
           <div className="mt-3 flex items-center gap-4">
             <span className="flex h-16 w-16 shrink-0 items-center justify-center rounded-2xl bg-white/20 text-4xl" aria-hidden="true">{passo.icone}</span>
             <h2 className={`font-black leading-tight ${modoFacil ? 'text-2xl' : 'text-xl'}`}>{passo.titulo}</h2>
@@ -61,7 +61,7 @@ export default function ComoUsar({ onVoltar, onIr, falarTexto, modoFacil = false
         </div>
         <div className="p-5 space-y-3">
           <p className={`${base} text-slate-700 leading-relaxed`}>{passo.resumo}</p>
-          <p className={`${base} rounded-2xl bg-slate-50 border border-slate-200 px-3 py-2 font-semibold text-slate-600`}>💡 {passo.dica}</p>
+          <p className={`${base} rounded-2xl bg-slate-50 border border-slate-200 px-3 py-2 font-semibold text-slate-600 flex gap-2`}><Lightbulb size={18} className="mt-0.5 shrink-0 text-amber-700" aria-hidden="true" /><span>{passo.dica}</span></p>
           <div className="flex flex-wrap gap-2">
             <button
               type="button"
@@ -77,9 +77,13 @@ export default function ComoUsar({ onVoltar, onIr, falarTexto, modoFacil = false
                   feedbackSensorial.toqueSuave()
                   onIr(passo.acao.destino)
                 }}
-                className="min-h-11 rounded-2xl bg-blue-600 px-4 text-sm font-black text-white hover:bg-blue-700 cursor-pointer"
+                className={`min-h-11 rounded-xl px-4 text-sm font-black cursor-pointer ${
+                  passo.acao.destino === 'registrar'
+                    ? 'bg-faixa text-asfalto shadow-[0_3px_0_#e0b200] hover:bg-faixa-escura'
+                    : 'bg-blue-600 text-white hover:bg-blue-700'
+                }`}
               >
-                {passo.acao.rotulo} →
+                {passo.acao.rotulo}
               </button>
             )}
           </div>

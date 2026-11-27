@@ -59,7 +59,7 @@ export default function FiltrosGestao({ filtroOrgao = 'todos', orgaoGestor = nul
                 : 'bg-rose-50 border border-rose-200 text-rose-700 hover:bg-rose-100'
             }`}
           >
-            ⏰ Atrasados ({totalAtrasados})
+            Atrasados ({totalAtrasados})
           </button>
         )}
         {totalDenunciados > 0 && (
@@ -72,7 +72,7 @@ export default function FiltrosGestao({ filtroOrgao = 'todos', orgaoGestor = nul
                 : 'bg-rose-50 border border-rose-200 text-rose-700 hover:bg-rose-100'
             }`}
           >
-            🚩 Denunciados ({totalDenunciados})
+            Denunciados ({totalDenunciados})
           </button>
         )}
         <button
@@ -82,7 +82,7 @@ export default function FiltrosGestao({ filtroOrgao = 'todos', orgaoGestor = nul
             ordenarPorGut ? 'bg-rose-600 text-white shadow-2xs' : 'bg-white border border-slate-200 text-slate-600 hover:bg-slate-50'
           }`}
         >
-          {ordenarPorGut ? '🔥 Mais urgentes primeiro' : '↕ Ordenar por urgência'}
+          {ordenarPorGut ? 'Mais urgentes primeiro' : 'Ordenar por urgência'}
         </button>
       </div>
     </div>

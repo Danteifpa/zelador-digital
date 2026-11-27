@@ -12,7 +12,7 @@ async function abrirApp(page, ponto) {
 }
 
 async function registrar(page, { tipo = /Lixo/, referencia }) {
-  await page.getByText('Registrar Nova Ocorrência').click()
+  await page.getByText('Registrar um problema', { exact: true }).click()
   await page.getByRole('button', { name: tipo }).first().click()
   await page.getByRole('button', { name: /^Continuar$/ }).click()
   await expect(page.getByText(/Fotografe o problema/)).toBeVisible()

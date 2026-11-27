@@ -35,7 +35,7 @@ describe('transparência', () => {
     const linhas = [{ protocolo: 'ZD-83803A', categoria: 'buraco', status: 'pendente', bairro: 'Coqueiro', latitude: -1.372, longitude: -48.418, registrado_em: '2026-11-01', resolvido_em: null, apoios: 2 }]
     const csv = dadosAbertosParaCsv(linhas)
     expect(csv.split('\n')[0]).toBe('\uFEFFprotocolo,categoria,tipo,status,situacao,bairro,latitude,longitude,registrado_em,resolvido_em,apoios')
-    expect(csv).toContain('"Buraco na Rua"')
+    expect(csv).toContain('"Buraco na rua"')
     const geo = dadosAbertosParaGeoJson(linhas)
     expect(geo.features[0].geometry.coordinates).toEqual([-48.418, -1.372])
     expect(Object.keys(geo.features[0].properties)).not.toContain('descricao')

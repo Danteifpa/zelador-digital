@@ -76,9 +76,9 @@ export function calcularPontuacaoGUT(item, ocorrencias = [], agora = new Date())
 }
 
 export function corCriticidade(pontuacao) {
-  if (pontuacao >= 60) return '#ef4444'
-  if (pontuacao >= 30) return '#f59e0b'
-  return '#22c55e'
+  if (pontuacao >= 60) return '#c8372d'
+  if (pontuacao >= 30) return '#b45309'
+  return '#2e7d4f'
 }
 
 export function rotuloCriticidade(pontuacao) {

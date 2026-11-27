@@ -4,15 +4,15 @@ import PrivacidadeFoto from '../components/PrivacidadeFoto'
 import { CATEGORIAS } from '../lib/categorias'
 import { CENTRO_COMUNITARIO } from '../lib/geo'
 import { formatarKm } from '../lib/gestao'
-import { Camera, MapPin, RefreshCw, Save, Send, Volume2 } from 'lucide-react'
+import { Camera, MapPin, RefreshCw, Save, Send, Volume2, Mic } from 'lucide-react'
 
 export default function TelaRegistrar({ alternarReconhecimentoVoz, borrarAreasDaFoto, capturandoGps, categoria, distanciaAtualKm, enviando, estaOnline, falarTexto, fotoPreview, gravandoVoz, handleFotoChange, handleSubmit, localizacao, modo, obterLocalizacaoAtual, origemLocalizacao, pontoReferencia, processandoFoto, removerFoto, rostosBorrados, selecionarCategoria, setPontoReferencia }) {
   return (
     <form onSubmit={handleSubmit} className="bg-white rounded-3xl p-5 border border-slate-200 shadow-xs space-y-5">
       <div className="flex items-center justify-between border-b border-slate-100 pb-3">
-        <h2 className="text-base font-black text-slate-800">Novo Registro Territorial</h2>
+        <h2 className="text-base font-black text-slate-800">Registrar um problema</h2>
         <span className={`text-[11px] font-bold px-2 py-0.5 rounded-full ${estaOnline ? 'bg-emerald-50 text-emerald-700' : 'bg-amber-50 text-amber-700'}`}>
-          {estaOnline ? 'Online' : 'Armazenamento Local'}
+          {estaOnline ? 'Online' : 'Sem internet: salva no celular'}
         </span>
       </div>
 
@@ -20,21 +20,21 @@ export default function TelaRegistrar({ alternarReconhecimentoVoz, borrarAreasDa
         <div className="bg-amber-100/70 border border-amber-300 rounded-2xl p-3 flex items-center justify-between text-amber-900">
           <div className="flex items-center space-x-2">
             <Volume2 size={20} strokeWidth={2.25} aria-hidden="true" />
-            <span className="text-xs font-bold">Modo Fácil: Botões ampliados e áudio ativo</span>
+            <span className="text-xs font-bold">Modo Fácil: botões maiores e leitura em voz alta</span>
           </div>
           <button
             type="button"
             onClick={() => falarTexto('Escolha o problema, tire a foto e clique no botão enviar.')}
             className="text-xs bg-amber-500 text-white font-bold px-2.5 py-1 rounded-xl shadow-2xs cursor-pointer"
           >
-            Ouvir Ajuda
+            Ouvir ajuda
           </button>
         </div>
       )}
 
       <div>
-        <label className={`block font-black text-slate-600 uppercase tracking-wider mb-2.5 ${modo === 'facil' ? 'text-sm' : 'text-xs'}`}>
-          1. Selecione o Tipo:
+        <label className={`block font-black text-slate-600 mb-2.5 ${modo === 'facil' ? 'text-sm' : 'text-xs'}`}>
+          1. O que você viu?
         </label>
         <div className="grid grid-cols-2 gap-2.5">
           {CATEGORIAS.map((cat) => {
@@ -61,15 +61,15 @@ export default function TelaRegistrar({ alternarReconhecimentoVoz, borrarAreasDa
       </div>
 
       <div>
-        <label className={`block font-black text-slate-600 uppercase tracking-wider mb-2 ${modo === 'facil' ? 'text-sm' : 'text-xs'}`}>
-          2. Fotografia do Local:
+        <label className={`block font-black text-slate-600 mb-2 ${modo === 'facil' ? 'text-sm' : 'text-xs'}`}>
+          2. Foto do problema
         </label>
 
         {!fotoPreview && !processandoFoto && <AvisoFoto grande={modo === 'facil'} />}
 
         {processandoFoto ? (
           <div className="rounded-2xl border border-slate-200 bg-slate-50 p-8 text-center text-xs text-blue-600 font-bold animate-pulse">
-            Otimizando a foto, protegendo rostos e lendo a localização... ⚡
+            Otimizando a foto, protegendo rostos e lendo a localização...
           </div>
         ) : fotoPreview ? (
           <div className="relative rounded-2xl overflow-hidden border border-slate-200 bg-slate-100">
@@ -79,7 +79,7 @@ export default function TelaRegistrar({ alternarReconhecimentoVoz, borrarAreasDa
               onClick={removerFoto}
               className="absolute top-3 right-3 bg-rose-600 hover:bg-rose-700 text-white text-xs font-bold px-3 py-1.5 rounded-full shadow-md transition-all cursor-pointer"
             >
-              ✕ Trocar Foto
+              Trocar foto
             </button>
           </div>
         ) : null}
@@ -162,7 +162,7 @@ export default function TelaRegistrar({ alternarReconhecimentoVoz, borrarAreasDa
                 ? 'bg-emerald-50 text-emerald-700 border border-emerald-200'
                 : 'bg-amber-50 text-amber-700 border border-amber-200'
             }`}>
-              {distanciaAtualKm <= CENTRO_COMUNITARIO.raioMaximoKm ? 'Dentro do Limite' : 'Fora do Raio'}
+              {distanciaAtualKm <= CENTRO_COMUNITARIO.raioMaximoKm ? 'Dentro da cidade' : 'Fora da área do app'}
             </span>
           </div>
         )}
@@ -170,8 +170,8 @@ export default function TelaRegistrar({ alternarReconhecimentoVoz, borrarAreasDa
 
       <div>
         <div className="flex items-center justify-between mb-2">
-          <label className={`block font-black text-slate-600 uppercase tracking-wider ${modo === 'facil' ? 'text-sm' : 'text-xs'}`}>
-            Referência (Opcional):
+          <label className={`block font-black text-slate-600 ${modo === 'facil' ? 'text-sm' : 'text-xs'}`}>
+            Ponto de referência (opcional)
           </label>
           <button
             type="button"
@@ -180,7 +180,7 @@ export default function TelaRegistrar({ alternarReconhecimentoVoz, borrarAreasDa
               gravandoVoz ? 'bg-rose-600 text-white animate-pulse' : 'bg-blue-50 text-blue-600 border border-blue-200'
             }`}
           >
-            <span>🎤</span>
+            <Mic size={13} strokeWidth={2.25} aria-hidden="true" />
             <span>{gravandoVoz ? 'Ouvindo...' : 'Por voz'}</span>
           </button>
         </div>
@@ -197,10 +197,10 @@ export default function TelaRegistrar({ alternarReconhecimentoVoz, borrarAreasDa
       <button
         type="submit"
         disabled={enviando || processandoFoto}
-        className={`w-full rounded-2xl font-black uppercase tracking-wider text-white shadow-md transition-all ${
+        className={`w-full rounded-2xl font-black text-asfalto shadow-[0_3px_0_#e0b200] transition-all ${
           modo === 'facil' ? 'py-5 text-base' : 'py-3.5 text-xs'
         } ${
-          enviando || processandoFoto ? 'bg-blue-400 cursor-not-allowed' : 'bg-blue-600 hover:bg-blue-700 active:scale-[0.99] cursor-pointer'
+          enviando || processandoFoto ? 'bg-faixa/50 text-asfalto/60 shadow-none cursor-not-allowed' : 'bg-faixa hover:bg-faixa-escura active:translate-y-px cursor-pointer'
         }`}
       >
         <span className="inline-flex items-center justify-center gap-2">

@@ -8,7 +8,7 @@ export default function IndicadoresGestao({ analiseCategorias, analiseTemporal, 
     {/* Indicadores técnicos e visualizações */}
     <section className="grid grid-cols-2 gap-3">
       <div className="bg-white border border-slate-200 rounded-3xl p-4 shadow-2xs">
-        <p className="text-[10px] uppercase tracking-wide text-slate-400 font-black">Tempo médio de resolução</p>
+        <p className="text-[10px] text-slate-400 font-black">Tempo médio de resolução</p>
         <p className="text-2xl font-black text-slate-800 mt-2">
           {metricas.tempoMedioDias === null ? '—' : `${metricas.tempoMedioDias.toFixed(1)} dias`}
         </p>
@@ -17,7 +17,7 @@ export default function IndicadoresGestao({ analiseCategorias, analiseTemporal, 
         </p>
       </div>
       <div className="bg-white border border-slate-200 rounded-3xl p-4 shadow-2xs">
-        <p className="text-[10px] uppercase tracking-wide text-slate-400 font-black">Índice de recorrência</p>
+        <p className="text-[10px] text-slate-400 font-black">Índice de recorrência</p>
         <p className="text-2xl font-black text-amber-600 mt-2">{metricas.indiceRecorrencia}%</p>
         <p className="text-[10px] text-slate-500 mt-1">Chamados a menos de {RAIO_RECURRENCIA_METROS} m de outro chamado.</p>
       </div>

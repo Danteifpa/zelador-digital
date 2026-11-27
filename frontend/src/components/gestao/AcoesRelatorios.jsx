@@ -1,11 +1,13 @@
+import { CalendarDays, FileSpreadsheet, FileText, Map as IconeMapa, Megaphone } from 'lucide-react'
+
 /** Documentos e exportações da gestão (aba Relatórios). */
 export default function AcoesRelatorios({ abrirOficio, abrirBoletim, abrirRelatorioMensal, exportarCsv, exportarGeoJson }) {
   const acoes = [
-    { icone: '🗓️', titulo: 'Relatório mensal', detalhe: 'Números do mês por órgão e bairro', onClick: abrirRelatorioMensal, destaque: 'bg-slate-900 hover:bg-slate-800 text-white border-slate-900' },
-    { icone: '📄', titulo: 'Ofício', detalhe: 'Reivindicação ao poder público', onClick: abrirOficio, destaque: 'bg-indigo-600 hover:bg-indigo-700 text-white border-indigo-600' },
-    { icone: '📢', titulo: 'Boletim', detalhe: 'Resumo para a comunidade', onClick: abrirBoletim, destaque: 'bg-emerald-600 hover:bg-emerald-700 text-white border-emerald-600' },
-    { icone: '📊', titulo: 'Planilha', detalhe: 'Exportar CSV', onClick: exportarCsv },
-    { icone: '🗺️', titulo: 'Dados do mapa', detalhe: 'Exportar GeoJSON', onClick: exportarGeoJson }
+    { Icone: CalendarDays, titulo: 'Relatório mensal', detalhe: 'Números do mês por órgão e bairro', onClick: abrirRelatorioMensal, destaque: 'bg-placa hover:bg-placa-escura text-white border-placa' },
+    { Icone: FileText, titulo: 'Ofício', detalhe: 'Reivindicação ao poder público', onClick: abrirOficio, destaque: 'bg-asfalto hover:bg-slate-800 text-white border-asfalto' },
+    { Icone: Megaphone, titulo: 'Boletim', detalhe: 'Resumo para a comunidade', onClick: abrirBoletim, destaque: 'bg-mangueira hover:bg-emerald-900 text-white border-mangueira' },
+    { Icone: FileSpreadsheet, titulo: 'Planilha', detalhe: 'Exportar CSV', onClick: exportarCsv },
+    { Icone: IconeMapa, titulo: 'Dados do mapa', detalhe: 'Exportar GeoJSON', onClick: exportarGeoJson }
   ]
   return (
     <section aria-label="Documentos e exportações" className="grid grid-cols-2 gap-2 [&>button:first-child]:col-span-2">
@@ -18,8 +20,8 @@ export default function AcoesRelatorios({ abrirOficio, abrirBoletim, abrirRelato
             acao.destaque || 'bg-white hover:bg-slate-50 text-slate-800 border-slate-200'
           }`}
         >
-          <span className="text-lg" aria-hidden="true">{acao.icone}</span>
-          <span className="mt-1 block text-sm font-black">{acao.titulo}</span>
+          <acao.Icone size={20} strokeWidth={2.25} aria-hidden="true" />
+          <span className="mt-1.5 block text-sm font-black">{acao.titulo}</span>
           <span className={`block text-[11px] ${acao.destaque ? 'text-white/80' : 'text-slate-500'}`}>{acao.detalhe}</span>
         </button>
       ))}

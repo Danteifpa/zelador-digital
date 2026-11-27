@@ -31,7 +31,7 @@ export default function MetricasGestao({ filtroStatus, metricas, onFiltrar }) {
           <span>Taxa de resolução</span>
           <span>{metricas.percentualResolucao}%</span>
         </div>
-        <div className="h-1.5 rounded-full bg-slate-700 overflow-hidden" aria-label={`${metricas.percentualResolucao}% de resolução`}>
+        <div className="h-1.5 rounded-full bg-slate-700 overflow-hidden" role="progressbar" aria-valuemin={0} aria-valuemax={100} aria-valuenow={metricas.percentualResolucao} aria-label="Taxa de resolução">
           <div className="h-full bg-emerald-400 transition-all" style={{ width: `${metricas.percentualResolucao}%` }} />
         </div>
       </div>

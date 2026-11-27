@@ -983,6 +983,7 @@ export default function App() {
         }}
         onAbrirSobre={() => setModalSobreAberto(true)}
         modoFacil={modo === 'facil'}
+        largo={abaAtiva === 'gestao'}
         onAlternarModoFacil={() => alternarModo(modo === 'facil' ? 'normal' : 'facil')}
       />
 
@@ -1208,7 +1209,7 @@ export default function App() {
       </main>
 
       {/* BARRA DE NAVEGAÇÃO INFERIOR */}
-      <nav className="barra-navegacao fixed bottom-0 left-0 right-0 z-40 bg-white/90 backdrop-blur-md border-t border-slate-200 shadow-lg pb-[env(safe-area-inset-bottom)]">
+      <nav className="barra-navegacao fixed bottom-0 left-0 right-0 z-40 bg-white border-t border-asfalto/10 pb-[env(safe-area-inset-bottom)]">
         <div className="max-w-md mx-auto px-4 h-16 flex items-center justify-between">
           <button
             onClick={() => {
@@ -1217,7 +1218,7 @@ export default function App() {
               setOcorrenciaSelecionada(null)
             }}
             className={`flex flex-col items-center justify-center space-y-1 transition-colors cursor-pointer ${
-              abaAtiva === 'inicio' ? 'text-blue-600' : 'text-slate-500 hover:text-slate-700'
+              abaAtiva === 'inicio' ? 'text-placa aba-ativa' : 'text-slate-500 hover:text-asfalto'
             }`}
           >
             <span aria-hidden="true"><House size={22} strokeWidth={2.1} /></span>
@@ -1231,7 +1232,7 @@ export default function App() {
               setOcorrenciaSelecionada(null)
             }}
             className={`flex flex-col items-center justify-center space-y-1 transition-colors cursor-pointer ${
-              abaAtiva === 'mapa' ? 'text-blue-600' : 'text-slate-500 hover:text-slate-700'
+              abaAtiva === 'mapa' ? 'text-placa aba-ativa' : 'text-slate-500 hover:text-asfalto'
             }`}
           >
             <span aria-hidden="true"><IconeMapa size={22} strokeWidth={2.1} /></span>
@@ -1244,9 +1245,9 @@ export default function App() {
               abrirAbaRegistar()
               setOcorrenciaSelecionada(null)
             }}
-            className="w-12 h-12 rounded-full bg-blue-600 text-white flex items-center justify-center text-xl shadow-md -mt-5 hover:bg-blue-700 active:scale-95 transition-all cursor-pointer border-4 border-white"
-            title="Registrar ocorrência"
-            aria-label="Registrar ocorrência"
+            className="w-13 h-13 rounded-2xl bg-faixa text-asfalto flex items-center justify-center shadow-[0_3px_0_#e0b200] -mt-6 hover:bg-faixa-escura active:translate-y-px transition-transform cursor-pointer border-4 border-white"
+            title="Registrar um problema"
+            aria-label="Registrar um problema"
           >
             <Plus size={26} strokeWidth={2.6} aria-hidden="true" />
           </button>
@@ -1258,7 +1259,7 @@ export default function App() {
               setOcorrenciaSelecionada(null)
             }}
             className={`flex flex-col items-center justify-center space-y-1 transition-colors cursor-pointer ${
-              abaAtiva === 'registos' ? 'text-blue-600' : 'text-slate-500 hover:text-slate-700'
+              abaAtiva === 'registos' ? 'text-placa aba-ativa' : 'text-slate-500 hover:text-asfalto'
             }`}
           >
             <span aria-hidden="true"><ClipboardList size={22} strokeWidth={2.1} /></span>
@@ -1272,7 +1273,7 @@ export default function App() {
               setOcorrenciaSelecionada(null)
             }}
             className={`flex flex-col items-center justify-center space-y-1 transition-colors cursor-pointer ${
-              abaAtiva === 'gestao' ? 'text-blue-600' : 'text-slate-500 hover:text-slate-700'
+              abaAtiva === 'gestao' ? 'text-placa aba-ativa' : 'text-slate-500 hover:text-asfalto'
             }`}
           >
             <span aria-hidden="true"><LayoutDashboard size={22} strokeWidth={2.1} /></span>

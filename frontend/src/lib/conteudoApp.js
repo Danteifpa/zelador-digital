@@ -7,19 +7,19 @@ export const ETAPAS_ONBOARDING = [
     titulo: 'Voz Ativa no Seu Bairro',
     descricao: `O ${MARCA.nome} é uma plataforma ${MARCA.prefeitura ? `da ${MARCA.prefeitura}` : 'comunitária independente'} para identificar, documentar e transformar a zeladoria urbana.`,
     icone: '🏙️',
-    gradiente: 'from-blue-600 to-indigo-600'
+    gradiente: 'bg-placa'
   },
   {
     titulo: 'Registro Rápido & Georreferenciado',
     descricao: 'Tire uma fotografia em campo e deixe que o satélite GPS marque com precisão o ponto exato da ocorrência territorial.',
     icone: '📸',
-    gradiente: 'from-sky-600 to-blue-600'
+    gradiente: 'bg-placa-escura'
   },
   {
     titulo: 'Transparência & Acompanhamento',
     descricao: 'Consulte os dados no mapa térmico e siga a linha do tempo desde o envio até a intervenção concluída.',
     icone: '🗺️',
-    gradiente: 'from-emerald-600 to-teal-600'
+    gradiente: 'bg-mangueira'
   }
 ]
 
